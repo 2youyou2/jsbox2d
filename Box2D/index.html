@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>TODO supply a title</title>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width">
+
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+
+		<script type="text/javascript" src="System/Class.js"></script>
+		<script type="text/javascript" src="System/Delegate.js"></script>
+		<script type="text/javascript" src="System/Map.js"></script>
+
+		<script type="text/javascript" src="Common/b2Settings.js"></script>
+		<script type="text/javascript" src="Common/b2Math.js"></script>
+		<script type="text/javascript" src="Common/b2Draw.js"></script>
+		<script type="text/javascript" src="Common/b2Timer.js"></script>
+
+		<script type="text/javascript" src="Collision/b2Collision.js"></script>
+		<script type="text/javascript" src="Collision/Shapes/b2Shape.js"></script>
+		<script type="text/javascript" src="Collision/Shapes/b2CircleShape.js"></script>
+		<script type="text/javascript" src="Collision/Shapes/b2EdgeShape.js"></script>
+		<script type="text/javascript" src="Collision/Shapes/b2ChainShape.js"></script>
+		<script type="text/javascript" src="Collision/Shapes/b2PolygonShape.js"></script>
+
+		<script type="text/javascript" src="Collision/b2BroadPhase.js"></script>
+		<script type="text/javascript" src="Collision/b2Distance.js"></script>
+		<script type="text/javascript" src="Collision/b2DynamicTree.js"></script>
+		<script type="text/javascript" src="Collision/b2TimeOfImpact.js"></script>
+
+		<script type="text/javascript" src="Dynamics/b2Body.js"></script>
+		<script type="text/javascript" src="Dynamics/b2Fixture.js"></script>
+		<script type="text/javascript" src="Dynamics/b2WorldCallbacks.js"></script>
+		<script type="text/javascript" src="Dynamics/b2TimeStep.js"></script>
+		<script type="text/javascript" src="Dynamics/b2World.js"></script>
+
+		<script type="text/javascript" src="Dynamics/Contacts/b2Contact.js"></script>
+		<script type="text/javascript" src="Dynamics/b2ContactManager.js"></script>
+		<script type="text/javascript" src="Dynamics/Contacts/b2ContactSolver.js"></script>
+		<script type="text/javascript" src="Dynamics/b2Island.js"></script>
+
+		<script type="text/javascript" src="Dynamics/Joints/b2Joint.js"></script>
+		<script type="text/javascript" src="Dynamics/Joints/b2RevoluteJoint.js"></script>
+		<script type="text/javascript" src="Dynamics/Joints/b2MouseJoint.js"></script>
+		<script type="text/javascript" src="Dynamics/Joints/b2DistanceJoint.js"></script>
+		<script type="text/javascript" src="Dynamics/Joints/b2PrismaticJoint.js"></script>
+
+		<script type="text/javascript" src="CanvasDebug.js"></script>
+
+		<script type="text/javascript" src="Test.js"></script>
+		<script type="text/javascript" src="TestPyramid.js"></script>
+		<script type="text/javascript" src="TestEdge.js"></script>
+		<script type="text/javascript" src="TestSphereStack.js"></script>
+		<script type="text/javascript" src="TestConveyorBelt.js"></script>
+		<script type="text/javascript" src="TestContinuous.js"></script>
+		<script type="text/javascript" src="TestVaryingRestitution.js"></script>
+		<script type="text/javascript" src="TestVaryingFriction.js"></script>
+		<script type="text/javascript" src="TestAddPair.js"></script>
+		<script type="text/javascript" src="TestTiles.js"></script>
+		<script type="text/javascript" src="TestTumbler.js"></script>
+		<script type="text/javascript" src="TestBridge.js"></script>
+		<script type="text/javascript" src="TestChain.js"></script>
+		<script type="text/javascript" src="TestRevolute.js"></script>
+		<script type="text/javascript" src="TestTheoJansenWalker.js"></script>
+		<script type="text/javascript" src="TestSliderCrank.js"></script>
+		<script type="text/javascript" src="TestConfined.js"></script>
+		<script type="text/javascript" src="TestPinball.js"></script>
+		<script type="text/javascript" src="TestBullet.js"></script>
+		<script type="text/javascript" src="TestCharacterCollision.js"></script>
+		<script type="text/javascript" src="TestCollisionFiltering.js"></script>
+		<script type="text/javascript" src="TestCollisionProcessing.js"></script>
+		<script type="text/javascript" src="TestCompoundShapes.js"></script>
+		<script type="text/javascript" src="TestSensor.js"></script>
+		<script type="text/javascript" src="TestDominos.js"></script>
+
+		<style>
+		/* FLEX STUFF */
+		.flex.container
+		{
+			display: flex;
+			display: -ms-flex;
+			display: -moz-flex;
+			display: -webkit-flex;
+		}
+
+		.flex.column
+		{
+			flex-direction: column;
+			-ms-flex-direction: column;
+			-moz-flex-direction: column;
+			-webkit-flex-direction: column;
+		}
+
+		.flex.columnReverse
+		{
+			flex-direction: column-reverse;
+			-ms-flex-direction: column-reverse;
+			-moz-flex-direction: column-reverse;
+			-webkit-flex-direction: column-reverse;
+		}
+
+		.flex.row
+		{
+			flex-direction: row;
+			-ms-flex-direction: row;
+			-moz-flex-direction: row;
+			-webkit-flex-direction: row;
+		}
+
+		.flex.anchor
+		{
+			flex: 0 0 auto;
+			-ms-flex: 0 0 auto;
+			-moz-flex: 0 0 auto;
+			-webkit-flex: 0 0 auto;
+		}
+
+		.flex.fillRest
+		{
+			flex: 0 1 auto;
+			-ms-flex: 0 1 auto;
+			-moz-flex: 0 1 auto;
+			-webkit-flex: 0 1 auto;
+
+			min-height: 0;
+			min-width: 0;
+		}
+
+		.flex.fillRestGrow
+		{
+			flex: 1 1 auto;
+			-ms-flex: 1 1 auto;
+			-moz-flex: 1 1 auto;
+			-webkit-flex: 1 1 auto;
+
+			min-height: 0;
+			min-width: 0;
+		}
+
+		.flex.allBasis
+		{
+			flex-basis: 100%;
+			-ms-flex-basis: 100%;
+			-moz-flex-basis: 100%;
+			-webkit-flex-basis: 100%;
+		}
+
+		.flex.noShrink
+		{
+			flex-shrink: 0;
+			-ms-flex-shrink: 0;
+			-moz-flex-shrink: 0;
+			-webkit-flex-shrink: 0;
+		}
+
+		.flex.centerAll
+		{
+			align-items: center;
+			-ms-align-items: center;
+			-moz-align-items: center;
+			-webkit-align-items: center;
+
+			justify-content: center;
+			-ms-justify-content: center;
+			-moz-justify-content: center;
+			-webkit-justify-content: center;
+		}
+
+		.flex.centerAlign
+		{
+			align-items: center;
+			-ms-align-items: center;
+			-moz-align-items: center;
+			-webkit-align-items: center;
+		}
+
+		.flex.centerJustify
+		{
+			justify-content: center;
+			-ms-justify-content: center;
+			-moz-justify-content: center;
+			-webkit-justify-content: center;
+		}
+
+		html, body
+		{
+			margin: 0;
+			width: 100%;
+			height: 100%;
+		}
+		</style>
+	</head>
+	<body>
+		<div class="flex container" style="width: 100%; height: 100%;">
+			<div class="flex container fillRestGrow">
+				<canvas style="background: #333333;" class="flex fillRestGrow" id="canvas"></canvas>
+			</div>
+			<div class="flex anchor container column centerAlign" style="width: 240px;">
+				<label for="test">Test</label>
+				<select id="test"></select>
+				<br/>
+			</div>
+		</div>
+
+		<script>
+			"use strict";
+
+			var canvas = document.getElementById('canvas');
+			var cQ = $(canvas);
+
+			canvas.width = canvas.clientWidth;
+			canvas.height = canvas.clientHeight;
+
+			var context = canvas.getContext('2d');
+
+			var tests =
+				[
+					TestPyramid,
+					TestEdge,
+					TestSphereStack,
+					TestConveyorBelt,
+					TestContinuous,
+					TestVaryingRestitution,
+					TestVaryingFriction,
+					TestAddPair,
+					TestTiles,
+					TestTumbler,
+					TestBridge,
+					TestChain,
+					TestRevolute,
+					TestTheoJansenWalker,
+					TestSliderCrank,
+					TestConfined,
+					TestPinball,
+					TestBullet,
+					TestCharacterCollision,
+					TestCollisionFiltering,
+					TestCollisionProcessing,
+					TestCompoundShapes,
+					TestSensor,
+					TestDominos
+				];
+
+			var testSelect = $('#test');
+			var currentTest = null;
+
+			testSelect.change(function()
+			{
+				var index = testSelect.prop("selectedIndex");
+				var test = tests[index];
+
+				currentTest = new test();
+				currentTest.m_debugDraw.context = context;
+				currentTest.m_debugDraw.SetFlags(b2Draw.e_shapeBit | b2Draw.e_jointBit);// | b2Draw.e_aabbBit | b2Draw.e_centerOfMassBit);
+				currentTest.Initialize();
+			});
+
+			cQ.mousedown(function(e)
+			{
+				var x = e.clientX;
+				var y = canvas.height - e.clientY;
+
+				x -= canvas.width / 2;
+				y -= canvas.height / 2;
+
+				x /= 14;
+				y /= 14;
+
+				currentTest.MouseDown(new b2Vec2(x, y));
+			});
+
+			cQ.mouseup(function(e)
+			{
+				var x = e.clientX;
+				var y = canvas.height - e.clientY;
+
+				x -= canvas.width / 2;
+				y -= canvas.height / 2;
+
+				x /= 14;
+				y /= 14;
+
+				currentTest.MouseUp(new b2Vec2(x, y));
+			});
+
+			cQ.mousemove(function(e)
+			{
+				var x = e.clientX;
+				var y = canvas.height - e.clientY;
+
+				x -= canvas.width / 2;
+				y -= canvas.height / 2;
+
+				x /= 14;
+				y /= 14;
+
+				currentTest.MouseMove(new b2Vec2(x, y));
+			});
+
+			$(document).keydown(function(e)
+			{
+				if (e.keyCode === 'R'.charCodeAt())
+					testSelect.change();
+				else
+					currentTest.Keyboard(e.keyCode);
+			});
+
+			$(document).keyup(function(e)
+			{
+				currentTest.KeyboardUp(e.keyCode);
+			});
+
+			for (var i = 0; i < tests.length; ++i)
+				testSelect.append('<option>' + tests[i].name.substr(4) + '</option>');
+
+			testSelect.change();
+
+			window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
+                              window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+
+			// This is our little game loop.
+			function step()
+			{
+				context.clearRect(0, 0, canvas.width, canvas.height);
+
+				currentTest.Step();
+
+				window.requestAnimationFrame(step);
+			}
+
+			window.requestAnimationFrame(step);
+		</script>
+	</body>
+</html>
