@@ -27,6 +27,7 @@ function Test()
 	this.m_points = [];
 
 	this.m_world.SetContactListener(this);
+	this.m_world.SetDestructionListener(this);
 
 	var bodyDef = new b2BodyDef();
 	this.m_groundBody = this.m_world.CreateBody(bodyDef);
@@ -67,6 +68,14 @@ QueryCallback.prototype =
 
 Test.prototype =
 {
+	SayGoodbyeJoint: function(joint)
+	{
+		if (this.m_mouseJoint == joint)
+			this.m_mouseJoint = null;
+	},
+	
+	SayGoodbyeFixture: function(fixture) { },
+
 	Initialize: function()
 	{
 	},
