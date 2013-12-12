@@ -68,7 +68,8 @@ struct b2Vec2
 
 	void Assign(const b2Vec2 &l)
 	{
-		this->Set(l.x, l.y);
+		this->x = l.x;
+		this->y = l.y;
 	}
 
 	/// Negate this vector.
@@ -167,6 +168,13 @@ struct b2Vec2
 	}
 
 	float32 x, y;
+
+private:
+	inline b2Vec2 &operator=(const b2Vec2 &l)
+	{
+		B2_NOT_USED(l);
+		return *this;
+	}
 };
 
 /// A 2D column vector with 3 elements.
@@ -177,6 +185,13 @@ struct b2Vec3
 
 	/// Construct using coordinates.
 	b2Vec3(float32 x, float32 y, float32 z) : x(x), y(y), z(z) {}
+
+	inline void Assign(const b2Vec3 &l)
+	{
+		this->x = l.x;
+		this->y = l.y;
+		this->z = l.z;
+	}
 
 	/// Set this vector to all zeros.
 	void SetZero() { this->x = 0.0; this->y = 0.0; this->z = 0.0; }
@@ -223,6 +238,13 @@ struct b2Vec3
 	}
 
 	float32 x, y, z;
+
+private:
+	inline b2Vec3 &operator=(const b2Vec3 &l)
+	{
+		B2_NOT_USED(l);
+		return *this;
+	}
 };
 
 /// A 2-by-2 matrix. Stored in column-major order.
@@ -234,8 +256,8 @@ struct b2Mat22
 	/// Construct this matrix using columns.
 	b2Mat22(const b2Vec2& c1, const b2Vec2& c2)
 	{
-		this->ex = c1;
-		this->ey = c2;
+		this->ex.Assign(c1);
+		this->ey.Assign(c2);
 	}
 
 	/// Construct this matrix using scalars.
@@ -245,11 +267,17 @@ struct b2Mat22
 		this->ey.x = a12; this->ey.y = a22;
 	}
 
+	inline void Assign(const b2Mat22 &l)
+	{
+		this->ex.Assign(l.ex);
+		this->ey.Assign(l.ey);
+	}
+
 	/// Initialize this matrix using columns.
 	void Set(const b2Vec2& c1, const b2Vec2& c2)
 	{
-		this->ex = c1;
-		this->ey = c2;
+		this->ex.Assign(c1);
+		this->ey.Assign(c2);
 	}
 
 	/// Set this to the identity matrix.
@@ -302,6 +330,13 @@ struct b2Mat22
 	}
 
 	b2Vec2 ex, ey;
+
+private:
+	inline b2Mat22 &operator=(const b2Mat22 &l)
+	{
+		B2_NOT_USED(l);
+		return *this;
+	}
 };
 
 /// A 3-by-3 matrix. Stored in column-major order.
@@ -313,9 +348,16 @@ struct b2Mat33
 	/// Construct this matrix using columns.
 	b2Mat33(const b2Vec3& c1, const b2Vec3& c2, const b2Vec3& c3)
 	{
-		this->ex = c1;
-		this->ey = c2;
-		this->ez = c3;
+		this->ex.Assign(c1);
+		this->ey.Assign(c2);
+		this->ez.Assign(c3);
+	}
+
+	inline void Assign(const b2Mat33 &l)
+	{
+		this->ex.Assign(l.ex);
+		this->ey.Assign(l.ey);
+		this->ez.Assign(l.ez);
 	}
 
 	/// Set this matrix to all zeros.
@@ -344,6 +386,13 @@ struct b2Mat33
 	void GetSymInverse33(b2Mat33* M) const;
 
 	b2Vec3 ex, ey, ez;
+
+private:
+	inline b2Mat33 &operator=(const b2Mat33 &l)
+	{
+		B2_NOT_USED(l);
+		return *this;
+	}
 };
 
 /// Rotation
@@ -357,6 +406,12 @@ struct b2Rot
 		/// TODO_ERIN optimize
 		this->s = sinf(angle);
 		this->c = cosf(angle);
+	}
+
+	inline void Assign(const b2Rot &l)
+	{
+		this->s = l.s;
+		this->c = l.c;
 	}
 
 	/// Set using an angle in radians.
@@ -394,6 +449,13 @@ struct b2Rot
 
 	/// Sine and cosine
 	float32 s, c;
+
+private:
+	inline b2Rot &operator=(const b2Rot &l)
+	{
+		B2_NOT_USED(l);
+		return *this;
+	}
 };
 
 /// A transform contains translation and rotation. It is used to represent
@@ -406,6 +468,12 @@ struct b2Transform
 	/// Initialize using a position vector and a rotation.
 	b2Transform(const b2Vec2& position, const b2Rot& rotation) : p(position), q(rotation) {}
 
+	inline void Assign(const b2Transform &l)
+	{
+		this->p.Assign(l.p);
+		this->q.Assign(l.q);
+	}
+
 	/// Set this to the identity transform.
 	void SetIdentity()
 	{
@@ -416,12 +484,19 @@ struct b2Transform
 	/// Set this based on the position and angle.
 	void Set(const b2Vec2& position, float32 angle)
 	{
-		this->p = position;
+		this->p.Assign(position);
 		this->q.Set(angle);
 	}
 
 	b2Vec2 p;
 	b2Rot q;
+
+private:
+	inline b2Transform &operator=(const b2Transform &l)
+	{
+		B2_NOT_USED(l);
+		return *this;
+	}
 };
 
 /// This describes the motion of a body/shape for TOI computation.
@@ -441,6 +516,16 @@ struct b2Sweep
 	/// Normalize the angles.
 	void Normalize();
 
+	inline void Assign(const b2Sweep &l)
+	{
+		this->localCenter.Assign(l.localCenter);
+		this->c0.Assign(l.c0);
+		this->c.Assign(l.c);
+		this->a0 = l.a0;
+		this->a = l.a;
+		this->alpha0 = l.alpha0;
+	}
+
 	b2Vec2 localCenter;	///< local center of mass position
 	b2Vec2 c0, c;		///< center world positions
 	float32 a0, a;		///< world angles
@@ -448,6 +533,13 @@ struct b2Sweep
 	/// Fraction of the current time step in the range [0,1]
 	/// c0 and a0 are the positions at alpha0.
 	float32 alpha0;
+
+private:
+	inline b2Sweep &operator=(const b2Sweep &l)
+	{
+		B2_NOT_USED(l);
+		return *this;
+	}
 };
 
 /// Perform the dot product on two vectors.
@@ -601,8 +693,8 @@ inline b2Vec2 b2MulT_t_v2(const b2Transform& T, const b2Vec2& v)
 inline b2Transform b2Mul_t_t(const b2Transform& A, const b2Transform& B)
 {
 	b2Transform C;
-	C.q = b2Mul_r_r(A.q, B.q);
-	C.p = b2Vec2::Add(b2Mul_r_v2(A.q, B.p), A.p);
+	C.q.Assign(b2Mul_r_r(A.q, B.q));
+	C.p.Assign(b2Vec2::Add(b2Mul_r_v2(A.q, B.p), A.p));
 	return C;
 }
 
@@ -611,8 +703,8 @@ inline b2Transform b2Mul_t_t(const b2Transform& A, const b2Transform& B)
 inline b2Transform b2MulT_t_t(const b2Transform& A, const b2Transform& B)
 {
 	b2Transform C;
-	C.q = b2MulT_r_r(A.q, B.q);
-	C.p = b2MulT_r_v2(A.q, b2Vec2::Subtract(B.p, A.p));
+	C.q.Assign(b2MulT_r_r(A.q, B.q));
+	C.p.Assign(b2MulT_r_v2(A.q, b2Vec2::Subtract(B.p, A.p)));
 	return C;
 }
 
@@ -688,7 +780,7 @@ inline bool b2IsPowerOfTwo(uint32 x)
 
 inline void b2Sweep::GetTransform(b2Transform* xf, float32 beta) const
 {
-	xf->p = b2Vec2::Add(b2Vec2::Multiply((1.0 - beta), this->c0), b2Vec2::Multiply(beta, this->c));
+	xf->p.Assign(b2Vec2::Add(b2Vec2::Multiply((1.0 - beta), this->c0), b2Vec2::Multiply(beta, this->c)));
 	float32 angle = (1.0 - beta) * this->a0 + beta * this->a;
 	xf->q.Set(angle);
 

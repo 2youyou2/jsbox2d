@@ -91,20 +91,20 @@ void b2PrismaticJointDef::Initialize(b2Body* bA, b2Body* bB, const b2Vec2& ancho
 {
 	this->bodyA = bA;
 	this->bodyB = bB;
-	this->localAnchorA = this->bodyA->GetLocalPoint(anchor);
-	this->localAnchorB = this->bodyB->GetLocalPoint(anchor);
-	this->localAxisA = this->bodyA->GetLocalVector(axis);
+	this->localAnchorA.Assign(this->bodyA->GetLocalPoint(anchor));
+	this->localAnchorB.Assign(this->bodyB->GetLocalPoint(anchor));
+	this->localAxisA.Assign(this->bodyA->GetLocalVector(axis));
 	this->referenceAngle = this->bodyB->GetAngle() - this->bodyA->GetAngle();
 }
 
 b2PrismaticJoint::b2PrismaticJoint(const b2PrismaticJointDef* def)
 : b2Joint(def)
 {
-	this->m_localAnchorA = def->localAnchorA;
-	this->m_localAnchorB = def->localAnchorB;
-	this->m_localXAxisA = def->localAxisA;
+	this->m_localAnchorA.Assign(def->localAnchorA);
+	this->m_localAnchorB.Assign(def->localAnchorB);
+	this->m_localXAxisA.Assign(def->localAxisA);
 	this->m_localXAxisA.Normalize();
-	this->m_localYAxisA = b2Cross_f_v2(1.0, this->m_localXAxisA);
+	this->m_localYAxisA.Assign(b2Cross_f_v2(1.0, this->m_localXAxisA));
 	this->m_referenceAngle = def->referenceAngle;
 
 	this->m_impulse.SetZero();
@@ -127,8 +127,8 @@ void b2PrismaticJoint::InitVelocityConstraints(const b2SolverData& data)
 {
 	this->m_indexA = this->m_bodyA->m_islandIndex;
 	this->m_indexB = this->m_bodyB->m_islandIndex;
-	this->m_localCenterA = this->m_bodyA->m_sweep.localCenter;
-	this->m_localCenterB = this->m_bodyB->m_sweep.localCenter;
+	this->m_localCenterA.Assign(this->m_bodyA->m_sweep.localCenter);
+	this->m_localCenterB.Assign(this->m_bodyB->m_sweep.localCenter);
 	this->m_invMassA = this->m_bodyA->m_invMass;
 	this->m_invMassB = this->m_bodyB->m_invMass;
 	this->m_invIA = this->m_bodyA->m_invI;
@@ -156,7 +156,7 @@ void b2PrismaticJoint::InitVelocityConstraints(const b2SolverData& data)
 
 	// Compute motor Jacobian and effective mass.
 	{
-		this->m_axis = b2Mul_r_v2(qA, this->m_localXAxisA);
+		this->m_axis.Assign(b2Mul_r_v2(qA, this->m_localXAxisA));
 		this->m_a1 = b2Cross_v2_v2(b2Vec2::Add(d, rA), this->m_axis);
 		this->m_a2 = b2Cross_v2_v2(rB, this->m_axis);
 
@@ -169,7 +169,7 @@ void b2PrismaticJoint::InitVelocityConstraints(const b2SolverData& data)
 
 	// Prismatic constraint.
 	{
-		this->m_perp = b2Mul_r_v2(qA, this->m_localYAxisA);
+		this->m_perp.Assign(b2Mul_r_v2(qA, this->m_localYAxisA));
 
 		this->m_s1 = b2Cross_v2_v2(b2Vec2::Add(d, rA), this->m_perp);
 		this->m_s2 = b2Cross_v2_v2(rB, this->m_perp);
@@ -254,9 +254,9 @@ void b2PrismaticJoint::InitVelocityConstraints(const b2SolverData& data)
 		this->m_motorImpulse = 0.0;
 	}
 
-	data.velocities[this->m_indexA].v = vA;
+	data.velocities[this->m_indexA].v.Assign(vA);
 	data.velocities[this->m_indexA].w = wA;
-	data.velocities[this->m_indexB].v = vB;
+	data.velocities[this->m_indexB].v.Assign(vB);
 	data.velocities[this->m_indexB].w = wB;
 }
 
@@ -321,7 +321,7 @@ void b2PrismaticJoint::SolveVelocityConstraints(const b2SolverData& data)
 		this->m_impulse.x = f2r.x;
 		this->m_impulse.y = f2r.y;
 
-		df = b2Vec3::Subtract(this->m_impulse, f1);
+		df.Assign(b2Vec3::Subtract(this->m_impulse, f1));
 
 		b2Vec2 P = b2Vec2::Add(b2Vec2::Multiply(df.x, this->m_perp), b2Vec2::Multiply(df.z, this->m_axis));
 		float32 LA = df.x * this->m_s1 + df.y + df.z * this->m_a1;
@@ -351,9 +351,9 @@ void b2PrismaticJoint::SolveVelocityConstraints(const b2SolverData& data)
 		wB += iB * LB;
 	}
 
-	data.velocities[this->m_indexA].v = vA;
+	data.velocities[this->m_indexA].v.Assign(vA);
 	data.velocities[this->m_indexA].w = wA;
-	data.velocities[this->m_indexB].v = vB;
+	data.velocities[this->m_indexB].v.Assign(vB);
 	data.velocities[this->m_indexB].w = wB;
 }
 
@@ -442,7 +442,7 @@ bool b2PrismaticJoint::SolvePositionConstraints(const b2SolverData& data)
 		C.y = C1.y;
 		C.z = C2;
 
-		impulse = K.Solve33(C.Negate());
+		impulse.Assign(K.Solve33(C.Negate()));
 	}
 	else
 	{
@@ -473,9 +473,9 @@ bool b2PrismaticJoint::SolvePositionConstraints(const b2SolverData& data)
 	cB.Add(b2Vec2::Multiply(mB, P));
 	aB += iB * LB;
 
-	data.positions[this->m_indexA].c = cA;
+	data.positions[this->m_indexA].c.Assign(cA);
 	data.positions[this->m_indexA].a = aA;
-	data.positions[this->m_indexB].c = cB;
+	data.positions[this->m_indexB].c.Assign(cB);
 	data.positions[this->m_indexB].a = aB;
 
 	return linearError <= b2_linearSlop && angularError <= b2_angularSlop;

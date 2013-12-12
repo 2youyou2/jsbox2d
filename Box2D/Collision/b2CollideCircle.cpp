@@ -40,11 +40,11 @@ void b2CollideCircles(
 	}
 
 	manifold->type = b2Manifold::e_circles;
-	manifold->localPoint = circleA->m_p;
+	manifold->localPoint.Assign(circleA->m_p);
 	manifold->localNormal.SetZero();
 	manifold->pointCount = 1;
 
-	manifold->points[0].localPoint = circleB->m_p;
+	manifold->points[0].localPoint.Assign(circleB->m_p);
 	manifold->points[0].id.key = 0;
 }
 
@@ -95,9 +95,9 @@ void b2CollidePolygonAndCircle(
 	{
 		manifold->pointCount = 1;
 		manifold->type = b2Manifold::e_faceA;
-		manifold->localNormal = normals[normalIndex];
-		manifold->localPoint = b2Vec2::Multiply(0.5, b2Vec2::Add(v1, v2));
-		manifold->points[0].localPoint = circleB->m_p;
+		manifold->localNormal.Assign(normals[normalIndex]);
+		manifold->localPoint.Assign(b2Vec2::Multiply(0.5, b2Vec2::Add(v1, v2)));
+		manifold->points[0].localPoint.Assign(circleB->m_p);
 		manifold->points[0].id.key = 0;
 		return;
 	}
@@ -114,10 +114,10 @@ void b2CollidePolygonAndCircle(
 
 		manifold->pointCount = 1;
 		manifold->type = b2Manifold::e_faceA;
-		manifold->localNormal = b2Vec2::Subtract(cLocal, v1);
+		manifold->localNormal.Assign(b2Vec2::Subtract(cLocal, v1));
 		manifold->localNormal.Normalize();
-		manifold->localPoint = v1;
-		manifold->points[0].localPoint = circleB->m_p;
+		manifold->localPoint.Assign(v1);
+		manifold->points[0].localPoint.Assign(circleB->m_p);
 		manifold->points[0].id.key = 0;
 	}
 	else if (u2 <= 0.0)
@@ -129,10 +129,10 @@ void b2CollidePolygonAndCircle(
 
 		manifold->pointCount = 1;
 		manifold->type = b2Manifold::e_faceA;
-		manifold->localNormal = b2Vec2::Subtract(cLocal, v2);
+		manifold->localNormal.Assign(b2Vec2::Subtract(cLocal, v2));
 		manifold->localNormal.Normalize();
-		manifold->localPoint = v2;
-		manifold->points[0].localPoint = circleB->m_p;
+		manifold->localPoint.Assign(v2);
+		manifold->points[0].localPoint.Assign(circleB->m_p);
 		manifold->points[0].id.key = 0;
 	}
 	else
@@ -146,9 +146,9 @@ void b2CollidePolygonAndCircle(
 
 		manifold->pointCount = 1;
 		manifold->type = b2Manifold::e_faceA;
-		manifold->localNormal = normals[vertIndex1];
-		manifold->localPoint = faceCenter;
-		manifold->points[0].localPoint = circleB->m_p;
+		manifold->localNormal.Assign(normals[vertIndex1]);
+		manifold->localPoint.Assign(faceCenter);
+		manifold->points[0].localPoint.Assign(circleB->m_p);
 		manifold->points[0].id.key = 0;
 	}
 }

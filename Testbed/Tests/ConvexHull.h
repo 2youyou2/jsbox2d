@@ -46,8 +46,8 @@ public:
 			// Clamp onto a square to help create collinearities.
 			// This will stress the convex hull algorithm.
 			b2Vec2 v(x, y);
-			v = b2Clamp_v2(v, lowerBound, upperBound);
-			this->m_points[i] = v;
+			v.Assign(b2Clamp_v2(v, lowerBound, upperBound));
+			this->m_points[i].Assign(v);
 		}
 
 		this->m_count = e_count;

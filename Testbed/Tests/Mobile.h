@@ -48,7 +48,7 @@ public:
 		jointDef.bodyA = ground;
 		jointDef.bodyB = root;
 		jointDef.localAnchorA.SetZero();
-		jointDef.localAnchorB = h;
+		jointDef.localAnchorB.Assign(h);
 		this->m_world->CreateJoint(&jointDef);
 	}
 
@@ -61,7 +61,7 @@ public:
 
 		b2BodyDef bodyDef;
 		bodyDef.type = b2Body::b2_dynamicBody;
-		bodyDef.position = p;
+		bodyDef.position.Assign(p);
 		b2Body* body = this->m_world->CreateBody(&bodyDef);
 
 		b2PolygonShape shape;
@@ -80,13 +80,13 @@ public:
 
 		b2RevoluteJointDef jointDef;
 		jointDef.bodyA = body;
-		jointDef.localAnchorB = h;
+		jointDef.localAnchorB.Assign(h);
 
-		jointDef.localAnchorA = a1;
+		jointDef.localAnchorA.Assign(a1);
 		jointDef.bodyB = body1;
 		this->m_world->CreateJoint(&jointDef);
 
-		jointDef.localAnchorA = a2;
+		jointDef.localAnchorA.Assign(a2);
 		jointDef.bodyB = body2;
 		this->m_world->CreateJoint(&jointDef);
 

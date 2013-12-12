@@ -485,7 +485,7 @@ inline void b2Body::SetLinearVelocity(const b2Vec2& v)
 		SetAwake(true);
 	}
 
-	this->m_linearVelocity = v;
+	this->m_linearVelocity.Assign(v);
 }
 
 inline const b2Vec2& b2Body::GetLinearVelocity() const
@@ -527,7 +527,7 @@ inline void b2Body::GetMassData(b2MassData* data) const
 {
 	data->mass = this->m_mass;
 	data->I = this->m_I + this->m_mass * b2Dot_v2_v2(this->m_sweep.localCenter, this->m_sweep.localCenter);
-	data->center = this->m_sweep.localCenter;
+	data->center.Assign(this->m_sweep.localCenter);
 }
 
 inline b2Vec2 b2Body::GetWorldPoint(const b2Vec2& localPoint) const
@@ -811,17 +811,17 @@ inline void b2Body::ApplyAngularImpulse(float32 impulse, bool wake)
 inline void b2Body::SynchronizeTransform()
 {
 	this->m_xf.q.Set(this->m_sweep.a);
-	this->m_xf.p = b2Vec2::Subtract(this->m_sweep.c, b2Mul_r_v2(this->m_xf.q, this->m_sweep.localCenter));
+	this->m_xf.p.Assign(b2Vec2::Subtract(this->m_sweep.c, b2Mul_r_v2(this->m_xf.q, this->m_sweep.localCenter)));
 }
 
 inline void b2Body::Advance(float32 alpha)
 {
 	// Advance to the new safe time. This doesn't sync the broad-phase.
 	this->m_sweep.Advance(alpha);
-	this->m_sweep.c = this->m_sweep.c0;
+	this->m_sweep.c.Assign(this->m_sweep.c0);
 	this->m_sweep.a = this->m_sweep.a0;
 	this->m_xf.q.Set(this->m_sweep.a);
-	this->m_xf.p = b2Vec2::Subtract(this->m_sweep.c, b2Mul_r_v2(this->m_xf.q, this->m_sweep.localCenter));
+	this->m_xf.p.Assign(b2Vec2::Subtract(this->m_sweep.c, b2Mul_r_v2(this->m_xf.q, this->m_sweep.localCenter)));
 }
 
 inline b2World* b2Body::GetWorld()

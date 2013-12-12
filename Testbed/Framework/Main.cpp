@@ -259,7 +259,7 @@ static void sMouseButton(GLFWwindow*, int32 button, int32 action, int32 mods)
 	{
 		if (action == GLFW_PRESS)
 		{	
-			lastp = g_camera.ConvertScreenToWorld(ps);
+			lastp.Assign(g_camera.ConvertScreenToWorld(ps));
 			rightMouseDown = true;
 		}
 
@@ -283,7 +283,7 @@ static void sMouseMotion(GLFWwindow*, double xd, double yd)
 		b2Vec2 diff = b2Vec2::Subtract(pw, lastp);
 		g_camera.m_center.x -= diff.x;
 		g_camera.m_center.y -= diff.y;
-		lastp = g_camera.ConvertScreenToWorld(ps);
+		lastp.Assign(g_camera.ConvertScreenToWorld(ps));
 	}
 }
 

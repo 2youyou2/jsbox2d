@@ -31,8 +31,8 @@ public:
 						  const b2Vec2& normal, float32 fraction)
 	{
 		this->m_fixture = fixture;
-		this->m_point = point;
-		this->m_normal = normal;
+		this->m_point.Assign(point);
+		this->m_normal.Assign(normal);
 
 		return fraction;
 	}

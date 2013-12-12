@@ -68,9 +68,9 @@ public:
 			jd.bodyB = this->m_bodies[0];
 			jd.localAnchorA.Set(-10.0, 0.0);
 			jd.localAnchorB.Set(-0.5, -0.5);
-			p1 = jd.bodyA->GetWorldPoint(jd.localAnchorA);
-			p2 = jd.bodyB->GetWorldPoint(jd.localAnchorB);
-			d = b2Vec2::Subtract(p2, p1);
+			p1.Assign(jd.bodyA->GetWorldPoint(jd.localAnchorA));
+			p2.Assign(jd.bodyB->GetWorldPoint(jd.localAnchorB));
+			d.Assign(b2Vec2::Subtract(p2, p1));
 			jd.length = d.Length();
 			this->m_joints[0] = this->m_world->CreateJoint(&jd);
 
@@ -78,9 +78,9 @@ public:
 			jd.bodyB = this->m_bodies[1];
 			jd.localAnchorA.Set(10.0, 0.0);
 			jd.localAnchorB.Set(0.5, -0.5);
-			p1 = jd.bodyA->GetWorldPoint(jd.localAnchorA);
-			p2 = jd.bodyB->GetWorldPoint(jd.localAnchorB);
-			d = b2Vec2::Subtract(p2, p1);
+			p1.Assign(jd.bodyA->GetWorldPoint(jd.localAnchorA));
+			p2.Assign(jd.bodyB->GetWorldPoint(jd.localAnchorB));
+			d.Assign(b2Vec2::Subtract(p2, p1));
 			jd.length = d.Length();
 			this->m_joints[1] = this->m_world->CreateJoint(&jd);
 
@@ -88,9 +88,9 @@ public:
 			jd.bodyB = this->m_bodies[2];
 			jd.localAnchorA.Set(10.0, 20.0);
 			jd.localAnchorB.Set(0.5, 0.5);
-			p1 = jd.bodyA->GetWorldPoint(jd.localAnchorA);
-			p2 = jd.bodyB->GetWorldPoint(jd.localAnchorB);
-			d = b2Vec2::Subtract(p2, p1);
+			p1.Assign(jd.bodyA->GetWorldPoint(jd.localAnchorA));
+			p2.Assign(jd.bodyB->GetWorldPoint(jd.localAnchorB));
+			d.Assign(b2Vec2::Subtract(p2, p1));
 			jd.length = d.Length();
 			this->m_joints[2] = this->m_world->CreateJoint(&jd);
 
@@ -98,9 +98,9 @@ public:
 			jd.bodyB = this->m_bodies[3];
 			jd.localAnchorA.Set(-10.0, 20.0);
 			jd.localAnchorB.Set(-0.5, 0.5);
-			p1 = jd.bodyA->GetWorldPoint(jd.localAnchorA);
-			p2 = jd.bodyB->GetWorldPoint(jd.localAnchorB);
-			d = b2Vec2::Subtract(p2, p1);
+			p1.Assign(jd.bodyA->GetWorldPoint(jd.localAnchorA));
+			p2.Assign(jd.bodyB->GetWorldPoint(jd.localAnchorB));
+			d.Assign(b2Vec2::Subtract(p2, p1));
 			jd.length = d.Length();
 			this->m_joints[3] = this->m_world->CreateJoint(&jd);
 
@@ -108,9 +108,9 @@ public:
 			jd.bodyB = this->m_bodies[1];
 			jd.localAnchorA.Set(0.5, 0.0);
 			jd.localAnchorB.Set(-0.5, 0.0);;
-			p1 = jd.bodyA->GetWorldPoint(jd.localAnchorA);
-			p2 = jd.bodyB->GetWorldPoint(jd.localAnchorB);
-			d = b2Vec2::Subtract(p2, p1);
+			p1.Assign(jd.bodyA->GetWorldPoint(jd.localAnchorA));
+			p2.Assign(jd.bodyB->GetWorldPoint(jd.localAnchorB));
+			d.Assign(b2Vec2::Subtract(p2, p1));
 			jd.length = d.Length();
 			this->m_joints[4] = this->m_world->CreateJoint(&jd);
 
@@ -118,9 +118,9 @@ public:
 			jd.bodyB = this->m_bodies[2];
 			jd.localAnchorA.Set(0.0, 0.5);
 			jd.localAnchorB.Set(0.0, -0.5);
-			p1 = jd.bodyA->GetWorldPoint(jd.localAnchorA);
-			p2 = jd.bodyB->GetWorldPoint(jd.localAnchorB);
-			d = b2Vec2::Subtract(p2, p1);
+			p1.Assign(jd.bodyA->GetWorldPoint(jd.localAnchorA));
+			p2.Assign(jd.bodyB->GetWorldPoint(jd.localAnchorB));
+			d.Assign(b2Vec2::Subtract(p2, p1));
 			jd.length = d.Length();
 			this->m_joints[5] = this->m_world->CreateJoint(&jd);
 
@@ -128,9 +128,9 @@ public:
 			jd.bodyB = this->m_bodies[3];
 			jd.localAnchorA.Set(-0.5, 0.0);
 			jd.localAnchorB.Set(0.5, 0.0);
-			p1 = jd.bodyA->GetWorldPoint(jd.localAnchorA);
-			p2 = jd.bodyB->GetWorldPoint(jd.localAnchorB);
-			d = b2Vec2::Subtract(p2, p1);
+			p1.Assign(jd.bodyA->GetWorldPoint(jd.localAnchorA));
+			p2.Assign(jd.bodyB->GetWorldPoint(jd.localAnchorB));
+			d.Assign(b2Vec2::Subtract(p2, p1));
 			jd.length = d.Length();
 			this->m_joints[6] = this->m_world->CreateJoint(&jd);
 
@@ -138,9 +138,9 @@ public:
 			jd.bodyB = this->m_bodies[0];
 			jd.localAnchorA.Set(0.0, -0.5);
 			jd.localAnchorB.Set(0.0, 0.5);
-			p1 = jd.bodyA->GetWorldPoint(jd.localAnchorA);
-			p2 = jd.bodyB->GetWorldPoint(jd.localAnchorB);
-			d = b2Vec2::Subtract(p2, p1);
+			p1.Assign(jd.bodyA->GetWorldPoint(jd.localAnchorA));
+			p2.Assign(jd.bodyB->GetWorldPoint(jd.localAnchorB));
+			d.Assign(b2Vec2::Subtract(p2, p1));
 			jd.length = d.Length();
 			this->m_joints[7] = this->m_world->CreateJoint(&jd);
 		}

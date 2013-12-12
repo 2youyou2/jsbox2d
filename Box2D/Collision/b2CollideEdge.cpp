@@ -77,10 +77,10 @@ void b2CollideEdgeAndCircle(b2Manifold* manifold,
 		manifold->pointCount = 1;
 		manifold->type = b2Manifold::e_circles;
 		manifold->localNormal.SetZero();
-		manifold->localPoint = P;
+		manifold->localPoint.Assign(P);
 		manifold->points[0].id.key = 0;
 		manifold->points[0].id.cf = cf;
-		manifold->points[0].localPoint = circleB->m_p;
+		manifold->points[0].localPoint.Assign(circleB->m_p);
 		return;
 	}
 	
@@ -115,10 +115,10 @@ void b2CollideEdgeAndCircle(b2Manifold* manifold,
 		manifold->pointCount = 1;
 		manifold->type = b2Manifold::e_circles;
 		manifold->localNormal.SetZero();
-		manifold->localPoint = P;
+		manifold->localPoint.Assign(P);
 		manifold->points[0].id.key = 0;
 		manifold->points[0].id.cf = cf;
-		manifold->points[0].localPoint = circleB->m_p;
+		manifold->points[0].localPoint.Assign(circleB->m_p);
 		return;
 	}
 	
@@ -144,11 +144,11 @@ void b2CollideEdgeAndCircle(b2Manifold* manifold,
 	cf.typeA = b2ContactFeature::e_face;
 	manifold->pointCount = 1;
 	manifold->type = b2Manifold::e_faceA;
-	manifold->localNormal = n;
-	manifold->localPoint = A;
+	manifold->localNormal.Assign(n);
+	manifold->localPoint.Assign(A);
 	manifold->points[0].id.key = 0;
 	manifold->points[0].id.cf = cf;
-	manifold->points[0].localPoint = circleB->m_p;
+	manifold->points[0].localPoint.Assign(circleB->m_p);
 }
 
 // This structure is used to keep track of the best separating axis.
@@ -224,14 +224,14 @@ struct b2EPCollider
 void b2EPCollider::Collide(b2Manifold* manifold, const b2EdgeShape* edgeA, const b2Transform& xfA,
 						   const b2PolygonShape* polygonB, const b2Transform& xfB)
 {
-	this->m_xf = b2MulT_t_t(xfA, xfB);
+	this->m_xf.Assign(b2MulT_t_t(xfA, xfB));
 	
-	this->m_centroidB = b2Mul_t_v2(this->m_xf, polygonB->m_centroid);
+	this->m_centroidB.Assign(b2Mul_t_v2(this->m_xf, polygonB->m_centroid));
 	
-	this->m_v0 = edgeA->m_vertex0;
-	this->m_v1 = edgeA->m_vertex1;
-	this->m_v2 = edgeA->m_vertex2;
-	this->m_v3 = edgeA->m_vertex3;
+	this->m_v0.Assign(edgeA->m_vertex0);
+	this->m_v1.Assign(edgeA->m_vertex1);
+	this->m_v2.Assign(edgeA->m_vertex2);
+	this->m_v3.Assign(edgeA->m_vertex3);
 	
 	bool hasVertex0 = edgeA->m_hasVertex0;
 	bool hasVertex3 = edgeA->m_hasVertex3;
@@ -271,15 +271,15 @@ void b2EPCollider::Collide(b2Manifold* manifold, const b2EdgeShape* edgeA, const
 			this->m_front = offset0 >= 0.0 || offset1 >= 0.0 || offset2 >= 0.0;
 			if (this->m_front)
 			{
-				this->m_normal = this->m_normal1;
-				this->m_lowerLimit = this->m_normal0;
-				this->m_upperLimit = this->m_normal2;
+				this->m_normal.Assign(this->m_normal1);
+				this->m_lowerLimit.Assign(this->m_normal0);
+				this->m_upperLimit.Assign(this->m_normal2);
 			}
 			else
 			{
-				this->m_normal = this->m_normal1.Negate();
-				this->m_lowerLimit = this->m_normal1.Negate();
-				this->m_upperLimit = this->m_normal1.Negate();
+				this->m_normal.Assign(this->m_normal1.Negate());
+				this->m_lowerLimit.Assign(this->m_normal1.Negate());
+				this->m_upperLimit.Assign(this->m_normal1.Negate());
 			}
 		}
 		else if (convex1)
@@ -287,15 +287,15 @@ void b2EPCollider::Collide(b2Manifold* manifold, const b2EdgeShape* edgeA, const
 			this->m_front = offset0 >= 0.0 || (offset1 >= 0.0 && offset2 >= 0.0);
 			if (this->m_front)
 			{
-				this->m_normal = this->m_normal1;
-				this->m_lowerLimit = this->m_normal0;
-				this->m_upperLimit = this->m_normal1;
+				this->m_normal.Assign(this->m_normal1);
+				this->m_lowerLimit.Assign(this->m_normal0);
+				this->m_upperLimit.Assign(this->m_normal1);
 			}
 			else
 			{
-				this->m_normal = this->m_normal1.Negate();
-				this->m_lowerLimit = this->m_normal2.Negate();
-				this->m_upperLimit = this->m_normal1.Negate();
+				this->m_normal.Assign(this->m_normal1.Negate());
+				this->m_lowerLimit.Assign(this->m_normal2.Negate());
+				this->m_upperLimit.Assign(this->m_normal1.Negate());
 			}
 		}
 		else if (convex2)
@@ -303,15 +303,15 @@ void b2EPCollider::Collide(b2Manifold* manifold, const b2EdgeShape* edgeA, const
 			this->m_front = offset2 >= 0.0 || (offset0 >= 0.0 && offset1 >= 0.0);
 			if (this->m_front)
 			{
-				this->m_normal = this->m_normal1;
-				this->m_lowerLimit = this->m_normal1;
-				this->m_upperLimit = this->m_normal2;
+				this->m_normal.Assign(this->m_normal1);
+				this->m_lowerLimit.Assign(this->m_normal1);
+				this->m_upperLimit.Assign(this->m_normal2);
 			}
 			else
 			{
-				this->m_normal = this->m_normal1.Negate();
-				this->m_lowerLimit = this->m_normal1.Negate();
-				this->m_upperLimit = this->m_normal0.Negate();
+				this->m_normal.Assign(this->m_normal1.Negate());
+				this->m_lowerLimit.Assign(this->m_normal1.Negate());
+				this->m_upperLimit.Assign(this->m_normal0.Negate());
 			}
 		}
 		else
@@ -319,15 +319,15 @@ void b2EPCollider::Collide(b2Manifold* manifold, const b2EdgeShape* edgeA, const
 			this->m_front = offset0 >= 0.0 && offset1 >= 0.0 && offset2 >= 0.0;
 			if (this->m_front)
 			{
-				this->m_normal = this->m_normal1;
-				this->m_lowerLimit = this->m_normal1;
-				this->m_upperLimit = this->m_normal1;
+				this->m_normal.Assign(this->m_normal1);
+				this->m_lowerLimit.Assign(this->m_normal1);
+				this->m_upperLimit.Assign(this->m_normal1);
 			}
 			else
 			{
-				this->m_normal = this->m_normal1.Negate();
-				this->m_lowerLimit = this->m_normal2.Negate();
-				this->m_upperLimit = this->m_normal0.Negate();
+				this->m_normal.Assign(this->m_normal1.Negate());
+				this->m_lowerLimit.Assign(this->m_normal2.Negate());
+				this->m_upperLimit.Assign(this->m_normal0.Negate());
 			}
 		}
 	}
@@ -338,15 +338,15 @@ void b2EPCollider::Collide(b2Manifold* manifold, const b2EdgeShape* edgeA, const
 			this->m_front = offset0 >= 0.0 || offset1 >= 0.0;
 			if (this->m_front)
 			{
-				this->m_normal = this->m_normal1;
-				this->m_lowerLimit = this->m_normal0;
-				this->m_upperLimit = this->m_normal1.Negate();
+				this->m_normal.Assign(this->m_normal1);
+				this->m_lowerLimit.Assign(this->m_normal0);
+				this->m_upperLimit.Assign(this->m_normal1.Negate());
 			}
 			else
 			{
-				this->m_normal = this->m_normal1.Negate();
-				this->m_lowerLimit = this->m_normal1;
-				this->m_upperLimit = this->m_normal1.Negate();
+				this->m_normal.Assign(this->m_normal1.Negate());
+				this->m_lowerLimit.Assign(this->m_normal1);
+				this->m_upperLimit.Assign(this->m_normal1.Negate());
 			}
 		}
 		else
@@ -354,15 +354,15 @@ void b2EPCollider::Collide(b2Manifold* manifold, const b2EdgeShape* edgeA, const
 			this->m_front = offset0 >= 0.0 && offset1 >= 0.0;
 			if (this->m_front)
 			{
-				this->m_normal = this->m_normal1;
-				this->m_lowerLimit = this->m_normal1;
-				this->m_upperLimit = this->m_normal1.Negate();
+				this->m_normal.Assign(this->m_normal1);
+				this->m_lowerLimit.Assign(this->m_normal1);
+				this->m_upperLimit.Assign(this->m_normal1.Negate());
 			}
 			else
 			{
-				this->m_normal = this->m_normal1.Negate();
-				this->m_lowerLimit = this->m_normal1;
-				this->m_upperLimit = this->m_normal0.Negate();
+				this->m_normal.Assign(this->m_normal1.Negate());
+				this->m_lowerLimit.Assign(this->m_normal1);
+				this->m_upperLimit.Assign(this->m_normal0.Negate());
 			}
 		}
 	}
@@ -373,15 +373,15 @@ void b2EPCollider::Collide(b2Manifold* manifold, const b2EdgeShape* edgeA, const
 			this->m_front = offset1 >= 0.0 || offset2 >= 0.0;
 			if (this->m_front)
 			{
-				this->m_normal = this->m_normal1;
-				this->m_lowerLimit = this->m_normal1.Negate();
-				this->m_upperLimit = this->m_normal2;
+				this->m_normal.Assign(this->m_normal1);
+				this->m_lowerLimit.Assign(this->m_normal1.Negate());
+				this->m_upperLimit.Assign(this->m_normal2);
 			}
 			else
 			{
-				this->m_normal = this->m_normal1.Negate();
-				this->m_lowerLimit = this->m_normal1.Negate();
-				this->m_upperLimit = this->m_normal1;
+				this->m_normal.Assign(this->m_normal1.Negate());
+				this->m_lowerLimit.Assign(this->m_normal1.Negate());
+				this->m_upperLimit.Assign(this->m_normal1);
 			}
 		}
 		else
@@ -389,15 +389,15 @@ void b2EPCollider::Collide(b2Manifold* manifold, const b2EdgeShape* edgeA, const
 			this->m_front = offset1 >= 0.0 && offset2 >= 0.0;
 			if (this->m_front)
 			{
-				this->m_normal = this->m_normal1;
-				this->m_lowerLimit = this->m_normal1.Negate();
-				this->m_upperLimit = this->m_normal1;
+				this->m_normal.Assign(this->m_normal1);
+				this->m_lowerLimit.Assign(this->m_normal1.Negate());
+				this->m_upperLimit.Assign(this->m_normal1);
 			}
 			else
 			{
-				this->m_normal = this->m_normal1.Negate();
-				this->m_lowerLimit = this->m_normal2.Negate();
-				this->m_upperLimit = this->m_normal1;
+				this->m_normal.Assign(this->m_normal1.Negate());
+				this->m_lowerLimit.Assign(this->m_normal2.Negate());
+				this->m_upperLimit.Assign(this->m_normal1);
 			}
 		}		
 	}
@@ -406,15 +406,15 @@ void b2EPCollider::Collide(b2Manifold* manifold, const b2EdgeShape* edgeA, const
 		this->m_front = offset1 >= 0.0;
 		if (this->m_front)
 		{
-			this->m_normal = this->m_normal1;
-			this->m_lowerLimit = this->m_normal1.Negate();
-			this->m_upperLimit = this->m_normal1.Negate();
+			this->m_normal.Assign(this->m_normal1);
+			this->m_lowerLimit.Assign(this->m_normal1.Negate());
+			this->m_upperLimit.Assign(this->m_normal1.Negate());
 		}
 		else
 		{
-			this->m_normal = this->m_normal1.Negate();
-			this->m_lowerLimit = this->m_normal1;
-			this->m_upperLimit = this->m_normal1;
+			this->m_normal.Assign(this->m_normal1.Negate());
+			this->m_lowerLimit.Assign(this->m_normal1);
+			this->m_upperLimit.Assign(this->m_normal1);
 		}
 	}
 	
@@ -422,8 +422,8 @@ void b2EPCollider::Collide(b2Manifold* manifold, const b2EdgeShape* edgeA, const
 	this->m_polygonB.count = polygonB->m_count;
 	for (int32 i = 0; i < polygonB->m_count; ++i)
 	{
-		this->m_polygonB.vertices[i] = b2Mul_t_v2(this->m_xf, polygonB->m_vertices[i]);
-		this->m_polygonB.normals[i] = b2Mul_r_v2(this->m_xf.q, polygonB->m_normals[i]);
+		this->m_polygonB.vertices[i].Assign(b2Mul_t_v2(this->m_xf, polygonB->m_vertices[i]));
+		this->m_polygonB.normals[i].Assign(b2Mul_r_v2(this->m_xf.q, polygonB->m_normals[i]));
 	}
 	
 	this->m_radius = 2.0 * b2_polygonRadius;
@@ -489,13 +489,13 @@ void b2EPCollider::Collide(b2Manifold* manifold, const b2EdgeShape* edgeA, const
 		int32 i1 = bestIndex;
 		int32 i2 = i1 + 1 < this->m_polygonB.count ? i1 + 1 : 0;
 		
-		ie[0].v = this->m_polygonB.vertices[i1];
+		ie[0].v.Assign(this->m_polygonB.vertices[i1]);
 		ie[0].id.cf.indexA = 0;
 		ie[0].id.cf.indexB = static_cast<uint8>(i1);
 		ie[0].id.cf.typeA = b2ContactFeature::e_face;
 		ie[0].id.cf.typeB = b2ContactFeature::e_vertex;
 		
-		ie[1].v = this->m_polygonB.vertices[i2];
+		ie[1].v.Assign(this->m_polygonB.vertices[i2]);
 		ie[1].id.cf.indexA = 0;
 		ie[1].id.cf.indexB = static_cast<uint8>(i2);
 		ie[1].id.cf.typeA = b2ContactFeature::e_face;
@@ -505,30 +505,30 @@ void b2EPCollider::Collide(b2Manifold* manifold, const b2EdgeShape* edgeA, const
 		{
 			rf.i1 = 0;
 			rf.i2 = 1;
-			rf.v1 = this->m_v1;
-			rf.v2 = this->m_v2;
-			rf.normal = this->m_normal1;
+			rf.v1.Assign(this->m_v1);
+			rf.v2.Assign(this->m_v2);
+			rf.normal.Assign(this->m_normal1);
 		}
 		else
 		{
 			rf.i1 = 1;
 			rf.i2 = 0;
-			rf.v1 = this->m_v2;
-			rf.v2 = this->m_v1;
-			rf.normal = this->m_normal1.Negate();
+			rf.v1.Assign(this->m_v2);
+			rf.v2.Assign(this->m_v1);
+			rf.normal.Assign(this->m_normal1.Negate());
 		}		
 	}
 	else
 	{
 		manifold->type = b2Manifold::e_faceB;
 		
-		ie[0].v = this->m_v1;
+		ie[0].v.Assign(this->m_v1);
 		ie[0].id.cf.indexA = 0;
 		ie[0].id.cf.indexB = static_cast<uint8>(primaryAxis.index);
 		ie[0].id.cf.typeA = b2ContactFeature::e_vertex;
 		ie[0].id.cf.typeB = b2ContactFeature::e_face;
 		
-		ie[1].v = this->m_v2;
+		ie[1].v.Assign(this->m_v2);
 		ie[1].id.cf.indexA = 0;
 		ie[1].id.cf.indexB = static_cast<uint8>(primaryAxis.index);		
 		ie[1].id.cf.typeA = b2ContactFeature::e_vertex;
@@ -536,13 +536,13 @@ void b2EPCollider::Collide(b2Manifold* manifold, const b2EdgeShape* edgeA, const
 		
 		rf.i1 = primaryAxis.index;
 		rf.i2 = rf.i1 + 1 < this->m_polygonB.count ? rf.i1 + 1 : 0;
-		rf.v1 = this->m_polygonB.vertices[rf.i1];
-		rf.v2 = this->m_polygonB.vertices[rf.i2];
-		rf.normal = this->m_polygonB.normals[rf.i1];
+		rf.v1.Assign(this->m_polygonB.vertices[rf.i1]);
+		rf.v2.Assign(this->m_polygonB.vertices[rf.i2]);
+		rf.normal.Assign(this->m_polygonB.normals[rf.i1]);
 	}
 	
 	rf.sideNormal1.Set(rf.normal.y, -rf.normal.x);
-	rf.sideNormal2 = rf.sideNormal1.Negate();
+	rf.sideNormal2.Assign(rf.sideNormal1.Negate());
 	rf.sideOffset1 = b2Dot_v2_v2(rf.sideNormal1, rf.v1);
 	rf.sideOffset2 = b2Dot_v2_v2(rf.sideNormal2, rf.v2);
 	
@@ -570,13 +570,13 @@ void b2EPCollider::Collide(b2Manifold* manifold, const b2EdgeShape* edgeA, const
 	// Now clipPoints2 contains the clipped points.
 	if (primaryAxis.type == b2EPAxis::e_edgeA)
 	{
-		manifold->localNormal = rf.normal;
-		manifold->localPoint = rf.v1;
+		manifold->localNormal.Assign(rf.normal);
+		manifold->localPoint.Assign(rf.v1);
 	}
 	else
 	{
-		manifold->localNormal = polygonB->m_normals[rf.i1];
-		manifold->localPoint = polygonB->m_vertices[rf.i1];
+		manifold->localNormal.Assign(polygonB->m_normals[rf.i1]);
+		manifold->localPoint.Assign(polygonB->m_vertices[rf.i1]);
 	}
 	
 	int32 pointCount = 0;
@@ -592,12 +592,12 @@ void b2EPCollider::Collide(b2Manifold* manifold, const b2EdgeShape* edgeA, const
 			
 			if (primaryAxis.type == b2EPAxis::e_edgeA)
 			{
-				cp->localPoint = b2MulT_t_v2(this->m_xf, clipPoints2[i].v);
+				cp->localPoint.Assign(b2MulT_t_v2(this->m_xf, clipPoints2[i].v));
 				cp->id = clipPoints2[i].id;
 			}
 			else
 			{
-				cp->localPoint = clipPoints2[i].v;
+				cp->localPoint.Assign(clipPoints2[i].v);
 				cp->id.cf.typeA = clipPoints2[i].id.cf.typeB;
 				cp->id.cf.typeB = clipPoints2[i].id.cf.typeA;
 				cp->id.cf.indexA = clipPoints2[i].id.cf.indexB;

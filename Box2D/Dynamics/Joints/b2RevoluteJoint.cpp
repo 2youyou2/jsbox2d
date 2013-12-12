@@ -37,16 +37,16 @@ void b2RevoluteJointDef::Initialize(b2Body* bA, b2Body* bB, const b2Vec2& anchor
 {
 	this->bodyA = bA;
 	this->bodyB = bB;
-	this->localAnchorA = this->bodyA->GetLocalPoint(anchor);
-	this->localAnchorB = this->bodyB->GetLocalPoint(anchor);
+	this->localAnchorA.Assign(this->bodyA->GetLocalPoint(anchor));
+	this->localAnchorB.Assign(this->bodyB->GetLocalPoint(anchor));
 	this->referenceAngle = this->bodyB->GetAngle() - this->bodyA->GetAngle();
 }
 
 b2RevoluteJoint::b2RevoluteJoint(const b2RevoluteJointDef* def)
 : b2Joint(def)
 {
-	this->m_localAnchorA = def->localAnchorA;
-	this->m_localAnchorB = def->localAnchorB;
+	this->m_localAnchorA.Assign(def->localAnchorA);
+	this->m_localAnchorB.Assign(def->localAnchorB);
 	this->m_referenceAngle = def->referenceAngle;
 
 	this->m_impulse.SetZero();
@@ -65,8 +65,8 @@ void b2RevoluteJoint::InitVelocityConstraints(const b2SolverData& data)
 {
 	this->m_indexA = this->m_bodyA->m_islandIndex;
 	this->m_indexB = this->m_bodyB->m_islandIndex;
-	this->m_localCenterA = this->m_bodyA->m_sweep.localCenter;
-	this->m_localCenterB = this->m_bodyB->m_sweep.localCenter;
+	this->m_localCenterA.Assign(this->m_bodyA->m_sweep.localCenter);
+	this->m_localCenterB.Assign(this->m_bodyB->m_sweep.localCenter);
 	this->m_invMassA = this->m_bodyA->m_invMass;
 	this->m_invMassB = this->m_bodyB->m_invMass;
 	this->m_invIA = this->m_bodyA->m_invI;
@@ -82,8 +82,8 @@ void b2RevoluteJoint::InitVelocityConstraints(const b2SolverData& data)
 
 	b2Rot qA(aA), qB(aB);
 
-	this->m_rA = b2Mul_r_v2(qA, b2Vec2::Subtract(this->m_localAnchorA, this->m_localCenterA));
-	this->m_rB = b2Mul_r_v2(qB, b2Vec2::Subtract(this->m_localAnchorB, this->m_localCenterB));
+	this->m_rA.Assign(b2Mul_r_v2(qA, b2Vec2::Subtract(this->m_localAnchorA, this->m_localCenterA)));
+	this->m_rB.Assign(b2Mul_r_v2(qB, b2Vec2::Subtract(this->m_localAnchorB, this->m_localCenterB)));
 
 	// J = [-I -r1_skew I r2_skew]
 	//     [ 0       -1 0       1]
@@ -174,9 +174,9 @@ void b2RevoluteJoint::InitVelocityConstraints(const b2SolverData& data)
 		this->m_motorImpulse = 0.0;
 	}
 
-	data.velocities[this->m_indexA].v = vA;
+	data.velocities[this->m_indexA].v.Assign(vA);
 	data.velocities[this->m_indexA].w = wA;
-	data.velocities[this->m_indexB].v = vB;
+	data.velocities[this->m_indexB].v.Assign(vB);
 	data.velocities[this->m_indexB].w = wB;
 }
 
@@ -282,9 +282,9 @@ void b2RevoluteJoint::SolveVelocityConstraints(const b2SolverData& data)
 		wB += iB * b2Cross_v2_v2(this->m_rB, impulse);
 	}
 
-	data.velocities[this->m_indexA].v = vA;
+	data.velocities[this->m_indexA].v.Assign(vA);
 	data.velocities[this->m_indexA].w = wA;
-	data.velocities[this->m_indexB].v = vB;
+	data.velocities[this->m_indexB].v.Assign(vB);
 	data.velocities[this->m_indexB].w = wB;
 }
 
@@ -366,9 +366,9 @@ bool b2RevoluteJoint::SolvePositionConstraints(const b2SolverData& data)
 		aB += iB * b2Cross_v2_v2(rB, impulse);
 	}
 
-	data.positions[this->m_indexA].c = cA;
+	data.positions[this->m_indexA].c.Assign(cA);
 	data.positions[this->m_indexA].a = aA;
-	data.positions[this->m_indexB].c = cB;
+	data.positions[this->m_indexB].c.Assign(cB);
 	data.positions[this->m_indexB].a = aB;
 	
 	return positionError <= b2_linearSlop && angularError <= b2_angularSlop;

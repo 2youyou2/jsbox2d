@@ -47,28 +47,28 @@ public:
 		{
 			b2Vec2 vertices[3];
 
-			vertices[0] = p1;
-			vertices[1] = p2;
-			vertices[2] = p3;
+			vertices[0].Assign(p1);
+			vertices[1].Assign(p2);
+			vertices[2].Assign(p3);
 			poly1.Set(vertices, 3);
 
-			vertices[0] = b2Vec2(0, 0);
-			vertices[1] = b2Vec2::Subtract(p5, p4);
-			vertices[2] = b2Vec2::Subtract(p6, p4);
+			vertices[0].Assign(b2Vec2(0, 0));
+			vertices[1].Assign(b2Vec2::Subtract(p5, p4));
+			vertices[2].Assign(b2Vec2::Subtract(p6, p4));
 			poly2.Set(vertices, 3);
 		}
 		else
 		{
 			b2Vec2 vertices[3];
 
-			vertices[0] = p1;
-			vertices[1] = p3;
-			vertices[2] = p2;
+			vertices[0].Assign(p1);
+			vertices[1].Assign(p3);
+			vertices[2].Assign(p2);
 			poly1.Set(vertices, 3);
 
-			vertices[0] = b2Vec2(0, 0);
-			vertices[1] = b2Vec2::Subtract(p6, p4);
-			vertices[2] = b2Vec2::Subtract(p5, p4);
+			vertices[0].Assign(b2Vec2(0, 0));
+			vertices[1].Assign(b2Vec2::Subtract(p6, p4));
+			vertices[2].Assign(b2Vec2::Subtract(p5, p4));
 			poly2.Set(vertices, 3);
 		}
 
@@ -78,8 +78,8 @@ public:
 		b2BodyDef bd1, bd2;
 		bd1.type = b2Body::b2_dynamicBody;
 		bd2.type = b2Body::b2_dynamicBody;
-		bd1.position = this->m_offset;
-		bd2.position = b2Vec2::Add(p4, this->m_offset);
+		bd1.position.Assign(this->m_offset);
+		bd2.position.Assign(b2Vec2::Add(p4, this->m_offset));
 
 		bd1.angularDamping = 10.0;
 		bd2.angularDamping = 10.0;
@@ -164,7 +164,7 @@ public:
 			sd.filter.groupIndex = -1;
 			b2BodyDef bd;
 			bd.type = b2Body::b2_dynamicBody;
-			bd.position = b2Vec2::Add(pivot, this->m_offset);
+			bd.position.Assign(b2Vec2::Add(pivot, this->m_offset));
 			this->m_chassis = this->m_world->CreateBody(&bd);
 			this->m_chassis->CreateFixture(&sd);
 		}
@@ -179,7 +179,7 @@ public:
 			sd.filter.groupIndex = -1;
 			b2BodyDef bd;
 			bd.type = b2Body::b2_dynamicBody;
-			bd.position = b2Vec2::Add(pivot, this->m_offset);
+			bd.position.Assign(b2Vec2::Add(pivot, this->m_offset));
 			this->m_wheel = this->m_world->CreateBody(&bd);
 			this->m_wheel->CreateFixture(&sd);
 		}
@@ -196,7 +196,7 @@ public:
 
 		b2Vec2 wheelAnchor;
 		
-		wheelAnchor = b2Vec2::Add(pivot, b2Vec2(0.0, -0.8));
+		wheelAnchor.Assign(b2Vec2::Add(pivot, b2Vec2(0.0, -0.8)));
 
 		CreateLeg(-1.0, wheelAnchor);
 		CreateLeg(1.0, wheelAnchor);

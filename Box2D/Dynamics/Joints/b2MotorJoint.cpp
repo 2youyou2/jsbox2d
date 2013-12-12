@@ -37,7 +37,7 @@ void b2MotorJointDef::Initialize(b2Body* bA, b2Body* bB)
 	this->bodyA = bA;
 	this->bodyB = bB;
 	b2Vec2 xB = this->bodyB->GetPosition();
-	this->linearOffset = this->bodyA->GetLocalPoint(xB);
+	this->linearOffset.Assign(this->bodyA->GetLocalPoint(xB));
 
 	float32 angleA = this->bodyA->GetAngle();
 	float32 angleB = this->bodyB->GetAngle();
@@ -47,7 +47,7 @@ void b2MotorJointDef::Initialize(b2Body* bA, b2Body* bB)
 b2MotorJoint::b2MotorJoint(const b2MotorJointDef* def)
 : b2Joint(def)
 {
-	this->m_linearOffset = def->linearOffset;
+	this->m_linearOffset.Assign(def->linearOffset);
 	this->m_angularOffset = def->angularOffset;
 
 	this->m_linearImpulse.SetZero();
@@ -62,8 +62,8 @@ void b2MotorJoint::InitVelocityConstraints(const b2SolverData& data)
 {
 	this->m_indexA = this->m_bodyA->m_islandIndex;
 	this->m_indexB = this->m_bodyB->m_islandIndex;
-	this->m_localCenterA = this->m_bodyA->m_sweep.localCenter;
-	this->m_localCenterB = this->m_bodyB->m_sweep.localCenter;
+	this->m_localCenterA.Assign(this->m_bodyA->m_sweep.localCenter);
+	this->m_localCenterB.Assign(this->m_bodyB->m_sweep.localCenter);
 	this->m_invMassA = this->m_bodyA->m_invMass;
 	this->m_invMassB = this->m_bodyB->m_invMass;
 	this->m_invIA = this->m_bodyA->m_invI;
@@ -82,8 +82,8 @@ void b2MotorJoint::InitVelocityConstraints(const b2SolverData& data)
 	b2Rot qA(aA), qB(aB);
 
 	// Compute the effective mass matrix.
-	this->m_rA = b2Mul_r_v2(qA, this->m_localCenterA.Negate());
-	this->m_rB = b2Mul_r_v2(qB, this->m_localCenterB.Negate());
+	this->m_rA.Assign(b2Mul_r_v2(qA, this->m_localCenterA.Negate()));
+	this->m_rB.Assign(b2Mul_r_v2(qB, this->m_localCenterB.Negate()));
 
 	// J = [-I -r1_skew I r2_skew]
 	//     [ 0       -1 0       1]
@@ -103,7 +103,7 @@ void b2MotorJoint::InitVelocityConstraints(const b2SolverData& data)
 	K.ey.x = K.ex.y;
 	K.ey.y = mA + mB + iA * this->m_rA.x * this->m_rA.x + iB * this->m_rB.x * this->m_rB.x;
 
-	this->m_linearMass = K.GetInverse();
+	this->m_linearMass.Assign(K.GetInverse());
 
 	this->m_angularMass = iA + iB;
 	if (this->m_angularMass > 0.0)
@@ -111,7 +111,7 @@ void b2MotorJoint::InitVelocityConstraints(const b2SolverData& data)
 		this->m_angularMass = 1.0 / this->m_angularMass;
 	}
 
-	this->m_linearError = b2Vec2::Subtract(b2Vec2::Subtract(b2Vec2::Subtract(b2Vec2::Add(cB, this->m_rB), cA), this->m_rA), b2Mul_r_v2(qA, this->m_linearOffset));
+	this->m_linearError.Assign(b2Vec2::Subtract(b2Vec2::Subtract(b2Vec2::Subtract(b2Vec2::Add(cB, this->m_rB), cA), this->m_rA), b2Mul_r_v2(qA, this->m_linearOffset)));
 	this->m_angularError = aB - aA - this->m_angularOffset;
 
 	if (data.step.warmStarting)
@@ -132,9 +132,9 @@ void b2MotorJoint::InitVelocityConstraints(const b2SolverData& data)
 		this->m_angularImpulse = 0.0;
 	}
 
-	data.velocities[this->m_indexA].v = vA;
+	data.velocities[this->m_indexA].v.Assign(vA);
 	data.velocities[this->m_indexA].w = wA;
-	data.velocities[this->m_indexB].v = vB;
+	data.velocities[this->m_indexB].v.Assign(vB);
 	data.velocities[this->m_indexB].w = wB;
 }
 
@@ -181,7 +181,7 @@ void b2MotorJoint::SolveVelocityConstraints(const b2SolverData& data)
 			this->m_linearImpulse.Multiply(maxImpulse);
 		}
 
-		impulse = b2Vec2::Subtract(this->m_linearImpulse, oldImpulse);
+		impulse.Assign(b2Vec2::Subtract(this->m_linearImpulse, oldImpulse));
 
 		vA.Subtract(b2Vec2::Multiply(mA, impulse));
 		wA -= iA * b2Cross_v2_v2(this->m_rA, impulse);
@@ -190,9 +190,9 @@ void b2MotorJoint::SolveVelocityConstraints(const b2SolverData& data)
 		wB += iB * b2Cross_v2_v2(this->m_rB, impulse);
 	}
 
-	data.velocities[this->m_indexA].v = vA;
+	data.velocities[this->m_indexA].v.Assign(vA);
 	data.velocities[this->m_indexA].w = wA;
-	data.velocities[this->m_indexB].v = vB;
+	data.velocities[this->m_indexB].v.Assign(vB);
 	data.velocities[this->m_indexB].w = wB;
 }
 
@@ -262,7 +262,7 @@ void b2MotorJoint::SetLinearOffset(const b2Vec2& linearOffset)
 	{
 		this->m_bodyA->SetAwake(true);
 		this->m_bodyB->SetAwake(true);
-		this->m_linearOffset = linearOffset;
+		this->m_linearOffset.Assign(linearOffset);
 	}
 }
 

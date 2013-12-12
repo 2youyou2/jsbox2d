@@ -207,7 +207,7 @@ b2World.prototype =
 			}
 
 			f0.DestroyProxies(this.m_contactManager.m_broadPhase);
-			f0.Destroy(this.m_blockAllocator);
+			f0.Destroy();
 
 			b.m_fixtureList = f;
 			b.m_fixtureCount -= 1;

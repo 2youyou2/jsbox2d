@@ -130,7 +130,7 @@ b2MouseJoint.prototype =
 	InitVelocityConstraints: function(data)
 	{
 		this.m_indexB = this.m_bodyB.m_islandIndex;
-		this.m_localCenterB = this.m_bodyB.m_sweep.localCenter;
+		this.m_localCenterB.Assign(this.m_bodyB.m_sweep.localCenter);
 		this.m_invMassB = this.m_bodyB.m_invMass;
 		this.m_invIB = this.m_bodyB.m_invI;
 
@@ -165,7 +165,7 @@ b2MouseJoint.prototype =
 		this.m_beta = h * k * this.m_gamma;
 
 		// Compute the effective mass matrix.
-		this.m_rB = b2Mul_r_v2(qB, b2Vec2.Subtract(this.m_localAnchorB, this.m_localCenterB));
+		this.m_rB.Assign(b2Mul_r_v2(qB, b2Vec2.Subtract(this.m_localAnchorB, this.m_localCenterB)));
 
 		// K    = [(1/m1 + 1/m2) * eye(2) - skew(r1) * invI1 * skew(r1) - skew(r2) * invI2 * skew(r2)]
 		//      = [1/m1+1/m2     0    ] + invI1 * [r1.y*r1.y -r1.x*r1.y] + invI2 * [r1.y*r1.y -r1.x*r1.y]
@@ -176,9 +176,9 @@ b2MouseJoint.prototype =
 		K.ey.x = K.ex.y;
 		K.ey.y = this.m_invMassB + this.m_invIB * this.m_rB.x * this.m_rB.x + this.m_gamma;
 
-		this.m_mass = K.GetInverse();
+		this.m_mass.Assign(K.GetInverse());
 
-		this.m_C = b2Vec2.Subtract(b2Vec2.Add(cB, this.m_rB), this.m_targetA);
+		this.m_C.Assign(b2Vec2.Subtract(b2Vec2.Add(cB, this.m_rB), this.m_targetA));
 		this.m_C.Multiply(this.m_beta);
 
 		// Cheat with some damping
@@ -207,14 +207,14 @@ b2MouseJoint.prototype =
 		var Cdot = b2Vec2.Add(vB, b2Cross_f_v2(wB, this.m_rB));
 		var impulse = b2Mul_m22_v2(this.m_mass, (b2Vec2.Add(b2Vec2.Add(Cdot, this.m_C), b2Vec2.Multiply(this.m_gamma, this.m_impulse))).Negate());
 
-		var oldImpulse = this.m_impulse;
+		var oldImpulse = this.m_impulse.Clone();
 		this.m_impulse.Add(impulse);
 		var maxImpulse = data.step.dt * this.m_maxForce;
 		if (this.m_impulse.LengthSquared() > maxImpulse * maxImpulse)
 		{
 			this.m_impulse.Multiply(maxImpulse / this.m_impulse.Length());
 		}
-		impulse = b2Vec2.Subtract(this.m_impulse, oldImpulse);
+		impulse.Assign(b2Vec2.Subtract(this.m_impulse, oldImpulse));
 
 		vB.Add(b2Vec2.Multiply(this.m_invMassB, impulse));
 		wB += this.m_invIB * b2Cross_v2_v2(this.m_rB, impulse);

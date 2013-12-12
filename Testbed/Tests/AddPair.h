@@ -40,7 +40,7 @@ public:
 			{
 				b2BodyDef bd;
 				bd.type = b2Body::b2_dynamicBody;
-				bd.position = b2Vec2(RandomFloat(minX,maxX),RandomFloat(minY,maxY));
+				bd.position.Assign(b2Vec2(RandomFloat(minX,maxX),RandomFloat(minY,maxY)));
 				b2Body* body = this->m_world->CreateBody(&bd);
 				body->CreateFixture(&shape, 0.01f);
 			}

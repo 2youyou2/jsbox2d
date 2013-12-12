@@ -37,20 +37,20 @@ void b2WorldManifold::Initialize(const b2Manifold* manifold,
 			b2Vec2 pointB = b2Mul_t_v2(xfB, manifold->points[0].localPoint);
 			if (b2DistanceSquared(pointA, pointB) > b2_epsilon * b2_epsilon)
 			{
-				this->normal = b2Vec2::Subtract(pointB, pointA);
+				this->normal.Assign(b2Vec2::Subtract(pointB, pointA));
 				this->normal.Normalize();
 			}
 
 			b2Vec2 cA = b2Vec2::Add(pointA, b2Vec2::Multiply(radiusA, this->normal));
 			b2Vec2 cB = b2Vec2::Subtract(pointB, b2Vec2::Multiply(radiusB, this->normal));
-			this->points[0] = b2Vec2::Multiply(0.5, b2Vec2::Add(cA, cB));
+			this->points[0].Assign(b2Vec2::Multiply(0.5, b2Vec2::Add(cA, cB)));
 			this->separations[0] = b2Dot_v2_v2(b2Vec2::Subtract(cB, cA), this->normal);
 		}
 		break;
 
 	case b2Manifold::e_faceA:
 		{
-			this->normal = b2Mul_r_v2(xfA.q, manifold->localNormal);
+			this->normal.Assign(b2Mul_r_v2(xfA.q, manifold->localNormal));
 			b2Vec2 planePoint = b2Mul_t_v2(xfA, manifold->localPoint);
 
 			for (int32 i = 0; i < manifold->pointCount; ++i)
@@ -58,7 +58,7 @@ void b2WorldManifold::Initialize(const b2Manifold* manifold,
 				b2Vec2 clipPoint = b2Mul_t_v2(xfB, manifold->points[i].localPoint);
 				b2Vec2 cA = b2Vec2::Add(clipPoint, b2Vec2::Multiply((radiusA - b2Dot_v2_v2(b2Vec2::Subtract(clipPoint, planePoint), this->normal)), this->normal));
 				b2Vec2 cB = b2Vec2::Subtract(clipPoint, b2Vec2::Multiply(radiusB, this->normal));
-				this->points[i] = b2Vec2::Multiply(0.5, b2Vec2::Add(cA, cB));
+				this->points[i].Assign(b2Vec2::Multiply(0.5, b2Vec2::Add(cA, cB)));
 				this->separations[i] = b2Dot_v2_v2(b2Vec2::Subtract(cB, cA), this->normal);
 			}
 		}
@@ -66,7 +66,7 @@ void b2WorldManifold::Initialize(const b2Manifold* manifold,
 
 	case b2Manifold::e_faceB:
 		{
-			this->normal = b2Mul_r_v2(xfB.q, manifold->localNormal);
+			this->normal.Assign(b2Mul_r_v2(xfB.q, manifold->localNormal));
 			b2Vec2 planePoint = b2Mul_t_v2(xfB, manifold->localPoint);
 
 			for (int32 i = 0; i < manifold->pointCount; ++i)
@@ -74,12 +74,12 @@ void b2WorldManifold::Initialize(const b2Manifold* manifold,
 				b2Vec2 clipPoint = b2Mul_t_v2(xfA, manifold->points[i].localPoint);
 				b2Vec2 cB = b2Vec2::Add(clipPoint, b2Vec2::Multiply((radiusB - b2Dot_v2_v2(b2Vec2::Subtract(clipPoint, planePoint), this->normal)), this->normal));
 				b2Vec2 cA = b2Vec2::Subtract(clipPoint, b2Vec2::Multiply(radiusA, this->normal));
-				this->points[i] = b2Vec2::Multiply(0.5, b2Vec2::Add(cA, cB));
+				this->points[i].Assign(b2Vec2::Multiply(0.5, b2Vec2::Add(cA, cB)));
 				this->separations[i] = b2Dot_v2_v2(b2Vec2::Subtract(cA, cB), this->normal);
 			}
 
 			// Ensure normal points from A to B.
-			this->normal = this->normal.Negate();
+			this->normal.Assign(this->normal.Negate());
 		}
 		break;
 	}
@@ -195,7 +195,7 @@ bool b2AABB::RayCast(b2RayCastOutput* output, const b2RayCastInput& input) const
 
 	// Intersection.
 	output->fraction = tmin;
-	output->normal = normal;
+	output->normal.Assign(normal);
 	return true;
 }
 
@@ -219,7 +219,7 @@ int32 b2ClipSegmentToLine(b2ClipVertex vOut[2], const b2ClipVertex vIn[2],
 	{
 		// Find intersection point of edge and plane
 		float32 interp = distance0 / (distance0 - distance1);
-		vOut[numOut].v = b2Vec2::Add(vIn[0].v, b2Vec2::Multiply(interp, b2Vec2::Subtract(vIn[1].v, vIn[0].v)));
+		vOut[numOut].v.Assign(b2Vec2::Add(vIn[0].v, b2Vec2::Multiply(interp, b2Vec2::Subtract(vIn[1].v, vIn[0].v))));
 
 		// VertexA is hitting edgeB.
 		vOut[numOut].id.cf.indexA = static_cast<uint8>(vertexIndexA);
@@ -239,8 +239,8 @@ bool b2TestOverlap(	const b2Shape* shapeA, int32 indexA,
 	b2DistanceInput input;
 	input.proxyA.Set(shapeA, indexA);
 	input.proxyB.Set(shapeB, indexB);
-	input.transformA = xfA;
-	input.transformB = xfB;
+	input.transformA.Assign(xfA);
+	input.transformB.Assign(xfB);
 	input.useRadii = true;
 
 	b2SimplexCache cache;

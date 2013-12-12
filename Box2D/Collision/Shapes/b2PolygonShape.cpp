@@ -52,17 +52,17 @@ void b2PolygonShape::SetAsBox(float32 hx, float32 hy, const b2Vec2& center, floa
 	this->m_normals[1].Set(1.0, 0.0);
 	this->m_normals[2].Set(0.0, 1.0);
 	this->m_normals[3].Set(-1.0, 0.0);
-	this->m_centroid = center;
+	this->m_centroid.Assign(center);
 
 	b2Transform xf;
-	xf.p = center;
+	xf.p.Assign(center);
 	xf.q.Set(angle);
 
 	// Transform vertices and normals.
 	for (int32 i = 0; i < this->m_count; ++i)
 	{
-		this->m_vertices[i] = b2Mul_t_v2(xf, this->m_vertices[i]);
-		this->m_normals[i] = b2Mul_r_v2(xf.q, this->m_normals[i]);
+		this->m_vertices[i].Assign(b2Mul_t_v2(xf, this->m_vertices[i]));
+		this->m_normals[i].Assign(b2Mul_r_v2(xf.q, this->m_normals[i]));
 	}
 }
 
@@ -147,7 +147,7 @@ void b2PolygonShape::Set(const b2Vec2* vertices, int32 count)
 
 		if (unique)
 		{
-			ps[tempCount++] = v;
+			ps[tempCount++].Assign(v);
 		}
 	}
 
@@ -222,7 +222,7 @@ void b2PolygonShape::Set(const b2Vec2* vertices, int32 count)
 	// Copy vertices.
 	for (int32 i = 0; i < m; ++i)
 	{
-		this->m_vertices[i] = ps[hull[i]];
+		this->m_vertices[i].Assign(ps[hull[i]]);
 	}
 
 	// Compute normals. Ensure the edges have non-zero length.
@@ -232,12 +232,12 @@ void b2PolygonShape::Set(const b2Vec2* vertices, int32 count)
 		int32 i2 = i + 1 < m ? i + 1 : 0;
 		b2Vec2 edge = b2Vec2::Subtract(this->m_vertices[i2], this->m_vertices[i1]);
 		b2Assert(edge.LengthSquared() > b2_epsilon * b2_epsilon);
-		this->m_normals[i] = b2Cross_v2_f(edge, 1.0);
+		this->m_normals[i].Assign(b2Cross_v2_f(edge, 1.0));
 		this->m_normals[i].Normalize();
 	}
 
 	// Compute the polygon centroid.
-	this->m_centroid = ComputeCentroid(this->m_vertices, m);
+	this->m_centroid.Assign(ComputeCentroid(this->m_vertices, m));
 }
 
 bool b2PolygonShape::TestPoint(const b2Transform& xf, const b2Vec2& p) const
@@ -321,7 +321,7 @@ bool b2PolygonShape::RayCast(b2RayCastOutput* output, const b2RayCastInput& inpu
 	if (index >= 0)
 	{
 		output->fraction = lower;
-		output->normal = b2Mul_r_v2(xf.q, this->m_normals[index]);
+		output->normal.Assign(b2Mul_r_v2(xf.q, this->m_normals[index]));
 		return true;
 	}
 
@@ -338,13 +338,13 @@ void b2PolygonShape::ComputeAABB(b2AABB* aabb, const b2Transform& xf, int32 chil
 	for (int32 i = 1; i < this->m_count; ++i)
 	{
 		b2Vec2 v = b2Mul_t_v2(xf, this->m_vertices[i]);
-		lower = b2Min_v2(lower, v);
-		upper = b2Max_v2(upper, v);
+		lower.Assign(b2Min_v2(lower, v));
+		upper.Assign(b2Max_v2(upper, v));
 	}
 
 	b2Vec2 r(this->m_radius, this->m_radius);
-	aabb->lowerBound = b2Vec2::Subtract(lower, r);
-	aabb->upperBound = b2Vec2::Add(upper, r);
+	aabb->lowerBound.Assign(b2Vec2::Subtract(lower, r));
+	aabb->upperBound.Assign(b2Vec2::Add(upper, r));
 }
 
 void b2PolygonShape::ComputeMass(b2MassData* massData, float32 density) const
@@ -421,7 +421,7 @@ void b2PolygonShape::ComputeMass(b2MassData* massData, float32 density) const
 	// Center of mass
 	b2Assert(area > b2_epsilon);
 	center.Multiply(1.0 / area);
-	massData->center = b2Vec2::Add(center, s);
+	massData->center.Assign(b2Vec2::Add(center, s));
 
 	// Inertia tensor relative to the local origin (point s).
 	massData->I = density * I;

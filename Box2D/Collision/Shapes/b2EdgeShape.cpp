@@ -21,8 +21,8 @@
 
 void b2EdgeShape::Set(const b2Vec2& v1, const b2Vec2& v2)
 {
-	this->m_vertex1 = v1;
-	this->m_vertex2 = v2;
+	this->m_vertex1.Assign(v1);
+	this->m_vertex2.Assign(v2);
 	this->m_hasVertex0 = false;
 	this->m_hasVertex3 = false;
 }
@@ -104,11 +104,11 @@ bool b2EdgeShape::RayCast(b2RayCastOutput* output, const b2RayCastInput& input,
 	output->fraction = t;
 	if (numerator > 0.0)
 	{
-		output->normal = b2Mul_r_v2(xf.q, normal).Negate();
+		output->normal.Assign(b2Mul_r_v2(xf.q, normal).Negate());
 	}
 	else
 	{
-		output->normal = b2Mul_r_v2(xf.q, normal);
+		output->normal.Assign(b2Mul_r_v2(xf.q, normal));
 	}
 	return true;
 }
@@ -124,8 +124,8 @@ void b2EdgeShape::ComputeAABB(b2AABB* aabb, const b2Transform& xf, int32 childIn
 	b2Vec2 upper = b2Max_v2(v1, v2);
 
 	b2Vec2 r(this->m_radius, this->m_radius);
-	aabb->lowerBound = b2Vec2::Subtract(lower, r);
-	aabb->upperBound = b2Vec2::Add(upper, r);
+	aabb->lowerBound.Assign(b2Vec2::Subtract(lower, r));
+	aabb->upperBound.Assign(b2Vec2::Add(upper, r));
 }
 
 void b2EdgeShape::ComputeMass(b2MassData* massData, float32 density) const
@@ -133,6 +133,6 @@ void b2EdgeShape::ComputeMass(b2MassData* massData, float32 density) const
 	B2_NOT_USED(density);
 
 	massData->mass = 0.0;
-	massData->center = b2Vec2::Multiply(0.5, b2Vec2::Add(this->m_vertex1, this->m_vertex2));
+	massData->center.Assign(b2Vec2::Multiply(0.5, b2Vec2::Add(this->m_vertex1, this->m_vertex2)));
 	massData->I = 0.0;
 }

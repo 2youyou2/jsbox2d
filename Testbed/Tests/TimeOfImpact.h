@@ -40,7 +40,7 @@ public:
 		b2Sweep sweepA;
 		sweepA.c0.Set(24.0, -60.0);
 		sweepA.a0 = 2.95f;
-		sweepA.c = sweepA.c0;
+		sweepA.c.Assign(sweepA.c0);
 		sweepA.a = sweepA.a0;
 		sweepA.localCenter.SetZero();
 
@@ -57,8 +57,8 @@ public:
 		b2TOIInput input;
 		input.proxyA.Set(&this->m_shapeA, 0);
 		input.proxyB.Set(&this->m_shapeB, 0);
-		input.sweepA = sweepA;
-		input.sweepB = sweepB;
+		input.sweepA.Assign(sweepA);
+		input.sweepB.Assign(sweepB);
 		input.tMax = 1.0;
 
 		b2TOIOutput output;
@@ -78,7 +78,7 @@ public:
 		sweepA.GetTransform(&transformA, 0.0);
 		for (int32 i = 0; i < this->m_shapeA.m_count; ++i)
 		{
-			vertices[i] = b2Mul_t_v2(transformA, this->m_shapeA.m_vertices[i]);
+			vertices[i].Assign(b2Mul_t_v2(transformA, this->m_shapeA.m_vertices[i]));
 		}
 		g_debugDraw.DrawPolygon(vertices, this->m_shapeA.m_count, b2Color(0.9, 0.9, 0.9));
 
@@ -89,21 +89,21 @@ public:
 
 		for (int32 i = 0; i < this->m_shapeB.m_count; ++i)
 		{
-			vertices[i] = b2Mul_t_v2(transformB, this->m_shapeB.m_vertices[i]);
+			vertices[i].Assign(b2Mul_t_v2(transformB, this->m_shapeB.m_vertices[i]));
 		}
 		g_debugDraw.DrawPolygon(vertices, this->m_shapeB.m_count, b2Color(0.5, 0.9, 0.5));
 
 		sweepB.GetTransform(&transformB, output.t);
 		for (int32 i = 0; i < this->m_shapeB.m_count; ++i)
 		{
-			vertices[i] = b2Mul_t_v2(transformB, this->m_shapeB.m_vertices[i]);
+			vertices[i].Assign(b2Mul_t_v2(transformB, this->m_shapeB.m_vertices[i]));
 		}
 		g_debugDraw.DrawPolygon(vertices, this->m_shapeB.m_count, b2Color(0.5, 0.7, 0.9));
 
 		sweepB.GetTransform(&transformB, 1.0);
 		for (int32 i = 0; i < this->m_shapeB.m_count; ++i)
 		{
-			vertices[i] = b2Mul_t_v2(transformB, this->m_shapeB.m_vertices[i]);
+			vertices[i].Assign(b2Mul_t_v2(transformB, this->m_shapeB.m_vertices[i]));
 		}
 		g_debugDraw.DrawPolygon(vertices, this->m_shapeB.m_count, b2Color(0.9, 0.5, 0.5));
 

@@ -60,6 +60,15 @@ public:
 
 	/// Position
 	b2Vec2 m_p;
+
+	b2CircleShape &operator= (const b2CircleShape &l)
+	{
+		this->m_p.Assign(l.m_p);
+		this->m_type = l.m_type;
+		this->m_radius = l.m_radius;
+
+		return *this;
+	}
 };
 
 inline b2CircleShape::b2CircleShape()

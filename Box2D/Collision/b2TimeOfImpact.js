@@ -287,8 +287,8 @@ function b2TimeOfImpact(output, input)
 	var cache = new b2SimplexCache();
 	cache.count = 0;
 	var distanceInput = new b2DistanceInput();
-	distanceInput.proxyA = input.proxyA;
-	distanceInput.proxyB = input.proxyB;
+	distanceInput.proxyA.Assign(input.proxyA);
+	distanceInput.proxyB.Assign(input.proxyB);
 	distanceInput.useRadii = false;
 
 	// The outer loop progressively attempts to compute new separating axes.
@@ -326,33 +326,6 @@ function b2TimeOfImpact(output, input)
 		// Initialize the separating axis.
 		var fcn = new b2SeparationFunction();
 		fcn.Initialize(cache, proxyA, sweepA, proxyB, sweepB, t1);
-/*
-#if 0
-		// Dump the curve seen by the root finder
-		{
-			const int32 N = 100;
-			float32 dx = 1.0 / N;
-			float32 xs[N+1];
-			float32 fs[N+1];
-
-			float32 x = 0.0;
-
-			for (int32 i = 0; i <= N; ++i)
-			{
-				sweepA.GetTransform(&xfA, x);
-				sweepB.GetTransform(&xfB, x);
-				float32 f = fcn.Evaluate(xfA, xfB) - target;
-
-				printf("%g %g\n", x, f);
-
-				xs[i] = x;
-				fs[i] = f;
-
-				x += dx;
-			}
-		}
-#endif
-*/
 
 		// Compute the TOI on the separating axis. We do this by successively
 		// resolving the deepest point. This loop is bounded by the number of vertices.
@@ -364,7 +337,6 @@ function b2TimeOfImpact(output, input)
 			// Find the deepest point at t2. Store the witness point indices.
 			var indices = [];
 			var s2 = fcn.FindMinSeparation(indices, t2);
-			var indexA = indices[0], indexB = indices[1];
 
 			// Is the final configuration separated?
 			if (s2 > target + tolerance)
@@ -385,7 +357,7 @@ function b2TimeOfImpact(output, input)
 			}
 
 			// Compute the initial separation of the witness points.
-			var s1 = fcn.Evaluate(indexA, indexB, t1);
+			var s1 = fcn.Evaluate(indices[0], indices[1], t1);
 
 			// Check for initial overlap. This might happen if the root finder
 			// runs out of iterations.
@@ -428,7 +400,7 @@ function b2TimeOfImpact(output, input)
 				++rootIterCount;
 				++b2_toiRootIters;
 
-				var s = fcn.Evaluate(indexA, indexB, t);
+				var s = fcn.Evaluate(indices[0], indices[1], t);
 
 				if (b2Abs(s - target) < tolerance)
 				{

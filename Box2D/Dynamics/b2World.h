@@ -306,7 +306,7 @@ inline int32 b2World::GetContactCount() const
 
 inline void b2World::SetGravity(const b2Vec2& gravity)
 {
-	this->m_gravity = gravity;
+	this->m_gravity.Assign(gravity);
 }
 
 inline b2Vec2 b2World::GetGravity() const

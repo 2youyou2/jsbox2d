@@ -82,6 +82,23 @@ public:
 	b2Vec2 m_vertices[b2_maxPolygonVertices];
 	b2Vec2 m_normals[b2_maxPolygonVertices];
 	int32 m_count;
+
+	b2PolygonShape &operator= (const b2PolygonShape &l)
+	{
+		this->m_centroid.Assign(l.m_centroid);
+
+		for (int i = 0; i < b2_maxPolygonVertices; ++i)
+		{
+			this->m_vertices[i].Assign(l.m_vertices[i]);
+			this->m_normals[i].Assign(l.m_normals[i]);
+		}
+
+		this->m_count = l.m_count;
+		this->m_radius = l.m_radius;
+		this->m_type = l.m_type;
+
+		return *this;
+	}
 };
 
 inline b2PolygonShape::b2PolygonShape()

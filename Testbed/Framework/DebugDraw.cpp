@@ -169,12 +169,12 @@ void DebugDraw::DrawTransform(const b2Transform& xf)
 	
 	glColor3f(1.0, 0.0, 0.0);
 	glVertex2f(p1.x, p1.y);
-	p2 = b2Vec2::Add(p1, b2Vec2::Multiply(k_axisScale, xf.q.GetXAxis()));
+	p2.Assign(b2Vec2::Add(p1, b2Vec2::Multiply(k_axisScale, xf.q.GetXAxis())));
 	glVertex2f(p2.x, p2.y);
 
 	glColor3f(0.0, 1.0, 0.0);
 	glVertex2f(p1.x, p1.y);
-	p2 = b2Vec2::Add(p1, b2Vec2::Multiply(k_axisScale, xf.q.GetYAxis()));
+	p2.Assign(b2Vec2::Add(p1, b2Vec2::Multiply(k_axisScale, xf.q.GetYAxis())));
 	glVertex2f(p2.x, p2.y);
 
 	glEnd();

@@ -44,8 +44,8 @@ struct b2SeparationFunction
 		int32 count = cache->count;
 		b2Assert(0 < count && count < 3);
 
-		this->m_sweepA = sweepA;
-		this->m_sweepB = sweepB;
+		this->m_sweepA.Assign(sweepA);
+		this->m_sweepB.Assign(sweepB);
 
 		b2Transform xfA, xfB;
 		this->m_sweepA.GetTransform(&xfA, t1);
@@ -58,7 +58,7 @@ struct b2SeparationFunction
 			b2Vec2 localPointB = this->m_proxyB->GetVertex(cache->indexB[0]);
 			b2Vec2 pointA = b2Mul_t_v2(xfA, localPointA);
 			b2Vec2 pointB = b2Mul_t_v2(xfB, localPointB);
-			this->m_axis = b2Vec2::Subtract(pointB, pointA);
+			this->m_axis.Assign(b2Vec2::Subtract(pointB, pointA));
 			float32 s = this->m_axis.Normalize();
 			return s;
 		}
@@ -69,11 +69,11 @@ struct b2SeparationFunction
 			b2Vec2 localPointB1 = proxyB->GetVertex(cache->indexB[0]);
 			b2Vec2 localPointB2 = proxyB->GetVertex(cache->indexB[1]);
 
-			this->m_axis = b2Cross_v2_f(b2Vec2::Subtract(localPointB2, localPointB1), 1.0);
+			this->m_axis.Assign(b2Cross_v2_f(b2Vec2::Subtract(localPointB2, localPointB1), 1.0));
 			this->m_axis.Normalize();
 			b2Vec2 normal = b2Mul_r_v2(xfB.q, this->m_axis);
 
-			this->m_localPoint = b2Vec2::Multiply(0.5, b2Vec2::Add(localPointB1, localPointB2));
+			this->m_localPoint.Assign(b2Vec2::Multiply(0.5, b2Vec2::Add(localPointB1, localPointB2)));
 			b2Vec2 pointB = b2Mul_t_v2(xfB, this->m_localPoint);
 
 			b2Vec2 localPointA = proxyA->GetVertex(cache->indexA[0]);
@@ -82,7 +82,7 @@ struct b2SeparationFunction
 			float32 s = b2Dot_v2_v2(b2Vec2::Subtract(pointA, pointB), normal);
 			if (s < 0.0)
 			{
-				this->m_axis = this->m_axis.Negate();
+				this->m_axis.Assign(this->m_axis.Negate());
 				s = -s;
 			}
 			return s;
@@ -94,11 +94,11 @@ struct b2SeparationFunction
 			b2Vec2 localPointA1 = this->m_proxyA->GetVertex(cache->indexA[0]);
 			b2Vec2 localPointA2 = this->m_proxyA->GetVertex(cache->indexA[1]);
 
-			this->m_axis = b2Cross_v2_f(b2Vec2::Subtract(localPointA2, localPointA1), 1.0);
+			this->m_axis.Assign(b2Cross_v2_f(b2Vec2::Subtract(localPointA2, localPointA1), 1.0));
 			this->m_axis.Normalize();
 			b2Vec2 normal = b2Mul_r_v2(xfA.q, this->m_axis);
 
-			this->m_localPoint = b2Vec2::Multiply(0.5, b2Vec2::Add(localPointA1, localPointA2));
+			this->m_localPoint.Assign(b2Vec2::Multiply(0.5, b2Vec2::Add(localPointA1, localPointA2)));
 			b2Vec2 pointA = b2Mul_t_v2(xfA, this->m_localPoint);
 
 			b2Vec2 localPointB = this->m_proxyB->GetVertex(cache->indexB[0]);
@@ -107,7 +107,7 @@ struct b2SeparationFunction
 			float32 s = b2Dot_v2_v2(b2Vec2::Subtract(pointB, pointA), normal);
 			if (s < 0.0)
 			{
-				this->m_axis = this->m_axis.Negate();
+				this->m_axis.Assign(this->m_axis.Negate());
 				s = -s;
 			}
 			return s;
@@ -283,8 +283,8 @@ void b2TimeOfImpact(b2TOIOutput* output, const b2TOIInput* input)
 	b2SimplexCache cache;
 	cache.count = 0;
 	b2DistanceInput distanceInput;
-	distanceInput.proxyA = input->proxyA;
-	distanceInput.proxyB = input->proxyB;
+	distanceInput.proxyA.Assign(input->proxyA);
+	distanceInput.proxyB.Assign(input->proxyB);
 	distanceInput.useRadii = false;
 
 	// The outer loop progressively attempts to compute new separating axes.
@@ -297,8 +297,8 @@ void b2TimeOfImpact(b2TOIOutput* output, const b2TOIInput* input)
 
 		// Get the distance between shapes. We can also use the results
 		// to get a separating axis.
-		distanceInput.transformA = xfA;
-		distanceInput.transformB = xfB;
+		distanceInput.transformA.Assign(xfA);
+		distanceInput.transformB.Assign(xfB);
 		b2DistanceOutput distanceOutput;
 		b2DistanceFunc(&distanceOutput, &cache, &distanceInput);
 

@@ -57,6 +57,21 @@ public:
 	/// Optional adjacent vertices. These are used for smooth collision.
 	b2Vec2 m_vertex0, m_vertex3;
 	bool m_hasVertex0, m_hasVertex3;
+
+	b2EdgeShape &operator =(const b2EdgeShape &r)
+	{
+		this->m_hasVertex0 = r.m_hasVertex0;
+		this->m_hasVertex3 = r.m_hasVertex3;
+		this->m_vertex0.Assign(r.m_vertex0);
+		this->m_vertex1.Assign(r.m_vertex1);
+		this->m_vertex2.Assign(r.m_vertex2);
+		this->m_vertex3.Assign(r.m_vertex3);
+
+		this->m_type = r.m_type;
+		this->m_radius = r.m_radius;
+
+		return *this;
+	}
 };
 
 inline b2EdgeShape::b2EdgeShape()

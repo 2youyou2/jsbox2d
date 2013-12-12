@@ -197,7 +197,7 @@ void b2Island::Solve(b2Profile* profile, const b2TimeStep& step, const b2Vec2& g
 		float32 w = b->m_angularVelocity;
 
 		// Store positions for continuous collision.
-		b->m_sweep.c0 = b->m_sweep.c;
+		b->m_sweep.c0.Assign(b->m_sweep.c);
 		b->m_sweep.a0 = b->m_sweep.a;
 
 		if (b->m_type == b2Body::b2_dynamicBody)
@@ -217,9 +217,9 @@ void b2Island::Solve(b2Profile* profile, const b2TimeStep& step, const b2Vec2& g
 			w *= 1.0 / (1.0 + h * b->m_angularDamping);
 		}
 
-		this->m_positions[i].c = c;
+		this->m_positions[i].c.Assign(c);
 		this->m_positions[i].a = a;
-		this->m_velocities[i].v = v;
+		this->m_velocities[i].v.Assign(v);
 		this->m_velocities[i].w = w;
 	}
 
@@ -298,9 +298,9 @@ void b2Island::Solve(b2Profile* profile, const b2TimeStep& step, const b2Vec2& g
 		c.Add(b2Vec2::Multiply(h, v));
 		a += h * w;
 
-		this->m_positions[i].c = c;
+		this->m_positions[i].c.Assign(c);
 		this->m_positions[i].a = a;
-		this->m_velocities[i].v = v;
+		this->m_velocities[i].v.Assign(v);
 		this->m_velocities[i].w = w;
 	}
 
@@ -330,9 +330,9 @@ void b2Island::Solve(b2Profile* profile, const b2TimeStep& step, const b2Vec2& g
 	for (int32 i = 0; i < this->m_bodyCount; ++i)
 	{
 		b2Body* body = this->m_bodies[i];
-		body->m_sweep.c = this->m_positions[i].c;
+		body->m_sweep.c.Assign(this->m_positions[i].c);
 		body->m_sweep.a = this->m_positions[i].a;
-		body->m_linearVelocity = this->m_velocities[i].v;
+		body->m_linearVelocity.Assign(this->m_velocities[i].v);
 		body->m_angularVelocity = this->m_velocities[i].w;
 		body->SynchronizeTransform();
 	}
@@ -390,9 +390,9 @@ void b2Island::SolveTOI(const b2TimeStep& subStep, int32 toiIndexA, int32 toiInd
 	for (int32 i = 0; i < this->m_bodyCount; ++i)
 	{
 		b2Body* b = this->m_bodies[i];
-		this->m_positions[i].c = b->m_sweep.c;
+		this->m_positions[i].c.Assign(b->m_sweep.c);
 		this->m_positions[i].a = b->m_sweep.a;
-		this->m_velocities[i].v = b->m_linearVelocity;
+		this->m_velocities[i].v.Assign(b->m_linearVelocity);
 		this->m_velocities[i].w = b->m_angularVelocity;
 	}
 
@@ -449,9 +449,9 @@ void b2Island::SolveTOI(const b2TimeStep& subStep, int32 toiIndexA, int32 toiInd
 #endif
 
 	// Leap of faith to new safe state.
-	this->m_bodies[toiIndexA]->m_sweep.c0 = this->m_positions[toiIndexA].c;
+	this->m_bodies[toiIndexA]->m_sweep.c0.Assign(this->m_positions[toiIndexA].c);
 	this->m_bodies[toiIndexA]->m_sweep.a0 = this->m_positions[toiIndexA].a;
-	this->m_bodies[toiIndexB]->m_sweep.c0 = this->m_positions[toiIndexB].c;
+	this->m_bodies[toiIndexB]->m_sweep.c0.Assign(this->m_positions[toiIndexB].c);
 	this->m_bodies[toiIndexB]->m_sweep.a0 = this->m_positions[toiIndexB].a;
 
 	// No warm starting is needed for TOI events because warm
@@ -496,16 +496,16 @@ void b2Island::SolveTOI(const b2TimeStep& subStep, int32 toiIndexA, int32 toiInd
 		c.Add(b2Vec2::Multiply(h, v));
 		a += h * w;
 
-		this->m_positions[i].c = c;
+		this->m_positions[i].c.Assign(c);
 		this->m_positions[i].a = a;
-		this->m_velocities[i].v = v;
+		this->m_velocities[i].v.Assign(v);
 		this->m_velocities[i].w = w;
 
 		// Sync bodies
 		b2Body* body = this->m_bodies[i];
-		body->m_sweep.c = c;
+		body->m_sweep.c.Assign(c);
 		body->m_sweep.a = a;
-		body->m_linearVelocity = v;
+		body->m_linearVelocity.Assign(v);
 		body->m_angularVelocity = w;
 		body->SynchronizeTransform();
 	}

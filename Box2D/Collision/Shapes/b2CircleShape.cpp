@@ -72,7 +72,7 @@ bool b2CircleShape::RayCast(b2RayCastOutput* output, const b2RayCastInput& input
 	{
 		a /= rr;
 		output->fraction = a;
-		output->normal = b2Vec2::Add(s, b2Vec2::Multiply(a, r));
+		output->normal.Assign(b2Vec2::Add(s, b2Vec2::Multiply(a, r)));
 		output->normal.Normalize();
 		return true;
 	}
@@ -92,7 +92,7 @@ void b2CircleShape::ComputeAABB(b2AABB* aabb, const b2Transform& transform, int3
 void b2CircleShape::ComputeMass(b2MassData* massData, float32 density) const
 {
 	massData->mass = density * b2_pi * this->m_radius * this->m_radius;
-	massData->center = this->m_p;
+	massData->center.Assign(this->m_p);
 
 	// inertia about the local origin
 	massData->I = massData->mass * (0.5 * this->m_radius * this->m_radius + b2Dot_v2_v2(this->m_p, this->m_p));

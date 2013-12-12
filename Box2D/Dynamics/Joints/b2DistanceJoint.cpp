@@ -40,8 +40,8 @@ void b2DistanceJointDef::Initialize(b2Body* b1, b2Body* b2,
 {
 	this->bodyA = b1;
 	this->bodyB = b2;
-	this->localAnchorA = this->bodyA->GetLocalPoint(anchor1);
-	this->localAnchorB = this->bodyB->GetLocalPoint(anchor2);
+	this->localAnchorA.Assign(this->bodyA->GetLocalPoint(anchor1));
+	this->localAnchorB.Assign(this->bodyB->GetLocalPoint(anchor2));
 	b2Vec2 d = b2Vec2::Subtract(anchor2, anchor1);
 	this->length = d.Length();
 }
@@ -49,8 +49,8 @@ void b2DistanceJointDef::Initialize(b2Body* b1, b2Body* b2,
 b2DistanceJoint::b2DistanceJoint(const b2DistanceJointDef* def)
 : b2Joint(def)
 {
-	this->m_localAnchorA = def->localAnchorA;
-	this->m_localAnchorB = def->localAnchorB;
+	this->m_localAnchorA.Assign(def->localAnchorA);
+	this->m_localAnchorB.Assign(def->localAnchorB);
 	this->m_length = def->length;
 	this->m_frequencyHz = def->frequencyHz;
 	this->m_dampingRatio = def->dampingRatio;
@@ -63,8 +63,8 @@ void b2DistanceJoint::InitVelocityConstraints(const b2SolverData& data)
 {
 	this->m_indexA = this->m_bodyA->m_islandIndex;
 	this->m_indexB = this->m_bodyB->m_islandIndex;
-	this->m_localCenterA = this->m_bodyA->m_sweep.localCenter;
-	this->m_localCenterB = this->m_bodyB->m_sweep.localCenter;
+	this->m_localCenterA.Assign(this->m_bodyA->m_sweep.localCenter);
+	this->m_localCenterB.Assign(this->m_bodyB->m_sweep.localCenter);
 	this->m_invMassA = this->m_bodyA->m_invMass;
 	this->m_invMassB = this->m_bodyB->m_invMass;
 	this->m_invIA = this->m_bodyA->m_invI;
@@ -82,9 +82,9 @@ void b2DistanceJoint::InitVelocityConstraints(const b2SolverData& data)
 
 	b2Rot qA(aA), qB(aB);
 
-	this->m_rA = b2Mul_r_v2(qA, b2Vec2::Subtract(this->m_localAnchorA, this->m_localCenterA));
-	this->m_rB = b2Mul_r_v2(qB, b2Vec2::Subtract(this->m_localAnchorB, this->m_localCenterB));
-	this->m_u = b2Vec2::Subtract(b2Vec2::Subtract(b2Vec2::Add(cB, this->m_rB), cA), this->m_rA);
+	this->m_rA.Assign(b2Mul_r_v2(qA, b2Vec2::Subtract(this->m_localAnchorA, this->m_localCenterA)));
+	this->m_rB.Assign(b2Mul_r_v2(qB, b2Vec2::Subtract(this->m_localAnchorB, this->m_localCenterB)));
+	this->m_u.Assign(b2Vec2::Subtract(b2Vec2::Subtract(b2Vec2::Add(cB, this->m_rB), cA), this->m_rA));
 
 	// Handle singularity.
 	float32 length = this->m_u.Length();
@@ -148,9 +148,9 @@ void b2DistanceJoint::InitVelocityConstraints(const b2SolverData& data)
 		this->m_impulse = 0.0;
 	}
 
-	data.velocities[this->m_indexA].v = vA;
+	data.velocities[this->m_indexA].v.Assign(vA);
 	data.velocities[this->m_indexA].w = wA;
-	data.velocities[this->m_indexB].v = vB;
+	data.velocities[this->m_indexB].v.Assign(vB);
 	data.velocities[this->m_indexB].w = wB;
 }
 
@@ -175,9 +175,9 @@ void b2DistanceJoint::SolveVelocityConstraints(const b2SolverData& data)
 	vB.Add(b2Vec2::Multiply(this->m_invMassB, P));
 	wB += this->m_invIB * b2Cross_v2_v2(this->m_rB, P);
 
-	data.velocities[this->m_indexA].v = vA;
+	data.velocities[this->m_indexA].v.Assign(vA);
 	data.velocities[this->m_indexA].w = wA;
-	data.velocities[this->m_indexB].v = vB;
+	data.velocities[this->m_indexB].v.Assign(vB);
 	data.velocities[this->m_indexB].w = wB;
 }
 
@@ -212,9 +212,9 @@ bool b2DistanceJoint::SolvePositionConstraints(const b2SolverData& data)
 	cB.Add(b2Vec2::Multiply(this->m_invMassB, P));
 	aB += this->m_invIB * b2Cross_v2_v2(rB, P);
 
-	data.positions[this->m_indexA].c = cA;
+	data.positions[this->m_indexA].c.Assign(cA);
 	data.positions[this->m_indexA].a = aA;
-	data.positions[this->m_indexB].c = cB;
+	data.positions[this->m_indexB].c.Assign(cB);
 	data.positions[this->m_indexB].a = aB;
 
 	return b2Abs(C) < b2_linearSlop;

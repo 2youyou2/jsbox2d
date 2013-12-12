@@ -54,10 +54,10 @@ public:
 			b2BodyDef bd;
 			bd.type = b2Body::b2_dynamicBody;
 
-			bd.position = p1;
+			bd.position.Assign(p1);
 			b2Body* leftFlipper = this->m_world->CreateBody(&bd);
 
-			bd.position = p2;
+			bd.position.Assign(p2);
 			b2Body* rightFlipper = this->m_world->CreateBody(&bd);
 
 			b2PolygonShape box;
@@ -78,14 +78,14 @@ public:
 			jd.enableLimit = true;
 
 			jd.motorSpeed = 0.0;
-			jd.localAnchorA = p1;
+			jd.localAnchorA.Assign(p1);
 			jd.bodyB = leftFlipper;
 			jd.lowerAngle = -30.0 * b2_pi / 180.0;
 			jd.upperAngle = 5.0 * b2_pi / 180.0;
 			this->m_leftJoint = (b2RevoluteJoint*)this->m_world->CreateJoint(&jd);
 
 			jd.motorSpeed = 0.0;
-			jd.localAnchorA = p2;
+			jd.localAnchorA.Assign(p2);
 			jd.bodyB = rightFlipper;
 			jd.lowerAngle = -5.0 * b2_pi / 180.0;
 			jd.upperAngle = 30.0 * b2_pi / 180.0;

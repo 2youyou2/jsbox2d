@@ -52,7 +52,7 @@ b2World::b2World(const b2Vec2& gravity)
 	this->m_stepComplete = true;
 
 	this->m_allowSleep = true;
-	this->m_gravity = gravity;
+	this->m_gravity.Assign(gravity);
 
 	this->m_flags = b2World::e_clearForces;
 
@@ -682,8 +682,8 @@ void b2World::SolveTOI(const b2TimeStep& step)
 				b2TOIInput input;
 				input.proxyA.Set(fA->GetShape(), indexA);
 				input.proxyB.Set(fB->GetShape(), indexB);
-				input.sweepA = bA->m_sweep;
-				input.sweepB = bB->m_sweep;
+				input.sweepA.Assign(bA->m_sweep);
+				input.sweepB.Assign(bB->m_sweep);
 				input.tMax = 1.0;
 
 				b2TOIOutput output;
@@ -741,8 +741,8 @@ void b2World::SolveTOI(const b2TimeStep& step)
 		{
 			// Restore the sweeps.
 			minContact->SetEnabled(false);
-			bA->m_sweep = backup1;
-			bB->m_sweep = backup2;
+			bA->m_sweep.Assign(backup1);
+			bB->m_sweep.Assign(backup2);
 			bA->SynchronizeTransform();
 			bB->SynchronizeTransform();
 			continue;
@@ -817,7 +817,7 @@ void b2World::SolveTOI(const b2TimeStep& step)
 					// Was the contact disabled by the user?
 					if (contact->IsEnabled() == false)
 					{
-						other->m_sweep = backup;
+						other->m_sweep.Assign(backup);
 						other->SynchronizeTransform();
 						continue;
 					}
@@ -825,7 +825,7 @@ void b2World::SolveTOI(const b2TimeStep& step)
 					// Are there contact points?
 					if (contact->IsTouching() == false)
 					{
-						other->m_sweep = backup;
+						other->m_sweep.Assign(backup);
 						other->SynchronizeTransform();
 						continue;
 					}
@@ -1023,8 +1023,8 @@ void b2World::RayCast(b2RayCastCallback* callback, const b2Vec2& point1, const b
 	wrapper.callback = callback;
 	b2RayCastInput input;
 	input.maxFraction = 1.0;
-	input.p1 = point1;
-	input.p2 = point2;
+	input.p1.Assign(point1);
+	input.p2.Assign(point2);
 	this->m_contactManager.m_broadPhase.RayCast(&wrapper, input);
 }
 
@@ -1065,7 +1065,7 @@ void b2World::DrawShape(b2Fixture* fixture, const b2Transform& xf, const b2Color
 				b2Vec2 v2 = b2Mul_t_v2(xf, vertices[i]);
 				g_debugDraw->DrawSegment(v1, v2, color);
 				g_debugDraw->DrawCircle(v1, 0.05f, color);
-				v1 = v2;
+				v1.Assign(v2);
 			}
 		}
 		break;
@@ -1079,7 +1079,7 @@ void b2World::DrawShape(b2Fixture* fixture, const b2Transform& xf, const b2Color
 
 			for (int32 i = 0; i < vertexCount; ++i)
 			{
-				vertices[i] = b2Mul_t_v2(xf, poly->m_vertices[i]);
+				vertices[i].Assign(b2Mul_t_v2(xf, poly->m_vertices[i]));
 			}
 
 			g_debugDraw->DrawSolidPolygon(vertices, vertexCount, color);
@@ -1230,7 +1230,7 @@ void b2World::DrawDebugData()
 		for (b2Body* b = this->m_bodyList; b; b = b->GetNext())
 		{
 			b2Transform xf = b->GetTransform();
-			xf.p = b->GetWorldCenter();
+			xf.p.Assign(b->GetWorldCenter());
 			g_debugDraw->DrawTransform(xf);
 		}
 	}

@@ -40,18 +40,18 @@ void b2WheelJointDef::Initialize(b2Body* bA, b2Body* bB, const b2Vec2& anchor, c
 {
 	this->bodyA = bA;
 	this->bodyB = bB;
-	this->localAnchorA = this->bodyA->GetLocalPoint(anchor);
-	this->localAnchorB = this->bodyB->GetLocalPoint(anchor);
-	this->localAxisA = this->bodyA->GetLocalVector(axis);
+	this->localAnchorA.Assign(this->bodyA->GetLocalPoint(anchor));
+	this->localAnchorB.Assign(this->bodyB->GetLocalPoint(anchor));
+	this->localAxisA.Assign(this->bodyA->GetLocalVector(axis));
 }
 
 b2WheelJoint::b2WheelJoint(const b2WheelJointDef* def)
 : b2Joint(def)
 {
-	this->m_localAnchorA = def->localAnchorA;
-	this->m_localAnchorB = def->localAnchorB;
-	this->m_localXAxisA = def->localAxisA;
-	this->m_localYAxisA = b2Cross_f_v2(1.0, this->m_localXAxisA);
+	this->m_localAnchorA.Assign(def->localAnchorA);
+	this->m_localAnchorB.Assign(def->localAnchorB);
+	this->m_localXAxisA.Assign(def->localAxisA);
+	this->m_localYAxisA.Assign(b2Cross_f_v2(1.0, this->m_localXAxisA));
 
 	this->m_mass = 0.0;
 	this->m_impulse = 0.0;
@@ -78,8 +78,8 @@ void b2WheelJoint::InitVelocityConstraints(const b2SolverData& data)
 {
 	this->m_indexA = this->m_bodyA->m_islandIndex;
 	this->m_indexB = this->m_bodyB->m_islandIndex;
-	this->m_localCenterA = this->m_bodyA->m_sweep.localCenter;
-	this->m_localCenterB = this->m_bodyB->m_sweep.localCenter;
+	this->m_localCenterA.Assign(this->m_bodyA->m_sweep.localCenter);
+	this->m_localCenterB.Assign(this->m_bodyB->m_sweep.localCenter);
 	this->m_invMassA = this->m_bodyA->m_invMass;
 	this->m_invMassB = this->m_bodyB->m_invMass;
 	this->m_invIA = this->m_bodyA->m_invI;
@@ -107,7 +107,7 @@ void b2WheelJoint::InitVelocityConstraints(const b2SolverData& data)
 
 	// Point to line constraint
 	{
-		this->m_ay = b2Mul_r_v2(qA, this->m_localYAxisA);
+		this->m_ay.Assign(b2Mul_r_v2(qA, this->m_localYAxisA));
 		this->m_sAy = b2Cross_v2_v2(b2Vec2::Add(d, rA), this->m_ay);
 		this->m_sBy = b2Cross_v2_v2(rB, this->m_ay);
 
@@ -125,7 +125,7 @@ void b2WheelJoint::InitVelocityConstraints(const b2SolverData& data)
 	this->m_gamma = 0.0;
 	if (this->m_frequencyHz > 0.0)
 	{
-		this->m_ax = b2Mul_r_v2(qA, this->m_localXAxisA);
+		this->m_ax.Assign(b2Mul_r_v2(qA, this->m_localXAxisA));
 		this->m_sAx = b2Cross_v2_v2(b2Vec2::Add(d, rA), this->m_ax);
 		this->m_sBx = b2Cross_v2_v2(rB, this->m_ax);
 
@@ -207,9 +207,9 @@ void b2WheelJoint::InitVelocityConstraints(const b2SolverData& data)
 		this->m_motorImpulse = 0.0;
 	}
 
-	data.velocities[this->m_indexA].v = vA;
+	data.velocities[this->m_indexA].v.Assign(vA);
 	data.velocities[this->m_indexA].w = wA;
-	data.velocities[this->m_indexB].v = vB;
+	data.velocities[this->m_indexB].v.Assign(vB);
 	data.velocities[this->m_indexB].w = wB;
 }
 
@@ -271,9 +271,9 @@ void b2WheelJoint::SolveVelocityConstraints(const b2SolverData& data)
 		wB += iB * LB;
 	}
 
-	data.velocities[this->m_indexA].v = vA;
+	data.velocities[this->m_indexA].v.Assign(vA);
 	data.velocities[this->m_indexA].w = wA;
-	data.velocities[this->m_indexB].v = vB;
+	data.velocities[this->m_indexB].v.Assign(vB);
 	data.velocities[this->m_indexB].w = wB;
 }
 
@@ -318,9 +318,9 @@ bool b2WheelJoint::SolvePositionConstraints(const b2SolverData& data)
 	cB.Add(b2Vec2::Multiply(this->m_invMassB, P));
 	aB += this->m_invIB * LB;
 
-	data.positions[this->m_indexA].c = cA;
+	data.positions[this->m_indexA].c.Assign(cA);
 	data.positions[this->m_indexA].a = aA;
-	data.positions[this->m_indexB].c = cB;
+	data.positions[this->m_indexB].c.Assign(cB);
 	data.positions[this->m_indexB].a = aB;
 
 	return b2Abs(C) <= b2_linearSlop;

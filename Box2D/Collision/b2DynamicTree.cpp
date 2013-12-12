@@ -108,8 +108,8 @@ int32 b2DynamicTree::CreateProxy(const b2AABB& aabb, void* userData)
 
 	// Fatten the aabb.
 	b2Vec2 r(b2_aabbExtension, b2_aabbExtension);
-	this->m_nodes[proxyId].aabb.lowerBound = b2Vec2::Subtract(aabb.lowerBound, r);
-	this->m_nodes[proxyId].aabb.upperBound = b2Vec2::Add(aabb.upperBound, r);
+	this->m_nodes[proxyId].aabb.lowerBound.Assign(b2Vec2::Subtract(aabb.lowerBound, r));
+	this->m_nodes[proxyId].aabb.upperBound.Assign(b2Vec2::Add(aabb.upperBound, r));
 	this->m_nodes[proxyId].userData = userData;
 	this->m_nodes[proxyId].height = 0;
 
@@ -143,8 +143,8 @@ bool b2DynamicTree::MoveProxy(int32 proxyId, const b2AABB& aabb, const b2Vec2& d
 	// Extend AABB.
 	b2AABB b = aabb;
 	b2Vec2 r(b2_aabbExtension, b2_aabbExtension);
-	b.lowerBound = b2Vec2::Add(b.lowerBound, r);
-	b.upperBound = b2Vec2::Add(b.upperBound, r);
+	b.lowerBound.Assign(b2Vec2::Add(b.lowerBound, r));
+	b.upperBound.Assign(b2Vec2::Add(b.upperBound, r));
 
 	// Predict AABB displacement.
 	b2Vec2 d = b2Vec2::Multiply(b2_aabbMultiplier, displacement);
@@ -167,7 +167,7 @@ bool b2DynamicTree::MoveProxy(int32 proxyId, const b2AABB& aabb, const b2Vec2& d
 		b.upperBound.y += d.y;
 	}
 
-	this->m_nodes[proxyId].aabb = b;
+	this->m_nodes[proxyId].aabb.Assign(b);
 
 	InsertLeaf(proxyId);
 	return true;

@@ -432,6 +432,12 @@ b2Rot.prototype =
 		return new b2Rot(this.s, this.c);
 	},
 
+	Assign: function(l)
+	{
+		this.s = l.s;
+		this.c = l.c;
+	},
+
 	/// Set using an angle in radians.
 	Set: function(angle)
 	{
@@ -488,8 +494,8 @@ b2Transform.prototype =
 
 	Assign: function(xf)
 	{
-		this.p = xf.p.Clone();
-		this.q = xf.q.Clone();
+		this.p.Assign(xf.p);
+		this.q.Assign(xf.q);
 	},
 
 	/// Set this to the identity transform.

@@ -52,14 +52,14 @@ void b2DistanceProxy::Set(const b2Shape* shape, int32 index)
 			const b2ChainShape* chain = static_cast<const b2ChainShape*>(shape);
 			b2Assert(0 <= index && index < chain->m_count);
 
-			this->m_buffer[0] = chain->m_vertices[index];
+			this->m_buffer[0].Assign(chain->m_vertices[index]);
 			if (index + 1 < chain->m_count)
 			{
-				this->m_buffer[1] = chain->m_vertices[index + 1];
+				this->m_buffer[1].Assign(chain->m_vertices[index + 1]);
 			}
 			else
 			{
-				this->m_buffer[1] = chain->m_vertices[0];
+				this->m_buffer[1].Assign(chain->m_vertices[0]);
 			}
 
 			this->m_vertices = this->m_buffer;
@@ -91,6 +91,25 @@ struct b2SimplexVertex
 	float32 a;		// barycentric coordinate for closest point
 	int32 indexA;	// wA index
 	int32 indexB;	// wB index
+
+	b2SimplexVertex &Assign (const b2SimplexVertex &l)
+	{
+		this->wA.Assign(l.wA);
+		this->wB.Assign(l.wB);
+		this->w.Assign(l.w);
+		this->a = l.a;
+		this->indexA = l.indexA;
+		this->indexB = l.indexB;
+
+		return *this;
+	}
+
+private:
+	b2SimplexVertex &operator= (const b2SimplexVertex &l)
+	{
+		B2_NOT_USED(l);
+		return *this;
+	}
 };
 
 struct b2Simplex
@@ -103,7 +122,7 @@ struct b2Simplex
 
 		// Copy data from cache.
 		this->m_count = cache->count;
-		b2SimplexVertex* vertices = &this->m_v1;
+		b2SimplexVertex* vertices = this->m_v;
 		for (int32 i = 0; i < this->m_count; ++i)
 		{
 			b2SimplexVertex* v = vertices + i;
@@ -111,9 +130,9 @@ struct b2Simplex
 			v->indexB = cache->indexB[i];
 			b2Vec2 wALocal = proxyA->GetVertex(v->indexA);
 			b2Vec2 wBLocal = proxyB->GetVertex(v->indexB);
-			v->wA = b2Mul_t_v2(transformA, wALocal);
-			v->wB = b2Mul_t_v2(transformB, wBLocal);
-			v->w = b2Vec2::Subtract(v->wB, v->wA);
+			v->wA.Assign(b2Mul_t_v2(transformA, wALocal));
+			v->wB.Assign(b2Mul_t_v2(transformB, wBLocal));
+			v->w.Assign(b2Vec2::Subtract(v->wB, v->wA));
 			v->a = 0.0;
 		}
 
@@ -138,9 +157,9 @@ struct b2Simplex
 			v->indexB = 0;
 			b2Vec2 wALocal = proxyA->GetVertex(0);
 			b2Vec2 wBLocal = proxyB->GetVertex(0);
-			v->wA = b2Mul_t_v2(transformA, wALocal);
-			v->wB = b2Mul_t_v2(transformB, wBLocal);
-			v->w = b2Vec2::Subtract(v->wB, v->wA);
+			v->wA.Assign(b2Mul_t_v2(transformA, wALocal));
+			v->wB.Assign(b2Mul_t_v2(transformB, wBLocal));
+			v->w.Assign(b2Vec2::Subtract(v->wB, v->wA));
 			v->a = 1.0;
 			this->m_count = 1;
 		}
@@ -150,7 +169,7 @@ struct b2Simplex
 	{
 		cache->metric = GetMetric();
 		cache->count = uint16(this->m_count);
-		const b2SimplexVertex* vertices = &this->m_v1;
+		const b2SimplexVertex* vertices = this->m_v;
 		for (int32 i = 0; i < this->m_count; ++i)
 		{
 			cache->indexA[i] = uint8(vertices[i].indexA);
@@ -163,12 +182,12 @@ struct b2Simplex
 		switch (this->m_count)
 		{
 		case 1:
-			return this->m_v1.w.Negate();
+			return this->m_v[0].w.Negate();
 
 		case 2:
 			{
-				b2Vec2 e12 = b2Vec2::Subtract(this->m_v2.w, this->m_v1.w);
-				float32 sgn = b2Cross_v2_v2(e12, this->m_v1.w.Negate());
+				b2Vec2 e12 = b2Vec2::Subtract(this->m_v[1].w, this->m_v[0].w);
+				float32 sgn = b2Cross_v2_v2(e12, this->m_v[0].w.Negate());
 				if (sgn > 0.0)
 				{
 					// Origin is left of e12.
@@ -196,10 +215,10 @@ struct b2Simplex
 			return b2Vec2(0, 0);
 
 		case 1:
-			return this->m_v1.w;
+			return this->m_v[0].w;
 
 		case 2:
-			return b2Vec2::Add(b2Vec2::Multiply(this->m_v1.a, this->m_v1.w), b2Vec2::Multiply(this->m_v2.a, this->m_v2.w));
+			return b2Vec2::Add(b2Vec2::Multiply(this->m_v[0].a, this->m_v[0].w), b2Vec2::Multiply(this->m_v[1].a, this->m_v[1].w));
 
 		case 3:
 			return b2Vec2(0, 0);
@@ -219,17 +238,17 @@ struct b2Simplex
 			break;
 
 		case 1:
-			pA->Assign(this->m_v1.wA);
-			pB->Assign(this->m_v1.wB);
+			pA->Assign(this->m_v[0].wA);
+			pB->Assign(this->m_v[0].wB);
 			break;
 
 		case 2:
-			pA->Assign(b2Vec2::Add(b2Vec2::Multiply(this->m_v1.a, this->m_v1.wA), b2Vec2::Multiply(this->m_v2.a, this->m_v2.wA)));
-			pB->Assign(b2Vec2::Add(b2Vec2::Multiply(this->m_v1.a, this->m_v1.wB), b2Vec2::Multiply(this->m_v2.a, this->m_v2.wB)));
+			pA->Assign(b2Vec2::Add(b2Vec2::Multiply(this->m_v[0].a, this->m_v[0].wA), b2Vec2::Multiply(this->m_v[1].a, this->m_v[1].wA)));
+			pB->Assign(b2Vec2::Add(b2Vec2::Multiply(this->m_v[0].a, this->m_v[0].wB), b2Vec2::Multiply(this->m_v[1].a, this->m_v[1].wB)));
 			break;
 
 		case 3:
-			pA->Assign(b2Vec2::Add(b2Vec2::Add(b2Vec2::Multiply(this->m_v1.a, this->m_v1.wA), b2Vec2::Multiply(this->m_v2.a, this->m_v2.wA)), b2Vec2::Multiply(this->m_v3.a, this->m_v3.wA)));
+			pA->Assign(b2Vec2::Add(b2Vec2::Add(b2Vec2::Multiply(this->m_v[0].a, this->m_v[0].wA), b2Vec2::Multiply(this->m_v[1].a, this->m_v[1].wA)), b2Vec2::Multiply(this->m_v[2].a, this->m_v[2].wA)));
 			pB->Assign(*pA);
 			break;
 
@@ -251,10 +270,10 @@ struct b2Simplex
 			return 0.0;
 
 		case 2:
-			return b2Distance(this->m_v1.w, this->m_v2.w);
+			return b2Distance(this->m_v[0].w, this->m_v[1].w);
 
 		case 3:
-			return b2Cross_v2_v2(b2Vec2::Subtract(this->m_v2.w, this->m_v1.w), b2Vec2::Subtract(this->m_v3.w, this->m_v1.w));
+			return b2Cross_v2_v2(b2Vec2::Subtract(this->m_v[1].w, this->m_v[0].w), b2Vec2::Subtract(this->m_v[2].w, this->m_v[0].w));
 
 		default:
 			b2Assert(false);
@@ -265,7 +284,7 @@ struct b2Simplex
 	void Solve2();
 	void Solve3();
 
-	b2SimplexVertex m_v1, m_v2, m_v3;
+	b2SimplexVertex m_v[3];
 	int32 m_count;
 };
 
@@ -295,8 +314,8 @@ struct b2Simplex
 // a2 = d12_2 / d12
 void b2Simplex::Solve2()
 {
-	b2Vec2 w1 = this->m_v1.w;
-	b2Vec2 w2 = this->m_v2.w;
+	b2Vec2 w1 = this->m_v[0].w;
+	b2Vec2 w2 = this->m_v[1].w;
 	b2Vec2 e12 = b2Vec2::Subtract(w2, w1);
 
 	// w1 region
@@ -304,7 +323,7 @@ void b2Simplex::Solve2()
 	if (d12_2 <= 0.0)
 	{
 		// a2 <= 0, so we clamp it to 0
-		this->m_v1.a = 1.0;
+		this->m_v[0].a = 1.0;
 		this->m_count = 1;
 		return;
 	}
@@ -314,16 +333,16 @@ void b2Simplex::Solve2()
 	if (d12_1 <= 0.0)
 	{
 		// a1 <= 0, so we clamp it to 0
-		this->m_v2.a = 1.0;
+		this->m_v[1].a = 1.0;
 		this->m_count = 1;
-		this->m_v1 = this->m_v2;
+		this->m_v[0].Assign(this->m_v[1]);
 		return;
 	}
 
 	// Must be in e12 region.
 	float32 inv_d12 = 1.0 / (d12_1 + d12_2);
-	this->m_v1.a = d12_1 * inv_d12;
-	this->m_v2.a = d12_2 * inv_d12;
+	this->m_v[0].a = d12_1 * inv_d12;
+	this->m_v[1].a = d12_2 * inv_d12;
 	this->m_count = 2;
 }
 
@@ -334,9 +353,9 @@ void b2Simplex::Solve2()
 // - inside the triangle
 void b2Simplex::Solve3()
 {
-	b2Vec2 w1 = this->m_v1.w;
-	b2Vec2 w2 = this->m_v2.w;
-	b2Vec2 w3 = this->m_v3.w;
+	b2Vec2 w1 = this->m_v[0].w;
+	b2Vec2 w2 = this->m_v[1].w;
+	b2Vec2 w3 = this->m_v[2].w;
 
 	// Edge12
 	// [1      1     ][a1] = [1]
@@ -378,7 +397,7 @@ void b2Simplex::Solve3()
 	// w1 region
 	if (d12_2 <= 0.0 && d13_2 <= 0.0)
 	{
-		this->m_v1.a = 1.0;
+		this->m_v[0].a = 1.0;
 		this->m_count = 1;
 		return;
 	}
@@ -387,8 +406,8 @@ void b2Simplex::Solve3()
 	if (d12_1 > 0.0 && d12_2 > 0.0 && d123_3 <= 0.0)
 	{
 		float32 inv_d12 = 1.0 / (d12_1 + d12_2);
-		this->m_v1.a = d12_1 * inv_d12;
-		this->m_v2.a = d12_2 * inv_d12;
+		this->m_v[0].a = d12_1 * inv_d12;
+		this->m_v[1].a = d12_2 * inv_d12;
 		this->m_count = 2;
 		return;
 	}
@@ -397,28 +416,28 @@ void b2Simplex::Solve3()
 	if (d13_1 > 0.0 && d13_2 > 0.0 && d123_2 <= 0.0)
 	{
 		float32 inv_d13 = 1.0 / (d13_1 + d13_2);
-		this->m_v1.a = d13_1 * inv_d13;
-		this->m_v3.a = d13_2 * inv_d13;
+		this->m_v[0].a = d13_1 * inv_d13;
+		this->m_v[2].a = d13_2 * inv_d13;
 		this->m_count = 2;
-		this->m_v2 = this->m_v3;
+		this->m_v[1].Assign(this->m_v[2]);
 		return;
 	}
 
 	// w2 region
 	if (d12_1 <= 0.0 && d23_2 <= 0.0)
 	{
-		this->m_v2.a = 1.0;
+		this->m_v[1].a = 1.0;
 		this->m_count = 1;
-		this->m_v1 = this->m_v2;
+		this->m_v[0].Assign(this->m_v[1]);
 		return;
 	}
 
 	// w3 region
 	if (d13_1 <= 0.0 && d23_1 <= 0.0)
 	{
-		this->m_v3.a = 1.0;
+		this->m_v[2].a = 1.0;
 		this->m_count = 1;
-		this->m_v1 = this->m_v3;
+		this->m_v[0].Assign(this->m_v[2]);
 		return;
 	}
 
@@ -426,18 +445,18 @@ void b2Simplex::Solve3()
 	if (d23_1 > 0.0 && d23_2 > 0.0 && d123_1 <= 0.0)
 	{
 		float32 inv_d23 = 1.0 / (d23_1 + d23_2);
-		this->m_v2.a = d23_1 * inv_d23;
-		this->m_v3.a = d23_2 * inv_d23;
+		this->m_v[1].a = d23_1 * inv_d23;
+		this->m_v[2].a = d23_2 * inv_d23;
 		this->m_count = 2;
-		this->m_v1 = this->m_v3;
+		this->m_v[0].Assign(this->m_v[2]);
 		return;
 	}
 
 	// Must be in triangle123
 	float32 inv_d123 = 1.0 / (d123_1 + d123_2 + d123_3);
-	this->m_v1.a = d123_1 * inv_d123;
-	this->m_v2.a = d123_2 * inv_d123;
-	this->m_v3.a = d123_3 * inv_d123;
+	this->m_v[0].a = d123_1 * inv_d123;
+	this->m_v[1].a = d123_2 * inv_d123;
+	this->m_v[2].a = d123_3 * inv_d123;
 	this->m_count = 3;
 }
 
@@ -458,7 +477,7 @@ void b2DistanceFunc(b2DistanceOutput* output,
 	simplex.ReadCache(cache, proxyA, transformA, proxyB, transformB);
 
 	// Get simplex vertices as an array.
-	b2SimplexVertex* vertices = &simplex.m_v1;
+	b2SimplexVertex* vertices = simplex.m_v;
 	const int32 k_maxIters = 20;
 
 	// These store the vertices of the last simplex so that we
@@ -531,13 +550,13 @@ void b2DistanceFunc(b2DistanceOutput* output,
 		}
 
 		// Compute a tentative new simplex vertex using support points.
-		b2SimplexVertex* vertex = vertices + simplex.m_count;
+		b2SimplexVertex* vertex = &vertices[simplex.m_count];
 		vertex->indexA = proxyA->GetSupport(b2MulT_r_v2(transformA.q, d.Negate()));
-		vertex->wA = b2Mul_t_v2(transformA, proxyA->GetVertex(vertex->indexA));
+		vertex->wA.Assign(b2Mul_t_v2(transformA, proxyA->GetVertex(vertex->indexA)));
 		b2Vec2 wBLocal;
 		vertex->indexB = proxyB->GetSupport(b2MulT_r_v2(transformB.q, d));
-		vertex->wB = b2Mul_t_v2(transformB, proxyB->GetVertex(vertex->indexB));
-		vertex->w = b2Vec2::Subtract(vertex->wB, vertex->wA);
+		vertex->wB.Assign(b2Mul_t_v2(transformB, proxyB->GetVertex(vertex->indexB)));
+		vertex->w.Assign(b2Vec2::Subtract(vertex->wB, vertex->wA));
 
 		// Iteration count is equated to the number of support point calls.
 		++iter;
@@ -595,8 +614,8 @@ void b2DistanceFunc(b2DistanceOutput* output,
 			// Shapes are overlapped when radii are considered.
 			// Move the witness points to the middle.
 			b2Vec2 p = b2Vec2::Multiply(0.5, b2Vec2::Add(output->pointA, output->pointB));
-			output->pointA = p;
-			output->pointB = p;
+			output->pointA.Assign(p);
+			output->pointB.Assign(p);
 			output->distance = 0.0;
 		}
 	}

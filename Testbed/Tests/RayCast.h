@@ -48,8 +48,8 @@ public:
 		}
 
 		this->m_hit = true;
-		this->m_point = point;
-		this->m_normal = normal;
+		this->m_point.Assign(point);
+		this->m_normal.Assign(normal);
 
 		// By returning the current fraction, we instruct the calling code to clip the ray and
 		// continue the ray-cast to the next fixture. WARNING: do not assume that fixtures
@@ -88,8 +88,8 @@ public:
 		}
 
 		this->m_hit = true;
-		this->m_point = point;
-		this->m_normal = normal;
+		this->m_point.Assign(point);
+		this->m_normal.Assign(normal);
 
 		// At this point we have a hit, so we know the ray is obstructed.
 		// By returning 0, we instruct the calling code to terminate the ray-cast.
@@ -134,8 +134,8 @@ public:
 
 		b2Assert(this->m_count < e_maxCount);
 
-		this->m_points[this->m_count] = point;
-		this->m_normals[this->m_count] = normal;
+		this->m_points[this->m_count].Assign(point);
+		this->m_normals[this->m_count].Assign(normal);
 		++this->m_count;
 
 		if (this->m_count == e_maxCount)

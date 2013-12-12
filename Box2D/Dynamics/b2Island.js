@@ -1,11 +1,25 @@
+/*
+* Copyright (c) 2006-2009 Erin Catto http://www.box2d.org
+*
+* This software is provided 'as-is', without any express or implied
+* warranty.  In no event will the authors be held liable for any damages
+* arising from the use of this software.
+* Permission is granted to anyone to use this software for any purpose,
+* including commercial applications, and to alter it and redistribute it
+* freely, subject to the following restrictions:
+* 1. The origin of this software must not be misrepresented; you must not
+* claim that you wrote the original software. If you use this software
+* in a product, an acknowledgment in the product documentation would be
+* appreciated but is not required.
+* 2. Altered source versions must be plainly marked as such, and must not be
+* misrepresented as being the original software.
+* 3. This notice may not be removed or altered from any source distribution.
+*/
 "use strict";
 
 /// This is an internal class.
-function b2Island(
-	bodyCapacity,
-	contactCapacity,
-	jointCapacity,
-	listener)
+function b2Island(bodyCapacity, contactCapacity, jointCapacity,
+			listener)
 {
 	this.m_bodyCapacity = bodyCapacity;
 	this.m_contactCapacity = contactCapacity;
@@ -20,8 +34,8 @@ function b2Island(
 	this.m_contacts = new Array(contactCapacity);
 	this.m_joints = new Array(jointCapacity);
 
-	this.m_velocities = new Array(this.m_bodyCapacity);
-	this.m_positions = new Array(this.m_bodyCapacity);
+	this.m_velocities = new Array(bodyCapacity);
+	this.m_positions = new Array(bodyCapacity);
 }
 
 b2Island.prototype =
@@ -91,6 +105,7 @@ b2Island.prototype =
 		contactSolverDef.count = this.m_contactCount;
 		contactSolverDef.positions = this.m_positions;
 		contactSolverDef.velocities = this.m_velocities;
+		contactSolverDef.allocator = this.m_allocator;
 
 		var contactSolver = new b2ContactSolver(contactSolverDef);
 		contactSolver.InitializeVelocityConstraints();
@@ -164,9 +179,9 @@ b2Island.prototype =
 			var contactsOkay = contactSolver.SolvePositionConstraints();
 
 			var jointsOkay = true;
-			for (var x = 0; x < this.m_jointCount; ++x)
+			for (var j = 0; j < this.m_jointCount; ++j)
 			{
-				var jointOkay = this.m_joints[x].SolvePositionConstraints(solverData);
+				var jointOkay = this.m_joints[j].SolvePositionConstraints(solverData);
 				jointsOkay = jointsOkay && jointOkay;
 			}
 
@@ -242,9 +257,9 @@ b2Island.prototype =
 		for (var i = 0; i < this.m_bodyCount; ++i)
 		{
 			var b = this.m_bodies[i];
-			this.m_positions[i].c = b.m_sweep.c.Clone();
+			this.m_positions[i].c.Assign(b.m_sweep.c);
 			this.m_positions[i].a = b.m_sweep.a;
-			this.m_velocities[i].v = b.m_linearVelocity.Clone();
+			this.m_velocities[i].v.Assign(b.m_linearVelocity);
 			this.m_velocities[i].w = b.m_angularVelocity;
 		}
 
@@ -267,9 +282,9 @@ b2Island.prototype =
 		}
 
 		// Leap of faith to new safe state.
-		this.m_bodies[toiIndexA].m_sweep.c0 = this.m_positions[toiIndexA].c.Clone();
+		this.m_bodies[toiIndexA].m_sweep.c0.Assign(this.m_positions[toiIndexA].c);
 		this.m_bodies[toiIndexA].m_sweep.a0 = this.m_positions[toiIndexA].a;
-		this.m_bodies[toiIndexB].m_sweep.c0 = this.m_positions[toiIndexB].c.Clone();
+		this.m_bodies[toiIndexB].m_sweep.c0.Assign(this.m_positions[toiIndexB].c);
 		this.m_bodies[toiIndexB].m_sweep.a0 = this.m_positions[toiIndexB].a;
 
 		// No warm starting is needed for TOI events because warm
@@ -368,11 +383,11 @@ b2Island.prototype =
 		for (var i = 0; i < this.m_contactCount; ++i)
 		{
 			var c = this.m_contacts[i];
+
 			var vc = constraints[i];
 
 			var impulse = new b2ContactImpulse();
 			impulse.count = vc.pointCount;
-
 			for (var j = 0; j < vc.pointCount; ++j)
 			{
 				impulse.normalImpulses[j] = vc.points[j].normalImpulse;

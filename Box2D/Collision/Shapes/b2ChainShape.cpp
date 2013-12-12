@@ -43,9 +43,9 @@ void b2ChainShape::CreateLoop(const b2Vec2* vertices, int32 count)
 	this->m_count = count + 1;
 	this->m_vertices = (b2Vec2*)b2Alloc(this->m_count * sizeof(b2Vec2));
 	memcpy(this->m_vertices, vertices, count * sizeof(b2Vec2));
-	this->m_vertices[count] = this->m_vertices[0];
-	this->m_prevVertex = this->m_vertices[this->m_count - 2];
-	this->m_nextVertex = this->m_vertices[1];
+	this->m_vertices[count].Assign(this->m_vertices[0]);
+	this->m_prevVertex.Assign(this->m_vertices[this->m_count - 2]);
+	this->m_nextVertex.Assign(this->m_vertices[1]);
 	this->m_hasPrevVertex = true;
 	this->m_hasNextVertex = true;
 }
@@ -75,13 +75,13 @@ void b2ChainShape::CreateChain(const b2Vec2* vertices, int32 count)
 
 void b2ChainShape::SetPrevVertex(const b2Vec2& prevVertex)
 {
-	this->m_prevVertex = prevVertex;
+	this->m_prevVertex.Assign(prevVertex);
 	this->m_hasPrevVertex = true;
 }
 
 void b2ChainShape::SetNextVertex(const b2Vec2& nextVertex)
 {
-	this->m_nextVertex = nextVertex;
+	this->m_nextVertex.Assign(nextVertex);
 	this->m_hasNextVertex = true;
 }
 
@@ -90,8 +90,8 @@ b2Shape* b2ChainShape::Clone(b2BlockAllocator* allocator) const
 	void* mem = allocator->Allocate(sizeof(b2ChainShape));
 	b2ChainShape* clone = new (mem) b2ChainShape;
 	clone->CreateChain(this->m_vertices, this->m_count);
-	clone->m_prevVertex = this->m_prevVertex;
-	clone->m_nextVertex = this->m_nextVertex;
+	clone->m_prevVertex.Assign(this->m_prevVertex);
+	clone->m_nextVertex.Assign(this->m_nextVertex);
 	clone->m_hasPrevVertex = this->m_hasPrevVertex;
 	clone->m_hasNextVertex = this->m_hasNextVertex;
 	return clone;
@@ -109,28 +109,28 @@ void b2ChainShape::GetChildEdge(b2EdgeShape* edge, int32 index) const
 	edge->m_type = b2Shape::e_edge;
 	edge->m_radius = this->m_radius;
 
-	edge->m_vertex1 = this->m_vertices[index + 0];
-	edge->m_vertex2 = this->m_vertices[index + 1];
+	edge->m_vertex1.Assign(this->m_vertices[index + 0]);
+	edge->m_vertex2.Assign(this->m_vertices[index + 1]);
 
 	if (index > 0)
 	{
-		edge->m_vertex0 = this->m_vertices[index - 1];
+		edge->m_vertex0.Assign(this->m_vertices[index - 1]);
 		edge->m_hasVertex0 = true;
 	}
 	else
 	{
-		edge->m_vertex0 = this->m_prevVertex;
+		edge->m_vertex0.Assign(this->m_prevVertex);
 		edge->m_hasVertex0 = this->m_hasPrevVertex;
 	}
 
 	if (index < this->m_count - 2)
 	{
-		edge->m_vertex3 = this->m_vertices[index + 2];
+		edge->m_vertex3.Assign(this->m_vertices[index + 2]);
 		edge->m_hasVertex3 = true;
 	}
 	else
 	{
-		edge->m_vertex3 = this->m_nextVertex;
+		edge->m_vertex3.Assign(this->m_nextVertex);
 		edge->m_hasVertex3 = this->m_hasNextVertex;
 	}
 }
@@ -156,8 +156,8 @@ bool b2ChainShape::RayCast(b2RayCastOutput* output, const b2RayCastInput& input,
 		i2 = 0;
 	}
 
-	edgeShape.m_vertex1 = this->m_vertices[i1];
-	edgeShape.m_vertex2 = this->m_vertices[i2];
+	edgeShape.m_vertex1.Assign(this->m_vertices[i1]);
+	edgeShape.m_vertex2.Assign(this->m_vertices[i2]);
 
 	return edgeShape.RayCast(output, input, xf, 0);
 }
@@ -176,8 +176,8 @@ void b2ChainShape::ComputeAABB(b2AABB* aabb, const b2Transform& xf, int32 childI
 	b2Vec2 v1 = b2Mul_t_v2(xf, this->m_vertices[i1]);
 	b2Vec2 v2 = b2Mul_t_v2(xf, this->m_vertices[i2]);
 
-	aabb->lowerBound = b2Min_v2(v1, v2);
-	aabb->upperBound = b2Max_v2(v1, v2);
+	aabb->lowerBound.Assign(b2Min_v2(v1, v2));
+	aabb->upperBound.Assign(b2Max_v2(v1, v2));
 }
 
 void b2ChainShape::ComputeMass(b2MassData* massData, float32 density) const

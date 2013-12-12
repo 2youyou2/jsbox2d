@@ -90,12 +90,12 @@ b2ContactSolver::b2ContactSolver(b2ContactSolverDef* def)
 		pc->indexB = bodyB->m_islandIndex;
 		pc->invMassA = bodyA->m_invMass;
 		pc->invMassB = bodyB->m_invMass;
-		pc->localCenterA = bodyA->m_sweep.localCenter;
-		pc->localCenterB = bodyB->m_sweep.localCenter;
+		pc->localCenterA.Assign(bodyA->m_sweep.localCenter);
+		pc->localCenterB.Assign(bodyB->m_sweep.localCenter);
 		pc->invIA = bodyA->m_invI;
 		pc->invIB = bodyB->m_invI;
-		pc->localNormal = manifold->localNormal;
-		pc->localPoint = manifold->localPoint;
+		pc->localNormal.Assign(manifold->localNormal);
+		pc->localPoint.Assign(manifold->localPoint);
 		pc->pointCount = pointCount;
 		pc->radiusA = radiusA;
 		pc->radiusB = radiusB;
@@ -123,7 +123,7 @@ b2ContactSolver::b2ContactSolver(b2ContactSolverDef* def)
 			vcp->tangentMass = 0.0;
 			vcp->velocityBias = 0.0;
 
-			pc->localPoints[j] = cp->localPoint;
+			pc->localPoints[j].Assign(cp->localPoint);
 		}
 	}
 }
@@ -171,21 +171,21 @@ void b2ContactSolver::InitializeVelocityConstraints()
 		b2Transform xfA, xfB;
 		xfA.q.Set(aA);
 		xfB.q.Set(aB);
-		xfA.p = b2Vec2::Subtract(cA, b2Mul_r_v2(xfA.q, localCenterA));
-		xfB.p = b2Vec2::Subtract(cB, b2Mul_r_v2(xfB.q, localCenterB));
+		xfA.p.Assign(b2Vec2::Subtract(cA, b2Mul_r_v2(xfA.q, localCenterA)));
+		xfB.p.Assign(b2Vec2::Subtract(cB, b2Mul_r_v2(xfB.q, localCenterB)));
 
 		b2WorldManifold worldManifold;
 		worldManifold.Initialize(manifold, xfA, radiusA, xfB, radiusB);
 
-		vc->normal = worldManifold.normal;
+		vc->normal.Assign(worldManifold.normal);
 
 		int32 pointCount = vc->pointCount;
 		for (int32 j = 0; j < pointCount; ++j)
 		{
 			b2VelocityConstraintPoint* vcp = vc->points + j;
 
-			vcp->rA = b2Vec2::Subtract(worldManifold.points[j], cA);
-			vcp->rB = b2Vec2::Subtract(worldManifold.points[j], cB);
+			vcp->rA.Assign(b2Vec2::Subtract(worldManifold.points[j], cA));
+			vcp->rB.Assign(b2Vec2::Subtract(worldManifold.points[j], cB));
 
 			float32 rnA = b2Cross_v2_v2(vcp->rA, vc->normal);
 			float32 rnB = b2Cross_v2_v2(vcp->rB, vc->normal);
@@ -234,7 +234,7 @@ void b2ContactSolver::InitializeVelocityConstraints()
 				// K is safe to invert.
 				vc->K.ex.Set(k11, k12);
 				vc->K.ey.Set(k12, k22);
-				vc->normalMass = vc->K.GetInverse();
+				vc->normalMass.Assign(vc->K.GetInverse());
 			}
 			else
 			{
@@ -279,9 +279,9 @@ void b2ContactSolver::WarmStart()
 			vB.Add(b2Vec2::Multiply(mB, P));
 		}
 
-		this->m_velocities[indexA].v = vA;
+		this->m_velocities[indexA].v.Assign(vA);
 		this->m_velocities[indexA].w = wA;
-		this->m_velocities[indexB].v = vB;
+		this->m_velocities[indexB].v.Assign(vB);
 		this->m_velocities[indexB].w = wB;
 	}
 }
@@ -589,9 +589,9 @@ void b2ContactSolver::SolveVelocityConstraints()
 			}
 		}
 
-		this->m_velocities[indexA].v = vA;
+		this->m_velocities[indexA].v.Assign(vA);
 		this->m_velocities[indexA].w = wA;
-		this->m_velocities[indexB].v = vB;
+		this->m_velocities[indexB].v.Assign(vB);
 		this->m_velocities[indexB].w = wB;
 	}
 }
@@ -623,35 +623,35 @@ struct b2PositionSolverManifold
 			{
 				b2Vec2 pointA = b2Mul_t_v2(xfA, pc->localPoint);
 				b2Vec2 pointB = b2Mul_t_v2(xfB, pc->localPoints[0]);
-				this->normal = b2Vec2::Subtract(pointB, pointA);
+				this->normal.Assign(b2Vec2::Subtract(pointB, pointA));
 				this->normal.Normalize();
-				this->point = b2Vec2::Multiply(0.5, b2Vec2::Add(pointA, pointB));
+				this->point.Assign(b2Vec2::Multiply(0.5, b2Vec2::Add(pointA, pointB)));
 				this->separation = b2Dot_v2_v2(b2Vec2::Subtract(pointB, pointA), this->normal) - pc->radiusA - pc->radiusB;
 			}
 			break;
 
 		case b2Manifold::e_faceA:
 			{
-				this->normal = b2Mul_r_v2(xfA.q, pc->localNormal);
+				this->normal.Assign(b2Mul_r_v2(xfA.q, pc->localNormal));
 				b2Vec2 planePoint = b2Mul_t_v2(xfA, pc->localPoint);
 
 				b2Vec2 clipPoint = b2Mul_t_v2(xfB, pc->localPoints[index]);
 				this->separation = b2Dot_v2_v2(b2Vec2::Subtract(clipPoint, planePoint), this->normal) - pc->radiusA - pc->radiusB;
-				this->point = clipPoint;
+				this->point.Assign(clipPoint);
 			}
 			break;
 
 		case b2Manifold::e_faceB:
 			{
-				this->normal = b2Mul_r_v2(xfB.q, pc->localNormal);
+				this->normal.Assign(b2Mul_r_v2(xfB.q, pc->localNormal));
 				b2Vec2 planePoint = b2Mul_t_v2(xfB, pc->localPoint);
 
 				b2Vec2 clipPoint = b2Mul_t_v2(xfA, pc->localPoints[index]);
 				this->separation = b2Dot_v2_v2(b2Vec2::Subtract(clipPoint, planePoint), this->normal) - pc->radiusA - pc->radiusB;
-				this->point = clipPoint;
+				this->point.Assign(clipPoint);
 
 				// Ensure normal points from A to B
-				this->normal = this->normal.Negate();
+				this->normal.Assign(this->normal.Negate());
 			}
 			break;
 		}
@@ -693,8 +693,8 @@ bool b2ContactSolver::SolvePositionConstraints()
 			b2Transform xfA, xfB;
 			xfA.q.Set(aA);
 			xfB.q.Set(aB);
-			xfA.p = b2Vec2::Subtract(cA, b2Mul_r_v2(xfA.q, localCenterA));
-			xfB.p = b2Vec2::Subtract(cB, b2Mul_r_v2(xfB.q, localCenterB));
+			xfA.p.Assign(b2Vec2::Subtract(cA, b2Mul_r_v2(xfA.q, localCenterA)));
+			xfB.p.Assign(b2Vec2::Subtract(cB, b2Mul_r_v2(xfB.q, localCenterB)));
 
 			b2PositionSolverManifold psm;
 			psm.Initialize(pc, xfA, xfB, j);
@@ -729,10 +729,10 @@ bool b2ContactSolver::SolvePositionConstraints()
 			aB += iB * b2Cross_v2_v2(rB, P);
 		}
 
-		this->m_positions[indexA].c = cA;
+		this->m_positions[indexA].c.Assign(cA);
 		this->m_positions[indexA].a = aA;
 
-		this->m_positions[indexB].c = cB;
+		this->m_positions[indexB].c.Assign(cB);
 		this->m_positions[indexB].a = aB;
 	}
 
@@ -784,8 +784,8 @@ bool b2ContactSolver::SolveTOIPositionConstraints(int32 toiIndexA, int32 toiInde
 			b2Transform xfA, xfB;
 			xfA.q.Set(aA);
 			xfB.q.Set(aB);
-			xfA.p = b2Vec2::Subtract(cA, b2Mul_r_v2(xfA.q, localCenterA));
-			xfB.p = b2Vec2::Subtract(cB, b2Mul_r_v2(xfB.q, localCenterB));
+			xfA.p.Assign(b2Vec2::Subtract(cA, b2Mul_r_v2(xfA.q, localCenterA)));
+			xfB.p.Assign(b2Vec2::Subtract(cB, b2Mul_r_v2(xfB.q, localCenterB)));
 
 			b2PositionSolverManifold psm;
 			psm.Initialize(pc, xfA, xfB, j);
@@ -820,10 +820,10 @@ bool b2ContactSolver::SolveTOIPositionConstraints(int32 toiIndexA, int32 toiInde
 			aB += iB * b2Cross_v2_v2(rB, P);
 		}
 
-		this->m_positions[indexA].c = cA;
+		this->m_positions[indexA].c.Assign(cA);
 		this->m_positions[indexA].a = aA;
 
-		this->m_positions[indexB].c = cB;
+		this->m_positions[indexB].c.Assign(cB);
 		this->m_positions[indexB].a = aB;
 	}
 

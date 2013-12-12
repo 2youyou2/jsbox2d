@@ -103,7 +103,7 @@ b2Contact.prototype =
 		var shapeA = this.m_fixtureA.GetShape();
 		var shapeB = this.m_fixtureB.GetShape();
 
-		worldManifold.Initialize(this.m_manifold, bodyA.GetTransform(), shapeA.m_radius, bodyB.GetTransform(), shapeB.m_radius);
+		worldManifold.Initialize(this.m_manifold.Clone(), bodyA.GetTransform().Clone(), shapeA.m_radius, bodyB.GetTransform().Clone(), shapeB.m_radius);
 	},
 
 	/// Is this contact touching?
@@ -238,8 +238,8 @@ b2Contact.prototype =
 
 		var bodyA = this.m_fixtureA.GetBody();
 		var bodyB = this.m_fixtureB.GetBody();
-		var xfA = bodyA.GetTransform();
-		var xfB = bodyB.GetTransform();
+		var xfA = bodyA.GetTransform().Clone();
+		var xfB = bodyB.GetTransform().Clone();
 
 		// Is this contact a sensor?
 		if (sensor)

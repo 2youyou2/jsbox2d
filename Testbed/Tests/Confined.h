@@ -95,7 +95,7 @@ public:
 		b2Vec2 p(RandomFloat(), 3.0 + RandomFloat());
 		b2BodyDef bd;
 		bd.type = b2Body::b2_dynamicBody;
-		bd.position = p;
+		bd.position.Assign(p);
 		//bd.allowSleep = false;
 		b2Body* body = this->m_world->CreateBody(&bd);
 

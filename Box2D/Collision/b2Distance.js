@@ -1,4 +1,3 @@
-
 /*
 * Copyright (c) 2006-2009 Erin Catto http://www.box2d.org
 *
@@ -25,6 +24,7 @@ var b2_gjkCalls = 0, b2_gjkIters = 0, b2_gjkMaxIters = 0;
 /// It encapsulates any shape.
 function b2DistanceProxy()
 {
+	this.m_buffer = [new b2Vec2(), new b2Vec2()];
 	this.m_vertices = null;
 	this.m_count = 0;
 	this.m_radius = 0;
@@ -32,6 +32,16 @@ function b2DistanceProxy()
 
 b2DistanceProxy.prototype =
 {
+	Assign: function(l)
+	{
+		for (var i = 0; i < 2; ++i)
+			this.m_buffer[i].Assign(l.m_buffer[i]);
+
+		this.m_vertices = l.m_vertices;
+		this.m_count = l.m_count;
+		this.m_radius = l.m_radius;
+	},
+
 	/// Initialize the proxy using the given shape. The shape
 	/// must remain in scope while the proxy is in use.
 	Set: function(shape, index)
@@ -40,47 +50,54 @@ b2DistanceProxy.prototype =
 		{
 		case b2Shape.e_circle:
 			{
-				this.m_vertices = [shape.m_p.Clone()];
+				var circle = shape;
+				this.m_vertices = [ circle.m_p.Clone() ];
 				this.m_count = 1;
-				this.m_radius = shape.m_radius;
+				this.m_radius = circle.m_radius;
 			}
 			break;
 
 		case b2Shape.e_polygon:
 			{
-				this.m_vertices = new Array(shape.m_count);
-				for (var i = 0; i < shape.m_count; ++i)
-					this.m_vertices[i] = shape.m_vertices[i].Clone();
-				this.m_count = shape.m_count;
-				this.m_radius = shape.m_radius;
+				var polygon = shape;
+
+				this.m_vertices = new Array(polygon.m_count);
+
+				for (var i = 0; i < polygon.m_count; ++i)
+					this.m_vertices[i] = polygon.m_vertices[i].Clone();
+
+				this.m_count = polygon.m_count;
+				this.m_radius = polygon.m_radius;
 			}
 			break;
 
 		case b2Shape.e_chain:
 			{
-				b2Assert(0 <= index && index < shape.m_count);
+				var chain = shape;
+				b2Assert(0 <= index && index < chain.m_count);
 
-				var buffer = [shape.m_vertices[index].Clone()];
-				if (index + 1 < shape.m_count)
+				this.m_buffer[0].Assign(chain.m_vertices[index]);
+				if (index + 1 < chain.m_count)
 				{
-					buffer[1] = shape.m_vertices[index + 1].Clone();
+					this.m_buffer[1].Assign(chain.m_vertices[index + 1]);
 				}
 				else
 				{
-					buffer[1] = shape.m_vertices[0].Clone();
+					this.m_buffer[1].Assign(chain.m_vertices[0]);
 				}
 
-				this.m_vertices = buffer;
+				this.m_vertices = this.m_buffer;
 				this.m_count = 2;
-				this.m_radius = shape.m_radius;
+				this.m_radius = chain.m_radius;
 			}
 			break;
 
 		case b2Shape.e_edge:
 			{
-				this.m_vertices = [shape.m_vertex1.Clone(), shape.m_vertex2.Clone()];
+				var edge = shape;
+				this.m_vertices = [ edge.m_vertex1.Clone(), edge.m_vertex2.Clone() ];
 				this.m_count = 2;
-				this.m_radius = shape.m_radius;
+				this.m_radius = edge.m_radius;
 			}
 			break;
 
@@ -89,17 +106,7 @@ b2DistanceProxy.prototype =
 		}
 	},
 
-	GetVertexCount: function()
-	{
-		return this.m_count;
-	},
-
-	GetVertex: function(index)
-	{
-		b2Assert(0 <= index && index < this.m_count);
-		return this.m_vertices[index];
-	},
-
+	/// Get the supporting vertex index in the given direction.
 	GetSupport: function(d)
 	{
 		var bestIndex = 0;
@@ -117,6 +124,7 @@ b2DistanceProxy.prototype =
 		return bestIndex;
 	},
 
+	/// Get the supporting vertex in the given direction.
 	GetSupportVertex: function(d)
 	{
 		var bestIndex = 0;
@@ -132,6 +140,19 @@ b2DistanceProxy.prototype =
 		}
 
 		return this.m_vertices[bestIndex];
+	},
+
+	/// Get the vertex count.
+	GetVertexCount: function()
+	{
+		return this.m_count;
+	},
+
+	/// Get a vertex by index. Used by b2Distance.
+	GetVertex: function(index)
+	{
+		b2Assert(0 <= index && index < this.m_count);
+		return this.m_vertices[index];
 	}
 };
 
@@ -143,7 +164,7 @@ function b2SimplexCache()
 	this.count = 0;
 	this.indexA = [0, 0, 0];	///< vertices on shape A
 	this.indexB = [0, 0, 0];	///< vertices on shape B
-}
+};
 
 /// Input for b2Distance.
 /// You have to option to use the shape radii
@@ -155,7 +176,7 @@ function b2DistanceInput()
 	this.transformA = new b2Transform();
 	this.transformB = new b2Transform();
 	this.useRadii = false;
-}
+};
 
 /// Output for b2Distance.
 function b2DistanceOutput()
@@ -164,7 +185,7 @@ function b2DistanceOutput()
 	this.pointB = new b2Vec2();		///< closest point on shapeB
 	this.distance = 0;
 	this.iterations = 0;	///< number of GJK iterations used
-}
+};
 
 function b2SimplexVertex()
 {
@@ -176,169 +197,23 @@ function b2SimplexVertex()
 	this.indexB = 0;	// wB index
 }
 
+b2SimplexVertex.prototype =
+{
+	Assign: function(l)
+	{
+		this.wA.Assign(l.wA);
+		this.wB.Assign(l.wB);
+		this.w.Assign(l.w);
+		this.a = l.a;
+		this.indexA = l.indexA;
+		this.indexB = l.indexB;
+	}
+};
+
 function b2Simplex()
 {
 	this.m_v = [new b2SimplexVertex(), new b2SimplexVertex(), new b2SimplexVertex()];
 	this.m_count = 0;
-}
-
-function b2DistanceFunc(output, cache, input)
-{
-	++b2_gjkCalls;
-
-	var proxyA = input.proxyA;
-	var proxyB = input.proxyB;
-
-	var transformA = input.transformA;
-	var transformB = input.transformB;
-
-	// Initialize the simplex.
-	var simplex = new b2Simplex();
-	simplex.ReadCache(cache, proxyA, transformA, proxyB, transformB);
-
-	// Get simplex vertices as an array.
-	var vertices = simplex.m_v;
-	var k_maxIters = 20;
-
-	// These store the vertices of the last simplex so that we
-	// can check for duplicates and prevent cycling.
-	var saveA = [0, 0, 0], saveB = [0, 0, 0];
-	var saveCount = 0;
-
-	var distanceSqr1 = b2_maxFloat;
-	var distanceSqr2 = distanceSqr1;
-
-	// Main iteration loop.
-	var iter = 0;
-	while (iter < k_maxIters)
-	{
-		// Copy simplex so we can identify duplicates.
-		saveCount = simplex.m_count;
-		for (var i = 0; i < saveCount; ++i)
-		{
-			saveA[i] = vertices[i].indexA;
-			saveB[i] = vertices[i].indexB;
-		}
-
-		switch (simplex.m_count)
-		{
-		case 1:
-			break;
-
-		case 2:
-			simplex.Solve2();
-			break;
-
-		case 3:
-			simplex.Solve3();
-			break;
-
-		default:
-			b2Assert(false);
-		}
-
-		// If we have 3 points, then the origin is in the corresponding triangle.
-		if (simplex.m_count == 3)
-		{
-			break;
-		}
-
-		// Compute closest point.
-		var p = simplex.GetClosestPoint();
-		distanceSqr2 = p.LengthSquared();
-
-		// Ensure progress
-		if (distanceSqr2 >= distanceSqr1)
-		{
-			//break;
-		}
-		distanceSqr1 = distanceSqr2;
-
-		// Get search direction.
-		var d = simplex.GetSearchDirection();
-
-		// Ensure the search direction is numerically fit.
-		if (d.LengthSquared() < b2_epsilon * b2_epsilon)
-		{
-			// The origin is probably contained by a line segment
-			// or triangle. Thus the shapes are overlapped.
-
-			// We can't return zero here even though there may be overlap.
-			// In case the simplex is a point, segment, or triangle it is difficult
-			// to determine if the origin is contained in the CSO or very close to it.
-			break;
-		}
-
-		// Compute a tentative new simplex vertex using support points.
-		var vertex = vertices[simplex.m_count];
-		vertex.indexA = proxyA.GetSupport(b2MulT_r_v2(transformA.q, d.Negate()));
-		vertex.wA = b2Mul_t_v2(transformA, proxyA.GetVertex(vertex.indexA));
-		var wBLocal;
-		vertex.indexB = proxyB.GetSupport(b2MulT_r_v2(transformB.q, d));
-		vertex.wB = b2Mul_t_v2(transformB, proxyB.GetVertex(vertex.indexB));
-		vertex.w = b2Vec2.Subtract(vertex.wB, vertex.wA);
-
-		// Iteration count is equated to the number of support point calls.
-		++iter;
-		++b2_gjkIters;
-
-		// Check for duplicate support points. This is the main termination criteria.
-		var duplicate = false;
-		for (var i = 0; i < saveCount; ++i)
-		{
-			if (vertex.indexA == saveA[i] && vertex.indexB == saveB[i])
-			{
-				duplicate = true;
-				break;
-			}
-		}
-
-		// If we found a duplicate support point we must exit to avoid cycling.
-		if (duplicate)
-		{
-			break;
-		}
-
-		// New vertex is ok and needed.
-		++simplex.m_count;
-	}
-
-	b2_gjkMaxIters = b2Max(b2_gjkMaxIters, iter);
-
-	// Prepare output.
-	simplex.GetWitnessPoints(output.pointA, output.pointB);
-	output.distance = b2Distance(output.pointA, output.pointB);
-	output.iterations = iter;
-
-	// Cache the simplex.
-	simplex.WriteCache(cache);
-
-	// Apply radii if requested.
-	if (input.useRadii)
-	{
-		var rA = proxyA.m_radius;
-		var rB = proxyB.m_radius;
-
-		if (output.distance > rA + rB && output.distance > b2_epsilon)
-		{
-			// Shapes are still no overlapped.
-			// Move the witness points to the outer surface.
-			output.distance -= rA + rB;
-			var normal = b2Vec2.Subtract(output.pointB, output.pointA);
-			normal.Normalize();
-			output.pointA.Add(b2Vec2.Multiply(rA, normal));
-			output.pointB.Subtract(b2Vec2.Multiply(rB, normal));
-		}
-		else
-		{
-			// Shapes are overlapped when radii are considered.
-			// Move the witness points to the middle.
-			var p = b2Vec2.Multiply(0.5, b2Vec2.Add(output.pointA, output.pointB));
-			output.pointA = p;
-			output.pointB = p;
-			output.distance = 0.0;
-		}
-	}
 }
 
 b2Simplex.prototype =
@@ -352,7 +227,6 @@ b2Simplex.prototype =
 		// Copy data from cache.
 		this.m_count = cache.count;
 		var vertices = this.m_v;
-
 		for (var i = 0; i < this.m_count; ++i)
 		{
 			var v = vertices[i];
@@ -360,9 +234,9 @@ b2Simplex.prototype =
 			v.indexB = cache.indexB[i];
 			var wALocal = proxyA.GetVertex(v.indexA);
 			var wBLocal = proxyB.GetVertex(v.indexB);
-			v.wA = b2Mul_t_v2(transformA, wALocal);
-			v.wB = b2Mul_t_v2(transformB, wBLocal);
-			v.w = b2Vec2.Subtract(v.wB, v.wA);
+			v.wA.Assign(b2Mul_t_v2(transformA, wALocal));
+			v.wB.Assign(b2Mul_t_v2(transformB, wBLocal));
+			v.w.Assign(b2Vec2.Subtract(v.wB, v.wA));
 			v.a = 0.0;
 		}
 
@@ -387,9 +261,9 @@ b2Simplex.prototype =
 			v.indexB = 0;
 			var wALocal = proxyA.GetVertex(0);
 			var wBLocal = proxyB.GetVertex(0);
-			v.wA = b2Mul_t_v2(transformA, wALocal);
-			v.wB = b2Mul_t_v2(transformB, wBLocal);
-			v.w = b2Vec2.Subtract(v.wB, v.wA);
+			v.wA.Assign(b2Mul_t_v2(transformA, wALocal));
+			v.wB.Assign(b2Mul_t_v2(transformB, wBLocal));
+			v.w.Assign(b2Vec2.Subtract(v.wB, v.wA));
 			v.a = 1.0;
 			this.m_count = 1;
 		}
@@ -536,8 +410,8 @@ b2Simplex.prototype =
 	// a2 = d12_2 / d12
 	Solve2: function()
 	{
-		var w1 = this.m_v[0].w;
-		var w2 = this.m_v[1].w;
+		var w1 = this.m_v[0].w.Clone();
+		var w2 = this.m_v[1].w.Clone();
 		var e12 = b2Vec2.Subtract(w2, w1);
 
 		// w1 region
@@ -557,7 +431,7 @@ b2Simplex.prototype =
 			// a1 <= 0, so we clamp it to 0
 			this.m_v[1].a = 1.0;
 			this.m_count = 1;
-			this.m_v[0] = this.m_v[1];
+			this.m_v[0].Assign(this.m_v[1]);
 			return;
 		}
 
@@ -575,9 +449,9 @@ b2Simplex.prototype =
 	// - inside the triangle
 	Solve3: function()
 	{
-		var w1 = this.m_v[0].w;
-		var w2 = this.m_v[1].w;
-		var w3 = this.m_v[2].w;
+		var w1 = this.m_v[0].w.Clone();
+		var w2 = this.m_v[1].w.Clone();
+		var w3 = this.m_v[2].w.Clone();
 
 		// Edge12
 		// [1      1     ][a1] = [1]
@@ -641,7 +515,7 @@ b2Simplex.prototype =
 			this.m_v[0].a = d13_1 * inv_d13;
 			this.m_v[2].a = d13_2 * inv_d13;
 			this.m_count = 2;
-			this.m_v[1] = this.m_v[2];
+			this.m_v[1].Assign(this.m_v[2]);
 			return;
 		}
 
@@ -650,7 +524,7 @@ b2Simplex.prototype =
 		{
 			this.m_v[1].a = 1.0;
 			this.m_count = 1;
-			this.m_v[0] = this.m_v[1];
+			this.m_v[0].Assign(this.m_v[1]);
 			return;
 		}
 
@@ -659,7 +533,7 @@ b2Simplex.prototype =
 		{
 			this.m_v[2].a = 1.0;
 			this.m_count = 1;
-			this.m_v[0] = this.m_v[2];
+			this.m_v[0].Assign(this.m_v[2]);
 			return;
 		}
 
@@ -670,7 +544,7 @@ b2Simplex.prototype =
 			this.m_v[1].a = d23_1 * inv_d23;
 			this.m_v[2].a = d23_2 * inv_d23;
 			this.m_count = 2;
-			this.m_v[0] = this.m_v[2];
+			this.m_v[0].Assign(this.m_v[2]);
 			return;
 		}
 
@@ -682,3 +556,167 @@ b2Simplex.prototype =
 		this.m_count = 3;
 	}
 };
+
+/// Compute the closest points between two shapes. Supports any combination of:
+/// b2CircleShape, b2PolygonShape, b2EdgeShape. The simplex cache is input/output.
+/// On the first call set b2SimplexCache.count to zero.
+function b2DistanceFunc(output,
+				cache,
+				input)
+{
+	++b2_gjkCalls;
+
+	var proxyA = input.proxyA;
+	var proxyB = input.proxyB;
+
+	var transformA = input.transformA.Clone();
+	var transformB = input.transformB.Clone();
+
+	// Initialize the simplex.
+	var simplex = new b2Simplex();
+	simplex.ReadCache(cache, proxyA, transformA, proxyB, transformB);
+
+	// Get simplex vertices as an array.
+	var vertices = simplex.m_v;
+	var k_maxIters = 20;
+
+	// These store the vertices of the last simplex so that we
+	// can check for duplicates and prevent cycling.
+	var saveA = [0, 0, 0], saveB = [0, 0, 0];
+	var saveCount = 0;
+
+	var distanceSqr1 = b2_maxFloat;
+	var distanceSqr2 = distanceSqr1;
+
+	// Main iteration loop.
+	var iter = 0;
+	while (iter < k_maxIters)
+	{
+		// Copy simplex so we can identify duplicates.
+		saveCount = simplex.m_count;
+		for (var i = 0; i < saveCount; ++i)
+		{
+			saveA[i] = vertices[i].indexA;
+			saveB[i] = vertices[i].indexB;
+		}
+
+		switch (simplex.m_count)
+		{
+		case 1:
+			break;
+
+		case 2:
+			simplex.Solve2();
+			break;
+
+		case 3:
+			simplex.Solve3();
+			break;
+
+		default:
+			b2Assert(false);
+		}
+
+		// If we have 3 points, then the origin is in the corresponding triangle.
+		if (simplex.m_count == 3)
+		{
+			break;
+		}
+
+		// Compute closest point.
+		var p = simplex.GetClosestPoint();
+		distanceSqr2 = p.LengthSquared();
+
+		// Ensure progress
+		if (distanceSqr2 >= distanceSqr1)
+		{
+			//break;
+		}
+		distanceSqr1 = distanceSqr2;
+
+		// Get search direction.
+		var d = simplex.GetSearchDirection();
+
+		// Ensure the search direction is numerically fit.
+		if (d.LengthSquared() < b2_epsilon * b2_epsilon)
+		{
+			// The origin is probably contained by a line segment
+			// or triangle. Thus the shapes are overlapped.
+
+			// We can't return zero here even though there may be overlap.
+			// In case the simplex is a point, segment, or triangle it is difficult
+			// to determine if the origin is contained in the CSO or very close to it.
+			break;
+		}
+
+		// Compute a tentative new simplex vertex using support points.
+		var vertex = vertices[simplex.m_count];
+		vertex.indexA = proxyA.GetSupport(b2MulT_r_v2(transformA.q, d.Negate()));
+		vertex.wA.Assign(b2Mul_t_v2(transformA, proxyA.GetVertex(vertex.indexA)));
+		var wBLocal;
+		vertex.indexB = proxyB.GetSupport(b2MulT_r_v2(transformB.q, d));
+		vertex.wB.Assign(b2Mul_t_v2(transformB, proxyB.GetVertex(vertex.indexB)));
+		vertex.w.Assign(b2Vec2.Subtract(vertex.wB, vertex.wA));
+
+		// Iteration count is equated to the number of support point calls.
+		++iter;
+		++b2_gjkIters;
+
+		// Check for duplicate support points. This is the main termination criteria.
+		var duplicate = false;
+		for (var i = 0; i < saveCount; ++i)
+		{
+			if (vertex.indexA == saveA[i] && vertex.indexB == saveB[i])
+			{
+				duplicate = true;
+				break;
+			}
+		}
+
+		// If we found a duplicate support point we must exit to avoid cycling.
+		if (duplicate)
+		{
+			break;
+		}
+
+		// New vertex is ok and needed.
+		++simplex.m_count;
+	}
+
+	b2_gjkMaxIters = b2Max(b2_gjkMaxIters, iter);
+
+	// Prepare output.
+	simplex.GetWitnessPoints(output.pointA, output.pointB);
+	output.distance = b2Distance(output.pointA, output.pointB);
+	output.iterations = iter;
+
+	// Cache the simplex.
+	simplex.WriteCache(cache);
+
+	// Apply radii if requested.
+	if (input.useRadii)
+	{
+		var rA = proxyA.m_radius;
+		var rB = proxyB.m_radius;
+
+		if (output.distance > rA + rB && output.distance > b2_epsilon)
+		{
+			// Shapes are still no overlapped.
+			// Move the witness points to the outer surface.
+			output.distance -= rA + rB;
+			var normal = b2Vec2.Subtract(output.pointB, output.pointA);
+			normal.Normalize();
+			output.pointA.Add(b2Vec2.Multiply(rA, normal));
+			output.pointB.Subtract(b2Vec2.Multiply(rB, normal));
+		}
+		else
+		{
+			// Shapes are overlapped when radii are considered.
+			// Move the witness points to the middle.
+			var p = b2Vec2.Multiply(0.5, b2Vec2.Add(output.pointA, output.pointB));
+			output.pointA.Assign(p);
+			output.pointB.Assign(p);
+			output.distance = 0.0;
+		}
+	}
+}

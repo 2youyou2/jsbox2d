@@ -199,7 +199,7 @@ private:
 		//aabb->lowerBound.y = -this->m_proxyExtent + this->m_worldExtent;
 		aabb->lowerBound.x = RandomFloat(-this->m_worldExtent, this->m_worldExtent);
 		aabb->lowerBound.y = RandomFloat(0.0, 2.0 * this->m_worldExtent);
-		aabb->upperBound = b2Vec2::Add(aabb->lowerBound, w);
+		aabb->upperBound.Assign(b2Vec2::Add(aabb->lowerBound, w));
 	}
 
 	void MoveAABB(b2AABB* aabb)

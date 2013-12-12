@@ -132,6 +132,14 @@ struct b2ClipVertex
 {
 	b2Vec2 v;
 	b2ContactID id;
+
+	b2ClipVertex &operator= (const b2ClipVertex &l)
+	{
+		this->v.Assign(l.v);
+		this->id = l.id;
+
+		return *this;
+	}
 };
 
 /// Ray-cast input data. The ray extends from p1 to p1 + maxFraction * (p2 - p1).
@@ -147,11 +155,25 @@ struct b2RayCastOutput
 {
 	b2Vec2 normal;
 	float32 fraction;
+
+	b2RayCastOutput &operator= (const b2RayCastOutput &l)
+	{
+		this->normal.Assign(l.normal);
+		this->fraction = l.fraction;
+
+		return *this;
+	}
 };
 
 /// An axis aligned bounding box.
 struct b2AABB
 {
+	void Assign(const b2AABB &l)
+	{
+		this->lowerBound.Assign(l.lowerBound);
+		this->upperBound.Assign(l.upperBound);
+	}
+
 	/// Verify that the bounds are sorted.
 	bool IsValid() const;
 
@@ -178,15 +200,15 @@ struct b2AABB
 	/// Combine an AABB into this one.
 	void Combine(const b2AABB& aabb)
 	{
-		this->lowerBound = b2Min_v2(this->lowerBound, aabb.lowerBound);
-		this->upperBound = b2Max_v2(this->upperBound, aabb.upperBound);
+		this->lowerBound.Assign(b2Min_v2(this->lowerBound, aabb.lowerBound));
+		this->upperBound.Assign(b2Max_v2(this->upperBound, aabb.upperBound));
 	}
 
 	/// Combine two AABBs into this one.
 	void Combine(const b2AABB& aabb1, const b2AABB& aabb2)
 	{
-		this->lowerBound = b2Min_v2(aabb1.lowerBound, aabb2.lowerBound);
-		this->upperBound = b2Max_v2(aabb1.upperBound, aabb2.upperBound);
+		this->lowerBound.Assign(b2Min_v2(aabb1.lowerBound, aabb2.lowerBound));
+		this->upperBound.Assign(b2Max_v2(aabb1.upperBound, aabb2.upperBound));
 	}
 
 	/// Does this aabb contain the provided AABB.
@@ -204,6 +226,13 @@ struct b2AABB
 
 	b2Vec2 lowerBound;	///< the lower vertex
 	b2Vec2 upperBound;	///< the upper vertex
+
+private:
+	b2AABB &operator =(const b2AABB &r)
+	{
+		B2_NOT_USED(r);
+		return *this;
+	}
 };
 
 /// Compute the collision manifold between two circles.
@@ -253,8 +282,8 @@ inline bool b2AABB::IsValid() const
 inline bool b2TestOverlap(const b2AABB& a, const b2AABB& b)
 {
 	b2Vec2 d1, d2;
-	d1 = b2Vec2::Subtract(b.lowerBound, a.upperBound);
-	d2 = b2Vec2::Subtract(a.lowerBound, b.upperBound);
+	d1.Assign(b2Vec2::Subtract(b.lowerBound, a.upperBound));
+	d2.Assign(b2Vec2::Subtract(a.lowerBound, b.upperBound));
 
 	if (d1.x > 0.0 || d1.y > 0.0)
 		return false;

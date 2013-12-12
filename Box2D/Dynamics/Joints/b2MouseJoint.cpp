@@ -36,8 +36,8 @@ b2MouseJoint::b2MouseJoint(const b2MouseJointDef* def)
 	b2Assert(b2IsValid(def->frequencyHz) && def->frequencyHz >= 0.0);
 	b2Assert(b2IsValid(def->dampingRatio) && def->dampingRatio >= 0.0);
 
-	this->m_targetA = def->target;
-	this->m_localAnchorB = b2MulT_t_v2(this->m_bodyB->GetTransform(), this->m_targetA);
+	this->m_targetA.Assign(def->target);
+	this->m_localAnchorB.Assign(b2MulT_t_v2(this->m_bodyB->GetTransform(), this->m_targetA));
 
 	this->m_maxForce = def->maxForce;
 	this->m_impulse.SetZero();
@@ -55,7 +55,7 @@ void b2MouseJoint::SetTarget(const b2Vec2& target)
 	{
 		this->m_bodyB->SetAwake(true);
 	}
-	this->m_targetA = target;
+	this->m_targetA.Assign(target);
 }
 
 const b2Vec2& b2MouseJoint::GetTarget() const
@@ -96,7 +96,7 @@ float32 b2MouseJoint::GetDampingRatio() const
 void b2MouseJoint::InitVelocityConstraints(const b2SolverData& data)
 {
 	this->m_indexB = this->m_bodyB->m_islandIndex;
-	this->m_localCenterB = this->m_bodyB->m_sweep.localCenter;
+	this->m_localCenterB.Assign(this->m_bodyB->m_sweep.localCenter);
 	this->m_invMassB = this->m_bodyB->m_invMass;
 	this->m_invIB = this->m_bodyB->m_invI;
 
@@ -131,7 +131,7 @@ void b2MouseJoint::InitVelocityConstraints(const b2SolverData& data)
 	this->m_beta = h * k * this->m_gamma;
 
 	// Compute the effective mass matrix.
-	this->m_rB = b2Mul_r_v2(qB, b2Vec2::Subtract(this->m_localAnchorB, this->m_localCenterB));
+	this->m_rB.Assign(b2Mul_r_v2(qB, b2Vec2::Subtract(this->m_localAnchorB, this->m_localCenterB)));
 
 	// K    = [(1/m1 + 1/m2) * eye(2) - skew(r1) * invI1 * skew(r1) - skew(r2) * invI2 * skew(r2)]
 	//      = [1/m1+1/m2     0    ] + invI1 * [r1.y*r1.y -r1.x*r1.y] + invI2 * [r1.y*r1.y -r1.x*r1.y]
@@ -142,9 +142,9 @@ void b2MouseJoint::InitVelocityConstraints(const b2SolverData& data)
 	K.ey.x = K.ex.y;
 	K.ey.y = this->m_invMassB + this->m_invIB * this->m_rB.x * this->m_rB.x + this->m_gamma;
 
-	this->m_mass = K.GetInverse();
+	this->m_mass.Assign(K.GetInverse());
 
-	this->m_C = b2Vec2::Subtract(b2Vec2::Add(cB, this->m_rB), this->m_targetA);
+	this->m_C.Assign(b2Vec2::Subtract(b2Vec2::Add(cB, this->m_rB), this->m_targetA));
 	this->m_C.Multiply(this->m_beta);
 
 	// Cheat with some damping
@@ -161,7 +161,7 @@ void b2MouseJoint::InitVelocityConstraints(const b2SolverData& data)
 		this->m_impulse.SetZero();
 	}
 
-	data.velocities[this->m_indexB].v = vB;
+	data.velocities[this->m_indexB].v.Assign(vB);
 	data.velocities[this->m_indexB].w = wB;
 }
 
@@ -181,12 +181,12 @@ void b2MouseJoint::SolveVelocityConstraints(const b2SolverData& data)
 	{
 		this->m_impulse.Multiply(maxImpulse / this->m_impulse.Length());
 	}
-	impulse = b2Vec2::Subtract(this->m_impulse, oldImpulse);
+	impulse.Assign(b2Vec2::Subtract(this->m_impulse, oldImpulse));
 
 	vB.Add(b2Vec2::Multiply(this->m_invMassB, impulse));
 	wB += this->m_invIB * b2Cross_v2_v2(this->m_rB, impulse);
 
-	data.velocities[this->m_indexB].v = vB;
+	data.velocities[this->m_indexB].v.Assign(vB);
 	data.velocities[this->m_indexB].w = wB;
 }
 

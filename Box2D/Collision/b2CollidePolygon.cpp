@@ -93,13 +93,13 @@ static void b2FindIncidentEdge(b2ClipVertex c[2],
 	int32 i1 = index;
 	int32 i2 = i1 + 1 < count2 ? i1 + 1 : 0;
 
-	c[0].v = b2Mul_t_v2(xf2, vertices2[i1]);
+	c[0].v.Assign(b2Mul_t_v2(xf2, vertices2[i1]));
 	c[0].id.cf.indexA = (uint8)edge1;
 	c[0].id.cf.indexB = (uint8)i1;
 	c[0].id.cf.typeA = b2ContactFeature::e_face;
 	c[0].id.cf.typeB = b2ContactFeature::e_vertex;
 
-	c[1].v = b2Mul_t_v2(xf2, vertices2[i2]);
+	c[1].v.Assign(b2Mul_t_v2(xf2, vertices2[i2]));
 	c[1].id.cf.indexA = (uint8)edge1;
 	c[1].id.cf.indexB = (uint8)i2;
 	c[1].id.cf.typeA = b2ContactFeature::e_face;
@@ -141,8 +141,8 @@ void b2CollidePolygons(b2Manifold* manifold,
 	{
 		poly1 = polyB;
 		poly2 = polyA;
-		xf1 = xfB;
-		xf2 = xfA;
+		xf1.Assign(xfB);
+		xf2.Assign(xfA);
 		edge1 = edgeB;
 		manifold->type = b2Manifold::e_faceB;
 		flip = 1;
@@ -151,8 +151,8 @@ void b2CollidePolygons(b2Manifold* manifold,
 	{
 		poly1 = polyA;
 		poly2 = polyB;
-		xf1 = xfA;
-		xf2 = xfB;
+		xf1.Assign(xfA);
+		xf2.Assign(xfB);
 		edge1 = edgeA;
 		manifold->type = b2Manifold::e_faceA;
 		flip = 0;
@@ -179,8 +179,8 @@ void b2CollidePolygons(b2Manifold* manifold,
 	b2Vec2 tangent = b2Mul_r_v2(xf1.q, localTangent);
 	b2Vec2 normal = b2Cross_v2_f(tangent, 1.0);
 	
-	v11 = b2Mul_t_v2(xf1, v11);
-	v12 = b2Mul_t_v2(xf1, v12);
+	v11.Assign(b2Mul_t_v2(xf1, v11));
+	v12.Assign(b2Mul_t_v2(xf1, v12));
 
 	// Face offset.
 	float32 frontOffset = b2Dot_v2_v2(normal, v11);
@@ -209,8 +209,8 @@ void b2CollidePolygons(b2Manifold* manifold,
 	}
 
 	// Now clipPoints2 contains the clipped points.
-	manifold->localNormal = localNormal;
-	manifold->localPoint = planePoint;
+	manifold->localNormal.Assign(localNormal);
+	manifold->localPoint.Assign(planePoint);
 
 	int32 pointCount = 0;
 	for (int32 i = 0; i < b2_maxManifoldPoints; ++i)
@@ -220,7 +220,7 @@ void b2CollidePolygons(b2Manifold* manifold,
 		if (separation <= totalRadius)
 		{
 			b2ManifoldPoint* cp = manifold->points + pointCount;
-			cp->localPoint = b2MulT_t_v2(xf2, clipPoints2[i].v);
+			cp->localPoint.Assign(b2MulT_t_v2(xf2, clipPoints2[i].v));
 			cp->id = clipPoints2[i].id;
 			if (flip)
 			{

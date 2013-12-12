@@ -66,7 +66,7 @@ public:
 
 				for (int32 i = 0; i < vertexCount; ++i)
 				{
-					vertices[i] = b2Mul_t_v2(xf, poly->m_vertices[i]);
+					vertices[i].Assign(b2Mul_t_v2(xf, poly->m_vertices[i]));
 				}
 
 				g_debugDraw->DrawPolygon(vertices, vertexCount, color);

@@ -39,10 +39,10 @@ void b2PulleyJointDef::Initialize(b2Body* bA, b2Body* bB,
 {
 	this->bodyA = bA;
 	this->bodyB = bB;
-	this->groundAnchorA = groundA;
-	this->groundAnchorB = groundB;
-	this->localAnchorA = this->bodyA->GetLocalPoint(anchorA);
-	this->localAnchorB = this->bodyB->GetLocalPoint(anchorB);
+	this->groundAnchorA.Assign(groundA);
+	this->groundAnchorB.Assign(groundB);
+	this->localAnchorA.Assign(this->bodyA->GetLocalPoint(anchorA));
+	this->localAnchorB.Assign(this->bodyB->GetLocalPoint(anchorB));
 	b2Vec2 dA = b2Vec2::Subtract(anchorA, groundA);
 	this->lengthA = dA.Length();
 	b2Vec2 dB = b2Vec2::Subtract(anchorB, groundB);
@@ -54,10 +54,10 @@ void b2PulleyJointDef::Initialize(b2Body* bA, b2Body* bB,
 b2PulleyJoint::b2PulleyJoint(const b2PulleyJointDef* def)
 : b2Joint(def)
 {
-	this->m_groundAnchorA = def->groundAnchorA;
-	this->m_groundAnchorB = def->groundAnchorB;
-	this->m_localAnchorA = def->localAnchorA;
-	this->m_localAnchorB = def->localAnchorB;
+	this->m_groundAnchorA.Assign(def->groundAnchorA);
+	this->m_groundAnchorB.Assign(def->groundAnchorB);
+	this->m_localAnchorA.Assign(def->localAnchorA);
+	this->m_localAnchorB.Assign(def->localAnchorB);
 
 	this->m_lengthA = def->lengthA;
 	this->m_lengthB = def->lengthB;
@@ -74,8 +74,8 @@ void b2PulleyJoint::InitVelocityConstraints(const b2SolverData& data)
 {
 	this->m_indexA = this->m_bodyA->m_islandIndex;
 	this->m_indexB = this->m_bodyB->m_islandIndex;
-	this->m_localCenterA = this->m_bodyA->m_sweep.localCenter;
-	this->m_localCenterB = this->m_bodyB->m_sweep.localCenter;
+	this->m_localCenterA.Assign(this->m_bodyA->m_sweep.localCenter);
+	this->m_localCenterB.Assign(this->m_bodyB->m_sweep.localCenter);
 	this->m_invMassA = this->m_bodyA->m_invMass;
 	this->m_invMassB = this->m_bodyB->m_invMass;
 	this->m_invIA = this->m_bodyA->m_invI;
@@ -93,12 +93,12 @@ void b2PulleyJoint::InitVelocityConstraints(const b2SolverData& data)
 
 	b2Rot qA(aA), qB(aB);
 
-	this->m_rA = b2Mul_r_v2(qA, b2Vec2::Subtract(this->m_localAnchorA, this->m_localCenterA));
-	this->m_rB = b2Mul_r_v2(qB, b2Vec2::Subtract(this->m_localAnchorB, this->m_localCenterB));
+	this->m_rA.Assign(b2Mul_r_v2(qA, b2Vec2::Subtract(this->m_localAnchorA, this->m_localCenterA)));
+	this->m_rB.Assign(b2Mul_r_v2(qB, b2Vec2::Subtract(this->m_localAnchorB, this->m_localCenterB)));
 
 	// Get the pulley axes.
-	this->m_uA = b2Vec2::Add(cA, b2Vec2::Subtract(this->m_rA, this->m_groundAnchorA));
-	this->m_uB = b2Vec2::Add(cB, b2Vec2::Subtract(this->m_rB, this->m_groundAnchorB));
+	this->m_uA.Assign(b2Vec2::Add(cA, b2Vec2::Subtract(this->m_rA, this->m_groundAnchorA)));
+	this->m_uB.Assign(b2Vec2::Add(cB, b2Vec2::Subtract(this->m_rB, this->m_groundAnchorB)));
 
 	float32 lengthA = this->m_uA.Length();
 	float32 lengthB = this->m_uB.Length();
@@ -154,9 +154,9 @@ void b2PulleyJoint::InitVelocityConstraints(const b2SolverData& data)
 		this->m_impulse = 0.0;
 	}
 
-	data.velocities[this->m_indexA].v = vA;
+	data.velocities[this->m_indexA].v.Assign(vA);
 	data.velocities[this->m_indexA].w = wA;
-	data.velocities[this->m_indexB].v = vB;
+	data.velocities[this->m_indexB].v.Assign(vB);
 	data.velocities[this->m_indexB].w = wB;
 }
 
@@ -181,9 +181,9 @@ void b2PulleyJoint::SolveVelocityConstraints(const b2SolverData& data)
 	vB.Add(b2Vec2::Multiply(this->m_invMassB, PB));
 	wB += this->m_invIB * b2Cross_v2_v2(this->m_rB, PB);
 
-	data.velocities[this->m_indexA].v = vA;
+	data.velocities[this->m_indexA].v.Assign(vA);
 	data.velocities[this->m_indexA].w = wA;
-	data.velocities[this->m_indexB].v = vB;
+	data.velocities[this->m_indexB].v.Assign(vB);
 	data.velocities[this->m_indexB].w = wB;
 }
 
@@ -251,9 +251,9 @@ bool b2PulleyJoint::SolvePositionConstraints(const b2SolverData& data)
 	cB.Add(b2Vec2::Multiply(this->m_invMassB, PB));
 	aB += this->m_invIB * b2Cross_v2_v2(rB, PB);
 
-	data.positions[this->m_indexA].c = cA;
+	data.positions[this->m_indexA].c.Assign(cA);
 	data.positions[this->m_indexA].a = aA;
-	data.positions[this->m_indexB].c = cB;
+	data.positions[this->m_indexB].c.Assign(cB);
 	data.positions[this->m_indexB].a = aB;
 
 	return linearError < b2_linearSlop;

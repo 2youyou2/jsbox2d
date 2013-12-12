@@ -87,8 +87,8 @@ void Test::PreSolve(b2Contact* contact, const b2Manifold* oldManifold)
 		ContactPoint* cp = this->m_points + this->m_pointCount;
 		cp->fixtureA = fixtureA;
 		cp->fixtureB = fixtureB;
-		cp->position = worldManifold.points[i];
-		cp->normal = worldManifold.normal;
+		cp->position.Assign(worldManifold.points[i]);
+		cp->normal.Assign(worldManifold.normal);
 		cp->state = state2[i];
 		cp->normalImpulse = manifold->points[i].normalImpulse;
 		cp->tangentImpulse = manifold->points[i].tangentImpulse;
@@ -108,7 +108,7 @@ class QueryCallback : public b2QueryCallback
 public:
 	QueryCallback(const b2Vec2& point)
 	{
-		this->m_point = point;
+		this->m_point.Assign(point);
 		this->m_fixture = null;
 	}
 
@@ -137,7 +137,7 @@ public:
 
 void Test::MouseDown(const b2Vec2& p)
 {
-	this->m_mouseWorld = p;
+	this->m_mouseWorld.Assign(p);
 	
 	if (this->m_mouseJoint != null)
 	{
@@ -148,8 +148,8 @@ void Test::MouseDown(const b2Vec2& p)
 	b2AABB aabb;
 	b2Vec2 d;
 	d.Set(0.001f, 0.001f);
-	aabb.lowerBound = b2Vec2::Subtract(p, d);
-	aabb.upperBound = b2Vec2::Add(p, d);
+	aabb.lowerBound.Assign(b2Vec2::Subtract(p, d));
+	aabb.upperBound.Assign(b2Vec2::Add(p, d));
 
 	// Query the world for overlapping shapes.
 	QueryCallback callback(p);
@@ -161,7 +161,7 @@ void Test::MouseDown(const b2Vec2& p)
 		b2MouseJointDef md;
 		md.bodyA = this->m_groundBody;
 		md.bodyB = body;
-		md.target = p;
+		md.target.Assign(p);
 		md.maxForce = 1000.0 * body->GetMass();
 		this->m_mouseJoint = (b2MouseJoint*)this->m_world->CreateJoint(&md);
 		body->SetAwake(true);
@@ -170,7 +170,7 @@ void Test::MouseDown(const b2Vec2& p)
 
 void Test::SpawnBomb(const b2Vec2& worldPt)
 {
-	this->m_bombSpawnPoint = worldPt;
+	this->m_bombSpawnPoint.Assign(worldPt);
 	this->m_bombSpawning = true;
 }
     
@@ -190,7 +190,7 @@ void Test::CompleteBombSpawn(const b2Vec2& p)
 
 void Test::ShiftMouseDown(const b2Vec2& p)
 {
-	this->m_mouseWorld = p;
+	this->m_mouseWorld.Assign(p);
 	
 	if (this->m_mouseJoint != null)
 	{
@@ -216,7 +216,7 @@ void Test::MouseUp(const b2Vec2& p)
 
 void Test::MouseMove(const b2Vec2& p)
 {
-	this->m_mouseWorld = p;
+	this->m_mouseWorld.Assign(p);
 	
 	if (this->m_mouseJoint)
 	{
@@ -241,7 +241,7 @@ void Test::LaunchBomb(const b2Vec2& position, const b2Vec2& velocity)
 
 	b2BodyDef bd;
 	bd.type = b2Body::b2_dynamicBody;
-	bd.position = position;
+	bd.position.Assign(position);
 	bd.bullet = true;
 	this->m_bomb = this->m_world->CreateBody(&bd);
 	this->m_bomb->SetLinearVelocity(velocity);
@@ -258,8 +258,8 @@ void Test::LaunchBomb(const b2Vec2& position, const b2Vec2& velocity)
 	b2Vec2 maxV = b2Vec2::Add(position, b2Vec2(0.3, 0.3));
 	
 	b2AABB aabb;
-	aabb.lowerBound = minV;
-	aabb.upperBound = maxV;
+	aabb.lowerBound.Assign(minV);
+	aabb.upperBound.Assign(maxV);
 
 	this->m_bomb->CreateFixture(&fd);
 }

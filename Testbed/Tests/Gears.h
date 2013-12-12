@@ -98,8 +98,8 @@ public:
 			b2RevoluteJointDef jd1;
 			jd1.bodyA = ground;
 			jd1.bodyB = body1;
-			jd1.localAnchorA = ground->GetLocalPoint(bd1.position);
-			jd1.localAnchorB = body1->GetLocalPoint(bd1.position);
+			jd1.localAnchorA.Assign(ground->GetLocalPoint(bd1.position));
+			jd1.localAnchorB.Assign(body1->GetLocalPoint(bd1.position));
 			jd1.referenceAngle = body1->GetAngle() - ground->GetAngle();
 			this->m_joint1 = (b2RevoluteJoint*)this->m_world->CreateJoint(&jd1);
 

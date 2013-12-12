@@ -218,8 +218,8 @@ inline void b2DynamicTree::RayCast(T* callback, const b2RayCastInput& input) con
 	b2AABB segmentAABB;
 	{
 		b2Vec2 t = b2Vec2::Add(p1, b2Vec2::Multiply(maxFraction, b2Vec2::Subtract(p2, p1)));
-		segmentAABB.lowerBound = b2Min_v2(p1, t);
-		segmentAABB.upperBound = b2Max_v2(p1, t);
+		segmentAABB.lowerBound.Assign(b2Min_v2(p1, t));
+		segmentAABB.upperBound.Assign(b2Max_v2(p1, t));
 	}
 
 	b2GrowableStack<int32, 256> stack;
@@ -253,8 +253,8 @@ inline void b2DynamicTree::RayCast(T* callback, const b2RayCastInput& input) con
 		if (node->IsLeaf())
 		{
 			b2RayCastInput subInput;
-			subInput.p1 = input.p1;
-			subInput.p2 = input.p2;
+			subInput.p1.Assign(input.p1);
+			subInput.p2.Assign(input.p2);
 			subInput.maxFraction = maxFraction;
 
 			float32 value = callback->RayCastCallback(subInput, nodeId);
@@ -270,8 +270,8 @@ inline void b2DynamicTree::RayCast(T* callback, const b2RayCastInput& input) con
 				// Update segment bounding box.
 				maxFraction = value;
 				b2Vec2 t = b2Vec2::Add(p1, b2Vec2::Multiply(maxFraction, b2Vec2::Subtract(p2, p1)));
-				segmentAABB.lowerBound = b2Min_v2(p1, t);
-				segmentAABB.upperBound = b2Max_v2(p1, t);
+				segmentAABB.lowerBound.Assign(b2Min_v2(p1, t));
+				segmentAABB.upperBound.Assign(b2Max_v2(p1, t));
 			}
 		}
 		else

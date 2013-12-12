@@ -36,40 +36,40 @@ public:
 
 			shape.Set(v1, v2);
 			shape.m_hasVertex3 = true;
-			shape.m_vertex3 = v3;
+			shape.m_vertex3.Assign(v3);
 			ground->CreateFixture(&shape, 0.0);
 
 			shape.Set(v2, v3);
 			shape.m_hasVertex0 = true;
 			shape.m_hasVertex3 = true;
-			shape.m_vertex0 = v1;
-			shape.m_vertex3 = v4;
+			shape.m_vertex0.Assign(v1);
+			shape.m_vertex3.Assign(v4);
 			ground->CreateFixture(&shape, 0.0);
 
 			shape.Set(v3, v4);
 			shape.m_hasVertex0 = true;
 			shape.m_hasVertex3 = true;
-			shape.m_vertex0 = v2;
-			shape.m_vertex3 = v5;
+			shape.m_vertex0.Assign(v2);
+			shape.m_vertex3.Assign(v5);
 			ground->CreateFixture(&shape, 0.0);
 
 			shape.Set(v4, v5);
 			shape.m_hasVertex0 = true;
 			shape.m_hasVertex3 = true;
-			shape.m_vertex0 = v3;
-			shape.m_vertex3 = v6;
+			shape.m_vertex0.Assign(v3);
+			shape.m_vertex3.Assign(v6);
 			ground->CreateFixture(&shape, 0.0);
 
 			shape.Set(v5, v6);
 			shape.m_hasVertex0 = true;
 			shape.m_hasVertex3 = true;
-			shape.m_vertex0 = v4;
-			shape.m_vertex3 = v7;
+			shape.m_vertex0.Assign(v4);
+			shape.m_vertex3.Assign(v7);
 			ground->CreateFixture(&shape, 0.0);
 
 			shape.Set(v6, v7);
 			shape.m_hasVertex0 = true;
-			shape.m_vertex0 = v5;
+			shape.m_vertex0.Assign(v5);
 			ground->CreateFixture(&shape, 0.0);
 		}
 

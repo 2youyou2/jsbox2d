@@ -161,9 +161,9 @@ TestWeb.prototype =
 		}
 	},
 
-	JointDestroyed: function(joint)
+	SayGoodbyeJoint: function(joint)
 	{
-		this.parent.prototype.JointDestroyed.call(this, joint);
+		this.parent.prototype.SayGoodbyeJoint.call(this, joint);
 
 		for (var i = 0; i < 8; ++i)
 		{

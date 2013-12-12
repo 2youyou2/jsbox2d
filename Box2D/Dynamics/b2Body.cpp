@@ -74,12 +74,12 @@ b2Body::b2Body(const b2BodyDef* bd, b2World* world)
 
 	this->m_world = world;
 
-	this->m_xf.p = bd->position;
+	this->m_xf.p.Assign(bd->position);
 	this->m_xf.q.Set(bd->angle);
 
 	this->m_sweep.localCenter.SetZero();
-	this->m_sweep.c0 = this->m_xf.p;
-	this->m_sweep.c = this->m_xf.p;
+	this->m_sweep.c0.Assign(this->m_xf.p);
+	this->m_sweep.c.Assign(this->m_xf.p);
 	this->m_sweep.a0 = bd->angle;
 	this->m_sweep.a = bd->angle;
 	this->m_sweep.alpha0 = 0.0;
@@ -89,7 +89,7 @@ b2Body::b2Body(const b2BodyDef* bd, b2World* world)
 	this->m_prev = null;
 	this->m_next = null;
 
-	this->m_linearVelocity = bd->linearVelocity;
+	this->m_linearVelocity.Assign(bd->linearVelocity);
 	this->m_angularVelocity = bd->angularVelocity;
 
 	this->m_linearDamping = bd->linearDamping;
@@ -150,7 +150,7 @@ void b2Body::SetType(int type)
 		this->m_linearVelocity.SetZero();
 		this->m_angularVelocity = 0.0;
 		this->m_sweep.a0 = this->m_sweep.a;
-		this->m_sweep.c0 = this->m_sweep.c;
+		this->m_sweep.c0.Assign(this->m_sweep.c);
 		SynchronizeFixtures();
 	}
 
@@ -308,8 +308,8 @@ void b2Body::ResetMassData()
 	// Static and kinematic bodies have zero mass.
 	if (this->m_type == b2_staticBody || this->m_type == b2_kinematicBody)
 	{
-		this->m_sweep.c0 = this->m_xf.p;
-		this->m_sweep.c = this->m_xf.p;
+		this->m_sweep.c0.Assign(this->m_xf.p);
+		this->m_sweep.c.Assign(this->m_xf.p);
 		this->m_sweep.a0 = this->m_sweep.a;
 		return;
 	}
@@ -361,8 +361,9 @@ void b2Body::ResetMassData()
 
 	// Move center of mass.
 	b2Vec2 oldCenter = this->m_sweep.c;
-	this->m_sweep.localCenter = localCenter;
-	this->m_sweep.c0 = this->m_sweep.c = b2Mul_t_v2(this->m_xf, this->m_sweep.localCenter);
+	this->m_sweep.localCenter.Assign(localCenter);
+	this->m_sweep.c.Assign(b2Mul_t_v2(this->m_xf, this->m_sweep.localCenter));
+	this->m_sweep.c0.Assign(this->m_sweep.c);
 
 	// Update center of mass velocity.
 	this->m_linearVelocity.Add(b2Cross_f_v2(this->m_angularVelocity, b2Vec2::Subtract(this->m_sweep.c, oldCenter)));
@@ -402,8 +403,9 @@ void b2Body::SetMassData(const b2MassData* massData)
 
 	// Move center of mass.
 	b2Vec2 oldCenter = this->m_sweep.c;
-	this->m_sweep.localCenter =  massData->center;
-	this->m_sweep.c0 = this->m_sweep.c = b2Mul_t_v2(this->m_xf, this->m_sweep.localCenter);
+	this->m_sweep.localCenter.Assign(massData->center);
+	this->m_sweep.c.Assign(b2Mul_t_v2(this->m_xf, this->m_sweep.localCenter));
+	this->m_sweep.c0.Assign(this->m_sweep.c);
 
 	// Update center of mass velocity.
 	this->m_linearVelocity.Add(b2Cross_f_v2(this->m_angularVelocity, b2Vec2::Subtract(this->m_sweep.c, oldCenter)));
@@ -441,12 +443,12 @@ void b2Body::SetTransform(const b2Vec2& position, float32 angle)
 	}
 
 	this->m_xf.q.Set(angle);
-	this->m_xf.p = position;
+	this->m_xf.p.Assign(position);
 
-	this->m_sweep.c = b2Mul_t_v2(this->m_xf, this->m_sweep.localCenter);
+	this->m_sweep.c.Assign(b2Mul_t_v2(this->m_xf, this->m_sweep.localCenter));
 	this->m_sweep.a = angle;
 
-	this->m_sweep.c0 = this->m_sweep.c;
+	this->m_sweep.c0.Assign(this->m_sweep.c);
 	this->m_sweep.a0 = angle;
 
 	b2BroadPhase* broadPhase = &this->m_world->m_contactManager.m_broadPhase;
@@ -460,7 +462,7 @@ void b2Body::SynchronizeFixtures()
 {
 	b2Transform xf1;
 	xf1.q.Set(this->m_sweep.a0);
-	xf1.p = b2Vec2::Subtract(this->m_sweep.c0, b2Mul_r_v2(xf1.q, this->m_sweep.localCenter));
+	xf1.p.Assign(b2Vec2::Subtract(this->m_sweep.c0, b2Mul_r_v2(xf1.q, this->m_sweep.localCenter)));
 
 	b2BroadPhase* broadPhase = &this->m_world->m_contactManager.m_broadPhase;
 	for (b2Fixture* f = this->m_fixtureList; f; f = f->m_next)

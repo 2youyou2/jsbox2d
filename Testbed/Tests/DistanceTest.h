@@ -51,8 +51,8 @@ public:
 		b2DistanceInput input;
 		input.proxyA.Set(&this->m_polygonA, 0);
 		input.proxyB.Set(&this->m_polygonB, 0);
-		input.transformA = this->m_transformA;
-		input.transformB = this->m_transformB;
+		input.transformA.Assign(this->m_transformA);
+		input.transformB.Assign(this->m_transformB);
 		input.useRadii = true;
 		b2SimplexCache cache;
 		cache.count = 0;
@@ -70,13 +70,13 @@ public:
 			b2Vec2 v[b2_maxPolygonVertices];
 			for (int32 i = 0; i < this->m_polygonA.m_count; ++i)
 			{
-				v[i] = b2Mul_t_v2(this->m_transformA, this->m_polygonA.m_vertices[i]);
+				v[i].Assign(b2Mul_t_v2(this->m_transformA, this->m_polygonA.m_vertices[i]));
 			}
 			g_debugDraw.DrawPolygon(v, this->m_polygonA.m_count, color);
 
 			for (int32 i = 0; i < this->m_polygonB.m_count; ++i)
 			{
-				v[i] = b2Mul_t_v2(this->m_transformB, this->m_polygonB.m_vertices[i]);
+				v[i].Assign(b2Mul_t_v2(this->m_transformB, this->m_polygonB.m_vertices[i]));
 			}
 			g_debugDraw.DrawPolygon(v, this->m_polygonB.m_count, color);
 		}

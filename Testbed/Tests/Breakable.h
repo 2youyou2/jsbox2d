@@ -95,7 +95,7 @@ public:
 
 		b2BodyDef bd;
 		bd.type = b2Body::b2_dynamicBody;
-		bd.position = body1->GetPosition();
+		bd.position.Assign(body1->GetPosition());
 		bd.angle = body1->GetAngle();
 
 		b2Body* body2 = this->m_world->CreateBody(&bd);
@@ -128,7 +128,7 @@ public:
 		// Cache velocities to improve movement on breakage.
 		if (this->m_broke == false)
 		{
-			this->m_velocity = this->m_body1->GetLinearVelocity();
+			this->m_velocity.Assign(this->m_body1->GetLinearVelocity());
 			this->m_angularVelocity = this->m_body1->GetAngularVelocity();
 		}
 

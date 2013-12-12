@@ -50,13 +50,13 @@ public:
 
 			for (int32 i = 0; i < e_count; ++i)
 			{
-				y = x;
+				y.Assign(x);
 
 				for (int32 j = i; j < e_count; ++j)
 				{
 					b2BodyDef bd;
 					bd.type = b2Body::b2_dynamicBody;
-					bd.position = y;
+					bd.position.Assign(y);
 					b2Body* body = this->m_world->CreateBody(&bd);
 					body->CreateFixture(&shape, 5.0);
 

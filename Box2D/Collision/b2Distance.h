@@ -50,6 +50,31 @@ struct b2DistanceProxy
 	const b2Vec2* m_vertices;
 	int32 m_count;
 	float32 m_radius;
+
+	b2DistanceProxy &Assign (const b2DistanceProxy &l)
+	{
+		for (int i = 0; i < 2; ++i)
+			this->m_buffer[i].Assign(l.m_buffer[i]);
+
+		this->m_vertices = l.m_vertices;
+		this->m_count = l.m_count;
+		this->m_radius = l.m_radius;
+
+		return *this;
+	}
+
+private:
+	b2DistanceProxy &operator= (const b2DistanceProxy &l)
+	{
+		for (int i = 0; i < 2; ++i)
+			this->m_buffer[i].Assign(l.m_buffer[i]);
+
+		this->m_vertices = l.m_vertices;
+		this->m_count = l.m_count;
+		this->m_radius = l.m_radius;
+
+		return *this;
+	}
 };
 
 /// Used to warm start b2Distance.

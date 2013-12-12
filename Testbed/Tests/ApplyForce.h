@@ -61,12 +61,12 @@ public:
 		{
 			b2Transform xf1;
 			xf1.q.Set(0.3524f * b2_pi);
-			xf1.p = xf1.q.GetXAxis();
+			xf1.p.Assign(xf1.q.GetXAxis());
 
 			b2Vec2 vertices[3];
-			vertices[0] = b2Mul_t_v2(xf1, b2Vec2(-1.0, 0.0));
-			vertices[1] = b2Mul_t_v2(xf1, b2Vec2(1.0, 0.0));
-			vertices[2] = b2Mul_t_v2(xf1, b2Vec2(0.0, 0.5));
+			vertices[0].Assign(b2Mul_t_v2(xf1, b2Vec2(-1.0, 0.0)));
+			vertices[1].Assign(b2Mul_t_v2(xf1, b2Vec2(1.0, 0.0)));
+			vertices[2].Assign(b2Mul_t_v2(xf1, b2Vec2(0.0, 0.5)));
 			
 			b2PolygonShape poly1;
 			poly1.Set(vertices, 3);
@@ -77,11 +77,11 @@ public:
 
 			b2Transform xf2;
 			xf2.q.Set(-0.3524f * b2_pi);
-			xf2.p = xf2.q.GetXAxis().Negate();
+			xf2.p.Assign(xf2.q.GetXAxis().Negate());
 
-			vertices[0] = b2Mul_t_v2(xf2, b2Vec2(-1.0, 0.0));
-			vertices[1] = b2Mul_t_v2(xf2, b2Vec2(1.0, 0.0));
-			vertices[2] = b2Mul_t_v2(xf2, b2Vec2(0.0, 0.5));
+			vertices[0].Assign(b2Mul_t_v2(xf2, b2Vec2(-1.0, 0.0)));
+			vertices[1].Assign(b2Mul_t_v2(xf2, b2Vec2(1.0, 0.0)));
+			vertices[2].Assign(b2Mul_t_v2(xf2, b2Vec2(0.0, 0.5)));
 			
 			b2PolygonShape poly2;
 			poly2.Set(vertices, 3);
