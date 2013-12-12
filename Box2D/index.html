@@ -198,10 +198,78 @@
 			<div class="flex container fillRestGrow">
 				<canvas style="background: #333333;" class="flex fillRestGrow" id="canvas"></canvas>
 			</div>
-			<div class="flex anchor container column centerAlign" style="width: 240px;">
+			<div class="flex anchor container column" style="width: 240px;">
 				<label for="test">Test</label>
 				<select id="test"></select>
-				<br/>
+				<hr style="width: 100%;"/>
+				<label id="label_velIters" for="velIters">Velocity Iterations (<span class="val">8</span>)</label>
+				<input id="velIters" type="range" min="0" max="50" value="8"></input>
+				<label id="label_posIters" for="posIters">Position Iterations (<span class="val">3</span>)</label>
+				<input id="posIters" type="range" min="0" max="50" value="3"></input>
+				<label id="label_hertz" for="hertz">Hertz (<span class="val">60</span>)</label>
+				<input id="hertz" type="range" min="2" max="120" value="60"></input>
+				<hr style="width: 100%;"/>
+				<div>
+					<input id="allowSleep" type="checkbox" checked="checked"></input>
+					<label for="allowSleep">Allow Sleep</label>
+				</div>
+				<div>
+					<input id="warmStarting" type="checkbox" checked="checked"></input>
+					<label for="warmStarting">Warm Starting</label>
+				</div>
+				<div>
+					<input id="toi" type="checkbox" checked="checked"></input>
+					<label for="toi">Time of Impact</label>
+				</div>
+				<div>
+					<input id="substep" type="checkbox"></input>
+					<label for="substep">Substepping</label>
+				</div>
+				<hr style="width: 100%;"/>
+				<div>
+					<input id="drawShapes" type="checkbox" checked="checked"></input>
+					<label for="drawShapes">Shapes</label>
+				</div>
+				<div>
+					<input id="drawJoints" type="checkbox" checked="checked"></input>
+					<label for="drawJoints">Joints</label>
+				</div>
+				<div>
+					<input id="drawAABBs" type="checkbox"></input>
+					<label for="drawAABBs">AABBs</label>
+				</div>
+				<div>
+					<input id="drawContactPoints" type="checkbox"></input>
+					<label for="drawContactPoints">Contact Points</label>
+				</div>
+				<div>
+					<input id="drawContactNormals" type="checkbox"></input>
+					<label for="drawContactNormals">Contact Normals</label>
+				</div>
+				<div>
+					<input id="drawContactImpulses" type="checkbox"></input>
+					<label for="drawContactImpulses">Contact Impulses</label>
+				</div>
+				<div>
+					<input id="drawFrictionImpulses" type="checkbox"></input>
+					<label for="drawFrictionImpulses">Friction Impulses</label>
+				</div>
+				<div>
+					<input id="drawCenters" type="checkbox"></input>
+					<label for="drawCenters">Center of Masses</label>
+				</div>
+				<div>
+					<input id="drawStatistics" type="checkbox"></input>
+					<label for="drawStatistics">Statistics</label>
+				</div>
+				<div>
+					<input id="drawProfile" type="checkbox"></input>
+					<label for="drawProfile">Profile</label>
+				</div>
+				<hr style="width: 100%;"/>
+				<button id="pause">Pause (P)</button>
+				<button id="step">Step (L)</button>
+				<button id="restart">Restart (R)</button>
 			</div>
 		</div>
 
@@ -218,13 +286,13 @@
 
 			var tests =
 				[
-					TestContinuous,
 					TestPyramid,
 					TestEdge,
 					TestSphereStack,
 					TestConveyorBelt,
 					TestVaryingRestitution,
 					TestVaryingFriction,
+					TestContinuous,
 					TestAddPair,
 					TestTiles,
 					TestTumbler,
@@ -249,15 +317,138 @@
 			var testSelect = $('#test');
 			var currentTest = null;
 
+			var debugDraw = new CanvasDebugDraw();
+			debugDraw.context = context;
+			debugDraw.SetFlags(b2Draw.e_shapeBit | b2Draw.e_jointBit);
+
 			testSelect.change(function()
 			{
 				var index = testSelect.prop("selectedIndex");
 				var test = tests[index];
 
+				var wasPaused = currentTest ? currentTest.m_pause : false;
+
 				currentTest = new test();
-				currentTest.m_debugDraw.context = context;
-				currentTest.m_debugDraw.SetFlags(b2Draw.e_shapeBit | b2Draw.e_jointBit);// | b2Draw.e_aabbBit | b2Draw.e_centerOfMassBit);
+				currentTest.m_debugDraw = debugDraw;
+				currentTest.m_world.SetDebugDraw(debugDraw);
 				currentTest.Initialize();
+
+				currentTest.m_hz = 1 / $('#hertz').val();
+				currentTest.m_velIters = $('#velIters').val();
+				currentTest.m_posIters = $('#posIters').val();
+				currentTest.m_world.SetAllowSleeping($('#allowSleep').is(':checked'));
+				currentTest.m_world.SetWarmStarting($('#warmStarting').is(':checked'));
+				currentTest.m_world.SetContinuousPhysics($('#toi').is(':checked'));
+				currentTest.m_world.SetSubStepping($('#substep').is(':checked'));
+
+				currentTest.m_pause = wasPaused;
+			});
+
+			$('#hertz').change(function()
+			{
+				currentTest.m_hz = 1 / $('#hertz').val();
+				$('#label_hertz').find('.val').text($('#hertz').val());
+			});
+
+			$('#velIters').change(function()
+			{
+				currentTest.m_velIters = $('#velIters').val();
+				$('#label_velIters').find('.val').text($('#velIters').val());
+			});
+
+			$('#posIters').change(function()
+			{
+				currentTest.m_posIters = $('#posIters').val();
+				$('#label_posIters').find('.val').text($('#posIters').val());
+			});
+
+
+			$('#allowSleep').click(function()
+			{
+				currentTest.m_world.SetAllowSleeping($('#allowSleep').is(':checked'));
+			});
+
+			$('#warmStarting').click(function()
+			{
+				currentTest.m_world.SetWarmStarting($('#warmStarting').is(':checked'));
+			});
+
+			$('#toi').click(function()
+			{
+				currentTest.m_world.SetContinuousPhysics($('#toi').is(':checked'));
+			});
+
+			$('#substep').click(function()
+			{
+				currentTest.m_world.SetSubStepping($('#substep').is(':checked'));
+			});
+
+
+			$('#drawShapes').click(function()
+			{
+				debugDraw.ToggleFlags(b2Draw.e_shapeBit);
+			});
+
+			$('#drawJoints').click(function()
+			{
+				debugDraw.ToggleFlags(b2Draw.e_jointBit);
+			});
+
+			$('#drawAABBs').click(function()
+			{
+				debugDraw.ToggleFlags(b2Draw.e_aabbBit);
+			});
+
+			$('#drawCenters').click(function()
+			{
+				debugDraw.ToggleFlags(b2Draw.e_centerOfMassBit);
+			});
+
+			$('#drawContactPoints').click(function()
+			{
+				debugDraw.ToggleFlags(b2Draw.e_contactPoints);
+			});
+
+			$('#drawContactNormals').click(function()
+			{
+				debugDraw.ToggleFlags(b2Draw.e_contactNormals);
+			});
+
+			$('#drawContactImpulses').click(function()
+			{
+				debugDraw.ToggleFlags(b2Draw.e_contactImpulses);
+			});
+
+			$('#drawFrictionImpulses').click(function()
+			{
+				debugDraw.ToggleFlags(b2Draw.e_frictionImpulses);
+			});
+
+			$('#drawStatistics').click(function()
+			{
+				debugDraw.ToggleFlags(b2Draw.e_statistics);
+			});
+
+			$('#drawProfile').click(function()
+			{
+				debugDraw.ToggleFlags(b2Draw.e_profile);
+			});
+
+
+			$('#pause').click(function()
+			{
+				currentTest.m_pause = !currentTest.m_pause;
+			});
+
+			$('#step').click(function()
+			{
+				currentTest.m_pause = true;
+				currentTest.m_singleStep = true;
+			});
+
+			$('#restart').click(function()
+			{
+				testSelect.change();
 			});
 
 			cQ.mousedown(function(e)

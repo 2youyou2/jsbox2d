@@ -17,11 +17,8 @@ function Test()
 	// Define the gravity vector.
 	var gravity = new b2Vec2(0.0, -10.0);
 
-	this.m_debugDraw = new CanvasDebugDraw();
-
 	// Construct a world object, which will hold and simulate the rigid bodies.
 	this.m_world = new b2World(gravity);
-	this.m_world.SetDebugDraw(this.m_debugDraw);
 
 	this.m_pointCount = 0;
 	this.m_points = [];
@@ -38,6 +35,9 @@ function Test()
 	this.m_stepCount = 0;
 	this.m_pause = false;
 	this.m_singleStep = 0;
+	this.m_hz = 1 / 60;
+	this.m_velIters = 8;
+	this.m_posIters = 3;
 }
 
 function QueryCallback(point)
@@ -84,7 +84,7 @@ Test.prototype =
 
 	Step: function()
 	{
-		var timeStep = 1 / 60;//settings->hz > 0.0 ? 1.0 / settings->hz : float32(0.0);
+		var timeStep = this.m_hz > 0.0 ? this.m_hz : 0.0;
 
 		if (this.m_pause)
 		{
@@ -98,21 +98,9 @@ Test.prototype =
 			}
 		}
 
-		/*uint32 flags = 0;
-		flags += settings->drawShapes			* b2Draw::e_shapeBit;
-		flags += settings->drawJoints			* b2Draw::e_jointBit;
-		flags += settings->drawAABBs			* b2Draw::e_aabbBit;
-		flags += settings->drawCOMs				* b2Draw::e_centerOfMassBit;
-		g_debugDraw.SetFlags(flags);
-
-		this->m_world->SetAllowSleeping(settings->enableSleep);
-		this->m_world->SetWarmStarting(settings->enableWarmStarting);
-		this->m_world->SetContinuousPhysics(settings->enableContinuous);
-		this->m_world->SetSubStepping(settings->enableSubStepping);*/
-
 		this.m_pointCount = 0;
 
-		this.m_world.Step(timeStep, 8, 3);//settings->velocityIterations, settings->positionIterations);
+		this.m_world.Step(timeStep, this.m_velIters, this.m_posIters);
 
 		this.m_debugDraw.context.save();
 		this.m_debugDraw.context.translate(this.m_debugDraw.context.canvas.width / 2, this.m_debugDraw.context.canvas.height / 2);
@@ -126,7 +114,7 @@ Test.prototype =
 			++this.m_stepCount;
 		}
 
-		if (false)
+		if (this.m_debugDraw.m_drawFlags & b2Draw.e_contactPoints)
 		{
 			var k_impulseScale = 0.1;
 			var k_axisScale = 0.3;
@@ -146,20 +134,20 @@ Test.prototype =
 					this.m_debugDraw.DrawPoint(point.position, 5.0 / 14, new b2Color(0.3, 0.3, 0.95));
 				}
 
-				if (false)//settings.drawContactNormals == 1)
+				if (this.m_debugDraw.m_drawFlags & b2Draw.e_contactNormals)
 				{
 					var p1 = point.position;
 					var p2 = b2Vec2.Add(p1, b2Vec2.Multiply(k_axisScale, point.normal));
 					this.m_debugDraw.DrawSegment(p1, p2, new b2Color(0.9, 0.9, 0.9));
 				}
-				else if (false)//settings.drawContactImpulse == 1)
+				else if (this.m_debugDraw.m_drawFlags & b2Draw.e_contactImpulses)
 				{
 					var p1 = point.position;
 					var p2 = b2Vec2.Add(p1, b2Vec2.Multiply(k_impulseScale, b2Vec2.Multiply(point.normalImpulse, point.normal)));
 					this.m_debugDraw.DrawSegment(p1, p2, new b2Color(0.9, 0.9, 0.3));
 				}
 
-				if (false)//settings->drawFrictionImpulse == 1)
+				if (this.m_debugDraw.m_drawFlags & b2Draw.e_frictionImpulses)
 				{
 					var tangent = b2Cross_v2_f(point.normal, 1.0);
 					var p1 = point.position;
@@ -188,8 +176,7 @@ Test.prototype =
 		this.m_debugDraw.context.fillStyle = "rgba(230, 153, 153, 1.0)";
 		this.m_debugDraw.context.font = "12px Arial";
 
-		//context.fillText("Test", 0, 12);
-		if (true)
+		if (this.m_debugDraw.m_drawFlags & b2Draw.e_statistics)
 		{
 			var bodyCount = this.m_world.GetBodyCount();
 			var contactCount = this.m_world.GetContactCount();
@@ -235,7 +222,7 @@ Test.prototype =
 			g_debugDraw.DrawSegment(this->m_mouseWorld, this->m_bombSpawnPoint, c);
 		}*/
 
-		if (true)
+		if (this.m_debugDraw.m_drawFlags & b2Draw.e_profile)
 		{
 			var aveProfile = new b2Profile();
 

@@ -56,6 +56,9 @@ b2Draw.prototype =
 	/// Clear flags from the current flags.
 	ClearFlags: function(flags) { this.m_drawFlags &= ~flags; },
 
+	/// Toggle flags
+	ToggleFlags: function(flags) { this.m_drawFlags ^= flags; },
+
 	/// Draw a closed polygon provided in CCW order.
 	DrawPolygon: function(vertices, vertexCount, color) { },
 
@@ -78,8 +81,13 @@ b2Draw.prototype =
 	m_drawFlags: 0
 };
 
-b2Draw.e_shapeBit = 0x0001;	///< draw shapes
-b2Draw.e_jointBit = 0x0002;	///< draw joint connections
-b2Draw.e_aabbBit = 0x0004;	///< draw axis aligned bounding boxes
-b2Draw.e_pairBit = 0x0008;	///< draw broad-phase pairs
-b2Draw.e_centerOfMassBit = 0x0010;	///< draw center of mass frame
+b2Draw.e_shapeBit = 1;	///< draw shapes
+b2Draw.e_jointBit = 2;	///< draw joint connections
+b2Draw.e_aabbBit = 4;	///< draw axis aligned bounding boxes
+b2Draw.e_centerOfMassBit = 8;	///< draw center of mass frame
+b2Draw.e_contactPoints = 16;
+b2Draw.e_contactNormals = 32;
+b2Draw.e_contactImpulses = 64;
+b2Draw.e_frictionImpulses = 128;
+b2Draw.e_statistics = 256;
+b2Draw.e_profile = 512;
