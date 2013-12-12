@@ -103,7 +103,7 @@ void b2GetPointStates(int state1[b2_maxManifoldPoints], int state2[b2_maxManifol
 
 		for (int32 j = 0; j < manifold2->pointCount; ++j)
 		{
-			if (manifold2->points[j].id.key == id.key)
+			if (manifold2->points[j].id.Get() == id.Get())
 			{
 				state1[i] = b2Manifold::b2_persistState;
 				break;
@@ -120,7 +120,7 @@ void b2GetPointStates(int state1[b2_maxManifoldPoints], int state2[b2_maxManifol
 
 		for (int32 j = 0; j < manifold1->pointCount; ++j)
 		{
-			if (manifold1->points[j].id.key == id.key)
+			if (manifold1->points[j].id.Get() == id.Get())
 			{
 				state2[i] = b2Manifold::b2_persistState;
 				break;
@@ -222,10 +222,10 @@ int32 b2ClipSegmentToLine(b2ClipVertex vOut[2], const b2ClipVertex vIn[2],
 		vOut[numOut].v.Assign(b2Vec2::Add(vIn[0].v, b2Vec2::Multiply(interp, b2Vec2::Subtract(vIn[1].v, vIn[0].v))));
 
 		// VertexA is hitting edgeB.
-		vOut[numOut].id.cf.indexA = static_cast<uint8>(vertexIndexA);
-		vOut[numOut].id.cf.indexB = vIn[0].id.cf.indexB;
-		vOut[numOut].id.cf.typeA = b2ContactFeature::e_vertex;
-		vOut[numOut].id.cf.typeB = b2ContactFeature::e_face;
+		vOut[numOut].id.indexA = static_cast<uint8>(vertexIndexA);
+		vOut[numOut].id.indexB = vIn[0].id.indexB;
+		vOut[numOut].id.typeA = b2ContactID::e_vertex;
+		vOut[numOut].id.typeB = b2ContactID::e_face;
 		++numOut;
 	}
 

@@ -35,22 +35,25 @@ const uint8 b2_nullFeature = UCHAR_MAX;
 
 /// The features that intersect to form the contact point
 /// This must be 4 bytes or less.
-struct b2ContactFeature
+struct b2ContactID
 {
 	uint8 indexA;		///< Feature index on shapeA
 	uint8 indexB;		///< Feature index on shapeB
 	uint8 typeA;		///< The feature type on shapeA
 	uint8 typeB;		///< The feature type on shapeB
 
+	void Reset()
+	{
+		this->indexA = this->indexB = this->typeA = this->typeB = 0;
+	}
+
+	uint32 Get() const
+	{
+		return this->indexA | (this->indexB << 8) | (this->typeA << 16) | (this->typeB << 24);
+	}
+
 	static const int e_vertex = 0;
 	static const int e_face = 1;
-};
-
-/// Contact ids to facilitate warm starting.
-union b2ContactID
-{
-	b2ContactFeature cf;
-	uint32 key;					///< Used to quickly compare contact ids.
 };
 
 /// A manifold point is a contact point belonging to a contact

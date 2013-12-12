@@ -4,55 +4,38 @@ var b2_nullFeature = 255;
 
 /// The features that intersect to form the contact point
 /// This must be 4 bytes or less.
-function b2ContactFeature()
-{
-	this.indexA = 0;	///< Feature index on shapeA
-	this.indexB = 0;	///< Feature index on shapeB
-	this.typeA = 0;		///< The feature type on shapeA
-	this.typeB = 0;		///< The feature type on shapeB
-};
-
-b2ContactFeature.prototype =
-{
-	Assign: function(copy)
-	{
-		this.indexA = copy.indexA;
-		this.indexB = copy.indexB;
-		this.typeA = copy.typeA;
-		this.typeB = copy.typeB;
-	}
-};
-
-b2ContactFeature.e_vertex = 0;
-b2ContactFeature.e_face = 1;
-
-/// Contact ids to facilitate warm starting.
 function b2ContactID()
 {
-	this.cf = new b2ContactFeature();
-};
+}
 
 b2ContactID.prototype =
 {
-	///< Used to quickly compare contact ids.
-	GetKey: function()
+	indexA: 0,		///< Feature index on shapeA
+	indexB: 0,		///< Feature index on shapeB
+	typeA: 0,		///< The feature type on shapeA
+	typeB: 0,		///< The feature type on shapeB
+
+	Reset: function()
 	{
-		return (this.cf.indexA) | (this.cf.indexB << 8) | (this.cf.typeA << 16) | (this.cf.typeB << 24);
+		this.indexA = this.indexB = this.typeA = this.typeB = 0;
 	},
 
-	SetKey: function(key)
+	Get: function()
 	{
-		this.cf.indexA = key & 0xFF;
-		this.cf.indexB = (key >> 8) & 0xFF;
-		this.cf.typeA = (key >> 16) & 0xFF;
-		this.cf.typeB = (key >> 24) & 0xFF;
+		return this.indexA | (this.indexB << 8) | (this.typeA << 16) | (this.typeB << 24);
 	},
 
-	Assign: function(copy)
+	Assign: function(k)
 	{
-		this.cf.Assign(copy.cf);
+		this.indexA = k.indexA;
+		this.indexB = k.indexB;
+		this.typeA = k.typeA;
+		this.typeB = k.typeB;
 	}
 };
+
+b2ContactID.e_vertex = 0;
+b2ContactID.e_face = 1;
 
 /// A manifold point is a contact point belonging to a contact
 /// manifold. It holds details related to the geometry and dynamics
@@ -239,7 +222,7 @@ function b2GetPointStates(state1, state2,
 
 		for (var j = 0; j < manifold2.pointCount; ++j)
 		{
-			if (manifold2.points[j].id.GetKey() == id.GetKey())
+			if (manifold2.points[j].id.Get() == id.Get())
 			{
 				state1[i] = b2Manifold.b2_persistState;
 				break;
@@ -256,7 +239,7 @@ function b2GetPointStates(state1, state2,
 
 		for (var j = 0; j < manifold1.pointCount; ++j)
 		{
-			if (manifold1.points[j].id.GetKey() == id.GetKey())
+			if (manifold1.points[j].id.Get() == id.Get())
 			{
 				state2[i] = b2Manifold.b2_persistState;
 				break;
@@ -461,7 +444,7 @@ function b2CollideCircles(manifold,
 
 	manifold.points[0] = new b2ManifoldPoint();
 	manifold.points[0].localPoint.Assign(circleB.m_p);
-	manifold.points[0].id.SetKey(0);
+	manifold.points[0].id.Reset();
 }
 
 /// Compute the collision manifold between a polygon and a circle.
@@ -515,7 +498,7 @@ function b2CollidePolygonAndCircle(manifold,
 		manifold.localPoint.Assign(b2Vec2.Multiply(0.5, b2Vec2.Add(v1, v2)));
 		manifold.points[0] = new b2ManifoldPoint();
 		manifold.points[0].localPoint.Assign(circleB.m_p);
-		manifold.points[0].id.key = 0;
+		manifold.points[0].id.Reset();
 		return;
 	}
 
@@ -536,7 +519,7 @@ function b2CollidePolygonAndCircle(manifold,
 		manifold.localPoint.Assign(v1);
 		manifold.points[0] = new b2ManifoldPoint();
 		manifold.points[0].localPoint.Assign(circleB.m_p);
-		manifold.points[0].id.key = 0;
+		manifold.points[0].id.Reset();
 	}
 	else if (u2 <= 0.0)
 	{
@@ -552,7 +535,7 @@ function b2CollidePolygonAndCircle(manifold,
 		manifold.localPoint.Assign(v2);
 		manifold.points[0] = new b2ManifoldPoint();
 		manifold.points[0].localPoint.Assign(circleB.m_p);
-		manifold.points[0].id.key = 0;
+		manifold.points[0].id.Reset();
 	}
 	else
 	{
@@ -569,7 +552,7 @@ function b2CollidePolygonAndCircle(manifold,
 		manifold.localPoint.Assign(faceCenter);
 		manifold.points[0] = new b2ManifoldPoint();
 		manifold.points[0].localPoint.Assign(circleB.m_p);
-		manifold.points[0].id.key = 0;
+		manifold.points[0].id.Reset();
 	}
 }
 
@@ -649,17 +632,17 @@ function b2FindIncidentEdge(c,
 
 	c[0] = new b2ClipVertex();
 	c[0].v = b2Mul_t_v2(xf2, vertices2[i1]);
-	c[0].id.cf.indexA = edge1;
-	c[0].id.cf.indexB = i1;
-	c[0].id.cf.typeA = b2ContactFeature.e_face;
-	c[0].id.cf.typeB = b2ContactFeature.e_vertex;
+	c[0].id.indexA = edge1;
+	c[0].id.indexB = i1;
+	c[0].id.typeA = b2ContactID.e_face;
+	c[0].id.typeB = b2ContactID.e_vertex;
 
 	c[1] = new b2ClipVertex();
 	c[1].v = b2Mul_t_v2(xf2, vertices2[i2]);
-	c[1].id.cf.indexA = edge1;
-	c[1].id.cf.indexB = i2;
-	c[1].id.cf.typeA = b2ContactFeature.e_face;
-	c[1].id.cf.typeB = b2ContactFeature.e_vertex;
+	c[1].id.indexA = edge1;
+	c[1].id.indexB = i2;
+	c[1].id.typeA = b2ContactID.e_face;
+	c[1].id.typeB = b2ContactID.e_vertex;
 }
 
 /// Compute the collision manifold between two polygons.
@@ -775,12 +758,12 @@ function b2CollidePolygons(manifold,
 			if (flip)
 			{
 				// Swap features
-				var cf = new b2ContactFeature();
-				cf.Assign(cp.id.cf);
-				cp.id.cf.indexA = cf.indexB;
-				cp.id.cf.indexB = cf.indexA;
-				cp.id.cf.typeA = cf.typeB;
-				cp.id.cf.typeB = cf.typeA;
+				var cf = new b2ContactID();
+				cf.Assign(cp.id);
+				cp.id.indexA = cf.indexB;
+				cp.id.indexB = cf.indexA;
+				cp.id.typeA = cf.typeB;
+				cp.id.typeB = cf.typeA;
 			}
 			++pointCount;
 		}
@@ -808,9 +791,9 @@ function b2CollideEdgeAndCircle(manifold,
 
 	var radius = edgeA.m_radius + circleB.m_radius;
 
-	var cf = new b2ContactFeature();
+	var cf = new b2ContactID();
 	cf.indexB = 0;
-	cf.typeB = b2ContactFeature.e_vertex;
+	cf.typeB = b2ContactID.e_vertex;
 
 	// Region A
 	if (v <= 0.0)
@@ -839,14 +822,13 @@ function b2CollideEdgeAndCircle(manifold,
 		}
 
 		cf.indexA = 0;
-		cf.typeA = b2ContactFeature.e_vertex;
+		cf.typeA = b2ContactID.e_vertex;
 		manifold.pointCount = 1;
 		manifold.type = b2Manifold.e_circles;
 		manifold.localNormal.SetZero();
 		manifold.localPoint.Assign(P);
 		manifold.points[0] = new b2ManifoldPoint();
-		manifold.points[0].id.SetKey(0);
-		manifold.points[0].id.cf.Assign(cf);
+		manifold.points[0].id.Assign(cf);
 		manifold.points[0].localPoint.Assign(circleB.m_p);
 		return;
 	}
@@ -878,14 +860,13 @@ function b2CollideEdgeAndCircle(manifold,
 		}
 
 		cf.indexA = 1;
-		cf.typeA = b2ContactFeature.e_vertex;
+		cf.typeA = b2ContactID.e_vertex;
 		manifold.pointCount = 1;
 		manifold.type = b2Manifold.e_circles;
 		manifold.localNormal.SetZero();
 		manifold.localPoint.Assign(P);
 		manifold.points[0] = new b2ManifoldPoint();
-		manifold.points[0].id.SetKey(0);
-		manifold.points[0].id.cf.Assign(cf);
+		manifold.points[0].id.Assign(cf);
 		manifold.points[0].localPoint.Assign(circleB.m_p);
 		return;
 	}
@@ -909,14 +890,13 @@ function b2CollideEdgeAndCircle(manifold,
 	n.Normalize();
 
 	cf.indexA = 0;
-	cf.typeA = b2ContactFeature.e_face;
+	cf.typeA = b2ContactID.e_face;
 	manifold.pointCount = 1;
 	manifold.type = b2Manifold.e_faceA;
 	manifold.localNormal.Assign(n);
 	manifold.localPoint.Assign(A);
 	manifold.points[0] = new b2ManifoldPoint();
-	manifold.points[0].id.SetKey(0);
-	manifold.points[0].id.cf.Assign(cf);
+	manifold.points[0].id.Assign(cf);
 	manifold.points[0].localPoint.Assign(circleB.m_p);
 }
 
@@ -1254,17 +1234,17 @@ b2EPCollider.prototype =
 
 			ie[0] = new b2ClipVertex();
 			ie[0].v.Assign(this.m_polygonB.vertices[i1]);
-			ie[0].id.cf.indexA = 0;
-			ie[0].id.cf.indexB = i1;
-			ie[0].id.cf.typeA = b2ContactFeature.e_face;
-			ie[0].id.cf.typeB = b2ContactFeature.e_vertex;
+			ie[0].id.indexA = 0;
+			ie[0].id.indexB = i1;
+			ie[0].id.typeA = b2ContactID.e_face;
+			ie[0].id.typeB = b2ContactID.e_vertex;
 
 			ie[1] = new b2ClipVertex();
 			ie[1].v.Assign(this.m_polygonB.vertices[i2]);
-			ie[1].id.cf.indexA = 0;
-			ie[1].id.cf.indexB = i2;
-			ie[1].id.cf.typeA = b2ContactFeature.e_face;
-			ie[1].id.cf.typeB = b2ContactFeature.e_vertex;
+			ie[1].id.indexA = 0;
+			ie[1].id.indexB = i2;
+			ie[1].id.typeA = b2ContactID.e_face;
+			ie[1].id.typeB = b2ContactID.e_vertex;
 
 			if (this.m_front)
 			{
@@ -1289,17 +1269,17 @@ b2EPCollider.prototype =
 
 			ie[0] = new b2ClipVertex();
 			ie[0].v = this.m_v1;
-			ie[0].id.cf.indexA = 0;
-			ie[0].id.cf.indexB = primaryAxis.index;
-			ie[0].id.cf.typeA = b2ContactFeature.e_vertex;
-			ie[0].id.cf.typeB = b2ContactFeature.e_face;
+			ie[0].id.indexA = 0;
+			ie[0].id.indexB = primaryAxis.index;
+			ie[0].id.typeA = b2ContactID.e_vertex;
+			ie[0].id.typeB = b2ContactID.e_face;
 
 			ie[1] = new b2ClipVertex();
 			ie[1].v = this.m_v2;
-			ie[1].id.cf.indexA = 0;
-			ie[1].id.cf.indexB = primaryAxis.index;
-			ie[1].id.cf.typeA = b2ContactFeature.e_vertex;
-			ie[1].id.cf.typeB = b2ContactFeature.e_face;
+			ie[1].id.indexA = 0;
+			ie[1].id.indexB = primaryAxis.index;
+			ie[1].id.typeA = b2ContactID.e_vertex;
+			ie[1].id.typeB = b2ContactID.e_face;
 
 			rf.i1 = primaryAxis.index;
 			rf.i2 = rf.i1 + 1 < this.m_polygonB.count ? rf.i1 + 1 : 0;
@@ -1365,10 +1345,10 @@ b2EPCollider.prototype =
 				else
 				{
 					cp.localPoint.Assign(clipPoints2[i].v);
-					cp.id.cf.typeA = clipPoints2[i].id.cf.typeB;
-					cp.id.cf.typeB = clipPoints2[i].id.cf.typeA;
-					cp.id.cf.indexA = clipPoints2[i].id.cf.indexB;
-					cp.id.cf.indexB = clipPoints2[i].id.cf.indexA;
+					cp.id.typeA = clipPoints2[i].id.typeB;
+					cp.id.typeB = clipPoints2[i].id.typeA;
+					cp.id.indexA = clipPoints2[i].id.indexB;
+					cp.id.indexB = clipPoints2[i].id.indexA;
 				}
 
 				++pointCount;
@@ -1487,10 +1467,10 @@ function b2ClipSegmentToLine(vOut, vIn,
 		vOut[numOut].v.Assign(b2Vec2.Add(vIn[0].v, b2Vec2.Multiply(interp, b2Vec2.Subtract(vIn[1].v, vIn[0].v))));
 
 		// VertexA is hitting edgeB.
-		vOut[numOut].id.cf.indexA = vertexIndexA;
-		vOut[numOut].id.cf.indexB = vIn[0].id.cf.indexB;
-		vOut[numOut].id.cf.typeA = b2ContactFeature.e_vertex;
-		vOut[numOut].id.cf.typeB = b2ContactFeature.e_face;
+		vOut[numOut].id.indexA = vertexIndexA;
+		vOut[numOut].id.indexB = vIn[0].id.indexB;
+		vOut[numOut].id.typeA = b2ContactID.e_vertex;
+		vOut[numOut].id.typeB = b2ContactID.e_face;
 		++numOut;
 	}
 

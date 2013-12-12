@@ -36,6 +36,8 @@ function Test()
 	this.m_totalProfile = new b2Profile();
 
 	this.m_stepCount = 0;
+	this.m_pause = false;
+	this.m_singleStep = 0;
 }
 
 function QueryCallback(point)
@@ -73,7 +75,7 @@ Test.prototype =
 		if (this.m_mouseJoint == joint)
 			this.m_mouseJoint = null;
 	},
-	
+
 	SayGoodbyeFixture: function(fixture) { },
 
 	Initialize: function()
@@ -84,22 +86,19 @@ Test.prototype =
 	{
 		var timeStep = 1 / 60;//settings->hz > 0.0 ? 1.0 / settings->hz : float32(0.0);
 
-		/*if (settings->pause)
+		if (this.m_pause)
 		{
-			if (settings->singleStep)
+			if (this.m_singleStep)
 			{
-				settings->singleStep = 0;
+				this.m_singleStep = 0;
 			}
 			else
 			{
 				timeStep = 0.0;
 			}
-
-			g_debugDraw.DrawString(5, this->m_textLine, "****PAUSED****");
-			this->m_textLine += DRAW_STRING_NEW_LINE;
 		}
 
-		uint32 flags = 0;
+		/*uint32 flags = 0;
 		flags += settings->drawShapes			* b2Draw::e_shapeBit;
 		flags += settings->drawJoints			* b2Draw::e_jointBit;
 		flags += settings->drawAABBs			* b2Draw::e_aabbBit;
@@ -139,12 +138,12 @@ Test.prototype =
 				if (point.state == b2Manifold.b2_addState)
 				{
 					// Add
-					//this.m_debugDraw.DrawPoint(point.position, 1.0, new b2Color(0.3, 0.95, 0.3));
+					this.m_debugDraw.DrawPoint(point.position, 10 / 14, new b2Color(0.3, 0.95, 0.3));
 				}
 				else if (point.state == b2Manifold.b2_persistState)
 				{
 					// Persist
-					//this.m_debugDraw.DrawPoint(point.position, .50, new b2Color(0.3, 0.3, 0.95));
+					this.m_debugDraw.DrawPoint(point.position, 5.0 / 14, new b2Color(0.3, 0.3, 0.95));
 				}
 
 				if (false)//settings.drawContactNormals == 1)
@@ -268,6 +267,10 @@ Test.prototype =
 
 	Keyboard: function(key)
 	{
+		if (key === 'P'.charCodeAt())
+			this.m_pause = !this.m_pause;
+		else if (key === 'L'.charCodeAt())
+			this.m_singleStep = 1;
 	},
 
 	KeyboardUp: function(key)

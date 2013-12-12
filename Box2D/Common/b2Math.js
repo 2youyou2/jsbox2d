@@ -531,6 +531,9 @@ b2Sweep.prototype =
 		this.localCenter.Assign(sweep.localCenter);
 		this.c0.Assign(sweep.c0);
 		this.c.Assign(sweep.c);
+		this.a = sweep.a;
+		this.a0 = sweep.a0;
+		this.alpha0 = sweep.alpha0;
 	},
 
 	Clone: function()
@@ -539,6 +542,9 @@ b2Sweep.prototype =
 		sweep.localCenter.Assign(this.localCenter);
 		sweep.c0.Assign(this.c0);
 		sweep.c.Assign(this.c);
+		sweep.a = this.a;
+		sweep.a0 = this.a0;
+		sweep.alpha0 = this.alpha0;
 		return sweep;
 	},
 

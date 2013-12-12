@@ -205,7 +205,7 @@ void b2Contact::Update(b2ContactListener* listener)
 			{
 				b2ManifoldPoint* mp1 = oldManifold.points + j;
 
-				if (mp1->id.key == id2.key)
+				if (mp1->id.Get() == id2.Get())
 				{
 					mp2->normalImpulse = mp1->normalImpulse;
 					mp2->tangentImpulse = mp1->tangentImpulse;

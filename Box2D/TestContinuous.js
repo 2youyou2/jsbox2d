@@ -35,7 +35,7 @@ TestContinuous.prototype =
 			this.m_body = this.m_world.CreateBody(bd);
 			this.m_body.CreateFixture(shape, 1.0);
 
-			this.m_angularVelocity = 0;
+			this.m_angularVelocity = b2RandomFloat(-50.0, 50.0);
 			//this.m_angularVelocity = 46.661274f;
 			this.m_body.SetLinearVelocity(new b2Vec2(0.0, -100.0));
 			this.m_body.SetAngularVelocity(this.m_angularVelocity);

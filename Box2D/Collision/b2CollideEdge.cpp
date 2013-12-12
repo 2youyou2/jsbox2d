@@ -42,9 +42,9 @@ void b2CollideEdgeAndCircle(b2Manifold* manifold,
 	
 	float32 radius = edgeA->m_radius + circleB->m_radius;
 	
-	b2ContactFeature cf;
+	b2ContactID cf;
 	cf.indexB = 0;
-	cf.typeB = b2ContactFeature::e_vertex;
+	cf.typeB = b2ContactID::e_vertex;
 	
 	// Region A
 	if (v <= 0.0)
@@ -73,13 +73,12 @@ void b2CollideEdgeAndCircle(b2Manifold* manifold,
 		}
 		
 		cf.indexA = 0;
-		cf.typeA = b2ContactFeature::e_vertex;
+		cf.typeA = b2ContactID::e_vertex;
 		manifold->pointCount = 1;
 		manifold->type = b2Manifold::e_circles;
 		manifold->localNormal.SetZero();
 		manifold->localPoint.Assign(P);
-		manifold->points[0].id.key = 0;
-		manifold->points[0].id.cf = cf;
+		manifold->points[0].id = cf;
 		manifold->points[0].localPoint.Assign(circleB->m_p);
 		return;
 	}
@@ -111,13 +110,12 @@ void b2CollideEdgeAndCircle(b2Manifold* manifold,
 		}
 		
 		cf.indexA = 1;
-		cf.typeA = b2ContactFeature::e_vertex;
+		cf.typeA = b2ContactID::e_vertex;
 		manifold->pointCount = 1;
 		manifold->type = b2Manifold::e_circles;
 		manifold->localNormal.SetZero();
 		manifold->localPoint.Assign(P);
-		manifold->points[0].id.key = 0;
-		manifold->points[0].id.cf = cf;
+		manifold->points[0].id = cf;
 		manifold->points[0].localPoint.Assign(circleB->m_p);
 		return;
 	}
@@ -141,13 +139,12 @@ void b2CollideEdgeAndCircle(b2Manifold* manifold,
 	n.Normalize();
 	
 	cf.indexA = 0;
-	cf.typeA = b2ContactFeature::e_face;
+	cf.typeA = b2ContactID::e_face;
 	manifold->pointCount = 1;
 	manifold->type = b2Manifold::e_faceA;
 	manifold->localNormal.Assign(n);
 	manifold->localPoint.Assign(A);
-	manifold->points[0].id.key = 0;
-	manifold->points[0].id.cf = cf;
+	manifold->points[0].id = cf;
 	manifold->points[0].localPoint.Assign(circleB->m_p);
 }
 
@@ -490,16 +487,16 @@ void b2EPCollider::Collide(b2Manifold* manifold, const b2EdgeShape* edgeA, const
 		int32 i2 = i1 + 1 < this->m_polygonB.count ? i1 + 1 : 0;
 		
 		ie[0].v.Assign(this->m_polygonB.vertices[i1]);
-		ie[0].id.cf.indexA = 0;
-		ie[0].id.cf.indexB = static_cast<uint8>(i1);
-		ie[0].id.cf.typeA = b2ContactFeature::e_face;
-		ie[0].id.cf.typeB = b2ContactFeature::e_vertex;
+		ie[0].id.indexA = 0;
+		ie[0].id.indexB = static_cast<uint8>(i1);
+		ie[0].id.typeA = b2ContactID::e_face;
+		ie[0].id.typeB = b2ContactID::e_vertex;
 		
 		ie[1].v.Assign(this->m_polygonB.vertices[i2]);
-		ie[1].id.cf.indexA = 0;
-		ie[1].id.cf.indexB = static_cast<uint8>(i2);
-		ie[1].id.cf.typeA = b2ContactFeature::e_face;
-		ie[1].id.cf.typeB = b2ContactFeature::e_vertex;
+		ie[1].id.indexA = 0;
+		ie[1].id.indexB = static_cast<uint8>(i2);
+		ie[1].id.typeA = b2ContactID::e_face;
+		ie[1].id.typeB = b2ContactID::e_vertex;
 		
 		if (this->m_front)
 		{
@@ -523,16 +520,16 @@ void b2EPCollider::Collide(b2Manifold* manifold, const b2EdgeShape* edgeA, const
 		manifold->type = b2Manifold::e_faceB;
 		
 		ie[0].v.Assign(this->m_v1);
-		ie[0].id.cf.indexA = 0;
-		ie[0].id.cf.indexB = static_cast<uint8>(primaryAxis.index);
-		ie[0].id.cf.typeA = b2ContactFeature::e_vertex;
-		ie[0].id.cf.typeB = b2ContactFeature::e_face;
+		ie[0].id.indexA = 0;
+		ie[0].id.indexB = static_cast<uint8>(primaryAxis.index);
+		ie[0].id.typeA = b2ContactID::e_vertex;
+		ie[0].id.typeB = b2ContactID::e_face;
 		
 		ie[1].v.Assign(this->m_v2);
-		ie[1].id.cf.indexA = 0;
-		ie[1].id.cf.indexB = static_cast<uint8>(primaryAxis.index);		
-		ie[1].id.cf.typeA = b2ContactFeature::e_vertex;
-		ie[1].id.cf.typeB = b2ContactFeature::e_face;
+		ie[1].id.indexA = 0;
+		ie[1].id.indexB = static_cast<uint8>(primaryAxis.index);		
+		ie[1].id.typeA = b2ContactID::e_vertex;
+		ie[1].id.typeB = b2ContactID::e_face;
 		
 		rf.i1 = primaryAxis.index;
 		rf.i2 = rf.i1 + 1 < this->m_polygonB.count ? rf.i1 + 1 : 0;
@@ -598,10 +595,10 @@ void b2EPCollider::Collide(b2Manifold* manifold, const b2EdgeShape* edgeA, const
 			else
 			{
 				cp->localPoint.Assign(clipPoints2[i].v);
-				cp->id.cf.typeA = clipPoints2[i].id.cf.typeB;
-				cp->id.cf.typeB = clipPoints2[i].id.cf.typeA;
-				cp->id.cf.indexA = clipPoints2[i].id.cf.indexB;
-				cp->id.cf.indexB = clipPoints2[i].id.cf.indexA;
+				cp->id.typeA = clipPoints2[i].id.typeB;
+				cp->id.typeB = clipPoints2[i].id.typeA;
+				cp->id.indexA = clipPoints2[i].id.indexB;
+				cp->id.indexB = clipPoints2[i].id.indexA;
 			}
 			
 			++pointCount;

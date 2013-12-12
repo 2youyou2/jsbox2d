@@ -32,8 +32,8 @@ function b2SeparationFunction()
 {
 	this.m_proxyA = null;
 	this.m_proxyB = null;
-	this.m_sweepA = new b2Sweep();
-	this.m_sweepB = new b2Sweep();
+	this.m_sweepA = null;
+	this.m_sweepB = null;
 	this.m_type = 0;
 	this.m_localPoint = new b2Vec2();
 	this.m_axis = new b2Vec2();
@@ -254,6 +254,45 @@ b2SeparationFunction.e_faceB = 2;
 /// Note: use b2Distance to compute the contact point and normal at the time of impact.
 function b2TimeOfImpact(output, input)
 {
+	var inputString = '';
+
+	inputString += 'input = new b2TOIInput();\n';
+	inputString += 'input.proxyA = new b2DistanceProxy();\n';
+	inputString += 'input.proxyA.m_count = ' + input.proxyA.m_count + ';\n';
+	inputString += 'input.proxyA.m_radius = ' + input.proxyA.m_radius + ';\n';
+	inputString += 'input.proxyA.m_vertices = new Array(' + input.proxyA.m_count + ');\n';
+
+	for (var i = 0; i < input.proxyA.m_count; ++i)
+		inputString += 'input.proxyA.m_vertices[' + i + '] = new b2Vec2(' + input.proxyA.m_vertices[i].x + ');\n';
+
+	inputString += 'input.proxyB = new b2DistanceProxy();\n';
+	inputString += 'input.proxyB.m_count = ' + input.proxyB.m_count + ';\n';
+	inputString += 'input.proxyB.m_radius = ' + input.proxyB.m_radius + ';\n';
+	inputString += 'input.proxyB.m_vertices = new Array(' + input.proxyB.m_count + ');\n';
+
+	for (var i = 0; i < input.proxyB.m_count; ++i)
+		inputString += 'input.proxyB.m_vertices[' + i + '] = new b2Vec2(' + input.proxyB.m_vertices[i].x + ');\n';
+
+	var t = new b2Sweep();
+
+	inputString += 'input.sweepA = new b2Sweep();\n';
+	inputString += 'input.sweepA.alpha0 = ' + input.sweepA.alpha0 + ';\n';
+	inputString += 'input.sweepA.a = ' + input.sweepA.a + ';\n';
+	inputString += 'input.sweepA.a0 = ' + input.sweepA.a0 + ';\n';
+	inputString += 'input.sweepA.c = new b2Vec2(' + input.sweepA.c.x + ',' + input.sweepA.c.y + ');\n';
+	inputString += 'input.sweepA.c0 = new b2Vec2(' + input.sweepA.c0.x + ',' + input.sweepA.c0.y + ');\n';
+	inputString += 'input.sweepA.localCenter = new b2Vec2(' + input.sweepA.localCenter.x + ',' + input.sweepA.localCenter.y + ');\n';
+
+	inputString += 'input.sweepB = new b2Sweep();\n';
+	inputString += 'input.sweepB.alpha0 = ' + input.sweepB.alpha0 + ';\n';
+	inputString += 'input.sweepB.a = ' + input.sweepB.a + ';\n';
+	inputString += 'input.sweepB.a0 = ' + input.sweepB.a0 + ';\n';
+	inputString += 'input.sweepB.c = new b2Vec2(' + input.sweepB.c.x + ',' + input.sweepB.c.y + ');\n';
+	inputString += 'input.sweepB.c0 = new b2Vec2(' + input.sweepB.c0.x + ',' + input.sweepB.c0.y + ');\n';
+	inputString += 'input.sweepB.localCenter = new b2Vec2(' + input.sweepB.localCenter.x + ',' + input.sweepB.localCenter.y + ');\n';
+
+	inputString += 'input.tMax = ' + input.tMax + ';\n';
+
 	var timer = new b2Timer();
 
 	++b2_toiCalls;
@@ -459,4 +498,9 @@ function b2TimeOfImpact(output, input)
 	var time = timer.GetMilliseconds();
 	b2_toiMaxTime = b2Max(b2_toiMaxTime, time);
 	b2_toiTime += time;
+
+	inputString += 'output = new b2TOIOutput();\n';
+	inputString += 'output.state = ' + output.state + ';\n';
+	inputString += 'output.t = ' + output.t + ';\n';
+	console.log(inputString);
 }

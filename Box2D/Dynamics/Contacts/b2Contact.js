@@ -269,7 +269,7 @@ b2Contact.prototype =
 				{
 					var mp1 = oldManifold.points[j];
 
-					if (mp1.id.GetKey() == id2.GetKey())
+					if (mp1.id.Get() == id2.Get())
 					{
 						mp2.normalImpulse = mp1.normalImpulse;
 						mp2.tangentImpulse = mp1.tangentImpulse;

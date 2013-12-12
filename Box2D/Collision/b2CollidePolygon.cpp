@@ -94,16 +94,16 @@ static void b2FindIncidentEdge(b2ClipVertex c[2],
 	int32 i2 = i1 + 1 < count2 ? i1 + 1 : 0;
 
 	c[0].v.Assign(b2Mul_t_v2(xf2, vertices2[i1]));
-	c[0].id.cf.indexA = (uint8)edge1;
-	c[0].id.cf.indexB = (uint8)i1;
-	c[0].id.cf.typeA = b2ContactFeature::e_face;
-	c[0].id.cf.typeB = b2ContactFeature::e_vertex;
+	c[0].id.indexA = (uint8)edge1;
+	c[0].id.indexB = (uint8)i1;
+	c[0].id.typeA = b2ContactID::e_face;
+	c[0].id.typeB = b2ContactID::e_vertex;
 
 	c[1].v.Assign(b2Mul_t_v2(xf2, vertices2[i2]));
-	c[1].id.cf.indexA = (uint8)edge1;
-	c[1].id.cf.indexB = (uint8)i2;
-	c[1].id.cf.typeA = b2ContactFeature::e_face;
-	c[1].id.cf.typeB = b2ContactFeature::e_vertex;
+	c[1].id.indexA = (uint8)edge1;
+	c[1].id.indexB = (uint8)i2;
+	c[1].id.typeA = b2ContactID::e_face;
+	c[1].id.typeB = b2ContactID::e_vertex;
 }
 
 // Find edge normal of max separation on A - return if separating axis is found
@@ -225,11 +225,11 @@ void b2CollidePolygons(b2Manifold* manifold,
 			if (flip)
 			{
 				// Swap features
-				b2ContactFeature cf = cp->id.cf;
-				cp->id.cf.indexA = cf.indexB;
-				cp->id.cf.indexB = cf.indexA;
-				cp->id.cf.typeA = cf.typeB;
-				cp->id.cf.typeB = cf.typeA;
+				b2ContactID cf = cp->id;
+				cp->id.indexA = cf.indexB;
+				cp->id.indexB = cf.indexA;
+				cp->id.typeA = cf.typeB;
+				cp->id.typeB = cf.typeA;
 			}
 			++pointCount;
 		}
