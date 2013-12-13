@@ -38,6 +38,8 @@ function Test()
 	this.m_hz = 1 / 60;
 	this.m_velIters = 8;
 	this.m_posIters = 3;
+
+	this.m_center = new b2Vec2();
 }
 
 function QueryCallback(point)
@@ -102,9 +104,9 @@ Test.prototype =
 
 		this.m_world.Step(timeStep, this.m_velIters, this.m_posIters);
 
-		this.m_debugDraw.context.save();
-		this.m_debugDraw.context.translate(this.m_debugDraw.context.canvas.width / 2, this.m_debugDraw.context.canvas.height / 2);
+		this.m_debugDraw.context.translate((this.m_debugDraw.context.canvas.width / 2), (this.m_debugDraw.context.canvas.height / 2));
 		this.m_debugDraw.context.scale(14, -14);
+		this.m_debugDraw.context.translate(-this.m_center.x, -this.m_center.y);
 		this.m_debugDraw.context.lineWidth = 1 / 14;
 
 		this.m_world.DrawDebugData();
@@ -171,23 +173,18 @@ Test.prototype =
 			this.m_debugDraw.DrawSegment(p1, p2, c);
 		}
 
-		this.m_debugDraw.context.restore();
-
-		this.m_debugDraw.context.fillStyle = "rgba(230, 153, 153, 1.0)";
-		this.m_debugDraw.context.font = "12px Arial";
-
 		if (this.m_debugDraw.m_drawFlags & b2Draw.e_statistics)
 		{
 			var bodyCount = this.m_world.GetBodyCount();
 			var contactCount = this.m_world.GetContactCount();
 			var jointCount = this.m_world.GetJointCount();
-			this.m_debugDraw.context.fillText("bodies/contacts/joints = " + bodyCount + "/" + contactCount + "/" + jointCount, 0, 12);
+			this.m_drawStringFunc("bodies/contacts/joints = " + bodyCount + "/" + contactCount + "/" + jointCount);
 
 			var proxyCount = this.m_world.GetProxyCount();
 			var height = this.m_world.GetTreeHeight();
 			var balance = this.m_world.GetTreeBalance();
 			var quality = this.m_world.GetTreeQuality();
-			this.m_debugDraw.context.fillText("proxies/height/balance/quality = " + proxyCount + "/" + height + "/" + balance + "/" + quality, 0, 24);
+			this.m_drawStringFunc("proxies/height/balance/quality = " + proxyCount + "/" + height + "/" + balance + "/" + quality);
 		}
 
 		// Track maximum profile times
@@ -245,7 +242,7 @@ Test.prototype =
 			{
 				if (p.hasOwnProperty(x))
 				{
-					this.m_debugDraw.context.fillText(x + " [ave] (max) = " + p[x].toFixed(2) + " [" + aveProfile[x].toFixed(2) + "] (" + this.m_maxProfile[x].toFixed(2) + ")", 0, y);
+					this.m_drawStringFunc(x + " [ave] (max) = " + p[x].toFixed(2) + " [" + aveProfile[x].toFixed(2) + "] (" + this.m_maxProfile[x].toFixed(2) + ")");
 					y += 12;
 				}
 			}
@@ -266,6 +263,9 @@ Test.prototype =
 
 	MouseDown: function(p)
 	{
+		p.x += this.m_center.x;
+		p.y += this.m_center.y;
+
 		this.m_mouseWorld = p;
 
 		if (this.m_mouseJoint != null)
@@ -299,6 +299,9 @@ Test.prototype =
 
 	MouseUp: function(p)
 	{
+		p.x += this.m_center.x;
+		p.y += this.m_center.y;
+
 		if (this.m_mouseJoint)
 		{
 			this.m_world.DestroyJoint(this.m_mouseJoint);
@@ -308,6 +311,9 @@ Test.prototype =
 
 	MouseMove: function(p)
 	{
+		p.x += this.m_center.x;
+		p.y += this.m_center.y;
+
 		this.m_mouseWorld = p;
 
 		if (this.m_mouseJoint)

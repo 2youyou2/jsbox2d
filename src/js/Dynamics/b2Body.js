@@ -242,7 +242,7 @@ b2Body.prototype =
 		{
 			if (node == fixture)
 			{
-				node = fixture.m_next;
+				this.m_fixtureList = node = fixture.m_next;
 				found = true;
 				break;
 			}

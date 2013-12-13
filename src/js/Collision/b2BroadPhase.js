@@ -102,7 +102,7 @@ b2BroadPhase.prototype =
 	{
 		// Reset pair buffer
 		this.m_pairCount = 0;
-		this.m_pairBuffer = [];
+		this.m_pairBuffer.length = 0;
 
 		// Perform tree queries for all moving proxies.
 		for (var i = 0; i < this.m_moveCount; ++i)
