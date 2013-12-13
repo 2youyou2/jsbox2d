@@ -48,6 +48,8 @@
 		<script type="text/javascript" src="src/js/Dynamics/Joints/b2WeldJoint.js"></script>
 		<script type="text/javascript" src="src/js/Dynamics/Joints/b2WheelJoint.js"></script>
 		<script type="text/javascript" src="src/js/Dynamics/Joints/b2GearJoint.js"></script>
+		<script type="text/javascript" src="src/js/Dynamics/Joints/b2MotorJoint.js"></script>
+		<script type="text/javascript" src="src/js/Dynamics/Joints/b2PulleyJoint.js"></script>
 
 		<script type="text/javascript" src="CanvasDebug.js"></script>
 
@@ -86,6 +88,14 @@
 		<script type="text/javascript" src="TestDistance.js"></script>
 		<script type="text/javascript" src="TestEdgeShapes.js"></script>
 		<script type="text/javascript" src="TestGears.js"></script>
+		<script type="text/javascript" src="TestMobile.js"></script>
+		<script type="text/javascript" src="TestMobileBalanced.js"></script>
+		<script type="text/javascript" src="TestMotorJoint.js"></script>
+		<script type="text/javascript" src="TestOneSidedPlatform.js"></script>
+		<script type="text/javascript" src="TestPolyCollision.js"></script>
+		<script type="text/javascript" src="TestPolyShapes.js"></script>
+		<script type="text/javascript" src="TestPrismatic.js"></script>
+		<script type="text/javascript" src="TestPulleys.js"></script>
 
 		<style>
 		/* FLEX STUFF */
@@ -331,7 +341,15 @@
 					TestCar,
 					TestDistance,
 					TestEdgeShapes,
-					TestGears
+					TestGears,
+					TestMobile,
+					TestMobileBalanced,
+					TestMotorJoint,
+					TestOneSidedPlatform,
+					TestPolyCollision,
+					TestPolyShapes,
+					TestPrismatic,
+					TestPulleys
 				];
 
 			tests.sort(function(a, b)
@@ -371,6 +389,7 @@
 				currentTest.Initialize();
 
 				currentTest.m_hz = 1 / $('#hertz').val();
+				currentTest.m_hz_raw = $('#hertz').val();
 				currentTest.m_velIters = $('#velIters').val();
 				currentTest.m_posIters = $('#posIters').val();
 				currentTest.m_world.SetAllowSleeping($('#allowSleep').is(':checked'));
@@ -384,6 +403,7 @@
 			$('#hertz').change(function()
 			{
 				currentTest.m_hz = 1 / $('#hertz').val();
+				currentTest.m_hz_raw = $('#hertz').val();
 				$('#label_hertz').find('.val').text($('#hertz').val());
 			});
 

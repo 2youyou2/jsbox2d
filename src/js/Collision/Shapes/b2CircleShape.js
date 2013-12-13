@@ -33,7 +33,7 @@ b2CircleShape.prototype =
 	{
 		var shape = new b2CircleShape();
 		shape.m_radius = this.m_radius;
-		shape.m_p = this.m_p;
+		shape.m_p = this.m_p.Clone();
 		return shape;
 	},
 
