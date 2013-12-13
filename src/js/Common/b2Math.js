@@ -179,6 +179,11 @@ b2Vec2.Multiply = function(s, a)
 	return new b2Vec2(s * a.x, s * a.y);
 };
 
+b2Vec2.Negate = function(a)
+{
+	return new b2Vec2(-a.x, -a.y);
+};
+
 /// A 2D column vector with 3 elements.
 function b2Vec3(x, y, z)
 {
