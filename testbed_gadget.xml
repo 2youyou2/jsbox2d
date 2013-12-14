@@ -478,7 +478,7 @@
 				var y = canvas.height - e.clientY;
 
 				x -= canvas.width / 2;
-				y -= canvas.height / 2;
+				y -= 128;
 
 				x /= 14;
 				y /= 14;
@@ -492,7 +492,7 @@
 				var y = canvas.height - e.clientY;
 
 				x -= canvas.width / 2;
-				y -= canvas.height / 2;
+				y -= 128;
 
 				x /= 14;
 				y /= 14;
@@ -506,7 +506,7 @@
 				var y = canvas.height - e.clientY;
 
 				x -= canvas.width / 2;
-				y -= canvas.height / 2;
+				y -= 128;
 
 				x /= 14;
 				y /= 14;
