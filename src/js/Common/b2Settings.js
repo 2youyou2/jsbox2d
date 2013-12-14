@@ -124,6 +124,14 @@ function b2Version(ma, mi, re)
 	this.major = ma;		///< significant changes
 	this.minor = mi;		///< incremental changes
 	this.revision = re;		///< bug fixes
+}
+
+b2Version.prototype =
+{
+	toString: function()
+	{
+		return this.major + '.' + this.minor + '.' + this.revision;
+	}
 };
 
 /// Current version.

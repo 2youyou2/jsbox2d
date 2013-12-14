@@ -40,11 +40,11 @@ TestRevolute.prototype =
 			body.SetLinearVelocity(new b2Vec2(-8.0 * w, 0.0));
 
 			rjd.Initialize(ground, body, new b2Vec2(-10.0, 12.0));
-			rjd.motorSpeed = 1.0 * b2_pi;
+			rjd.motorSpeed = 1.0 * Math.PI;
 			rjd.maxMotorTorque = 10000.0;
 			rjd.enableMotor = false;
-			rjd.lowerAngle = -0.25 * b2_pi;
-			rjd.upperAngle = 0.5 * b2_pi;
+			rjd.lowerAngle = -0.25 * Math.PI;
+			rjd.upperAngle = 0.5 * Math.PI;
 			rjd.enableLimit = true;
 			rjd.collideConnected = true;
 
@@ -79,8 +79,8 @@ TestRevolute.prototype =
 
 			var rjd = new b2RevoluteJointDef();
 			rjd.Initialize(ground, polygon_body, new b2Vec2(20.0, 10.0));
-			rjd.lowerAngle = -0.25 * b2_pi;
-			rjd.upperAngle = 0.0 * b2_pi;
+			rjd.lowerAngle = -0.25 * Math.PI;
+			rjd.upperAngle = 0.0 * Math.PI;
 			rjd.enableLimit = true;
 			this.m_world.CreateJoint(rjd);
 		}

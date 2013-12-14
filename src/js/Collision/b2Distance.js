@@ -18,8 +18,6 @@
 
 "use strict";
 
-var b2_gjkCalls = 0, b2_gjkIters = 0, b2_gjkMaxIters = 0;
-
 /// A distance proxy is used by the GJK algorithm.
 /// It encapsulates any shape.
 function b2DistanceProxy()
@@ -564,7 +562,7 @@ function b2DistanceFunc(output,
 				cache,
 				input)
 {
-	++b2_gjkCalls;
+	++b2DistanceFunc.b2_gjkCalls;
 
 	var proxyA = input.proxyA;
 	var proxyB = input.proxyB;
@@ -660,7 +658,7 @@ function b2DistanceFunc(output,
 
 		// Iteration count is equated to the number of support point calls.
 		++iter;
-		++b2_gjkIters;
+		++b2DistanceFunc.b2_gjkIters;
 
 		// Check for duplicate support points. This is the main termination criteria.
 		var duplicate = false;
@@ -683,7 +681,7 @@ function b2DistanceFunc(output,
 		++simplex.m_count;
 	}
 
-	b2_gjkMaxIters = b2Max(b2_gjkMaxIters, iter);
+	b2DistanceFunc.b2_gjkMaxIters = b2Max(b2DistanceFunc.b2_gjkMaxIters, iter);
 
 	// Prepare output.
 	simplex.GetWitnessPoints(output.pointA, output.pointB);
@@ -720,3 +718,7 @@ function b2DistanceFunc(output,
 		}
 	}
 }
+
+b2DistanceFunc.b2_gjkCalls = 0;
+b2DistanceFunc.b2_gjkIters = 0;
+b2DistanceFunc.b2_gjkMaxIters = 0;

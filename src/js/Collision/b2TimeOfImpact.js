@@ -23,10 +23,6 @@ b2TOIOutput.e_overlapped = 2;
 b2TOIOutput.e_touching = 3;
 b2TOIOutput.e_separated = 4;
 
-var b2_toiTime = 0, b2_toiMaxTime = 0;
-var b2_toiCalls = 0, b2_toiIters = 0, b2_toiMaxIters = 0;
-var b2_toiRootIters = 0, b2_toiMaxRootIters = 0;
-
 //
 function b2SeparationFunction()
 {
@@ -256,7 +252,7 @@ function b2TimeOfImpact(output, input)
 {
 	var timer = new b2Timer();
 
-	++b2_toiCalls;
+	++b2TimeOfImpact.b2_toiCalls;
 
 	output.state = b2TOIOutput.e_unknown;
 	output.t = input.tMax;
@@ -398,7 +394,7 @@ function b2TimeOfImpact(output, input)
 				}
 
 				++rootIterCount;
-				++b2_toiRootIters;
+				++b2TimeOfImpact.b2_toiRootIters;
 
 				var s = fcn.Evaluate(indices[0], indices[1], t);
 
@@ -427,7 +423,7 @@ function b2TimeOfImpact(output, input)
 				}
 			}
 
-			b2_toiMaxRootIters = b2Max(b2_toiMaxRootIters, rootIterCount);
+			b2TimeOfImpact.b2_toiMaxRootIters = b2Max(b2TimeOfImpact.b2_toiMaxRootIters, rootIterCount);
 
 			++pushBackIter;
 
@@ -438,7 +434,7 @@ function b2TimeOfImpact(output, input)
 		}
 
 		++iter;
-		++b2_toiIters;
+		++b2TimeOfImpact.b2_toiIters;
 
 		if (done)
 		{
@@ -454,9 +450,17 @@ function b2TimeOfImpact(output, input)
 		}
 	}
 
-	b2_toiMaxIters = b2Max(b2_toiMaxIters, iter);
+	b2TimeOfImpact.b2_toiMaxIters = b2Max(b2TimeOfImpact.b2_toiMaxIters, iter);
 
 	var time = timer.GetMilliseconds();
-	b2_toiMaxTime = b2Max(b2_toiMaxTime, time);
-	b2_toiTime += time;
+	b2TimeOfImpact.b2_toiMaxTime = b2Max(b2TimeOfImpact.b2_toiMaxTime, time);
+	b2TimeOfImpact.b2_toiTime += time;
 }
+
+b2TimeOfImpact.b2_toiTime = 0;
+b2TimeOfImpact.b2_toiMaxTime = 0;
+b2TimeOfImpact.b2_toiCalls = 0;
+b2TimeOfImpact.b2_toiIters = 0;
+b2TimeOfImpact.b2_toiMaxIters = 0;
+b2TimeOfImpact.b2_toiRootIters = 0;
+b2TimeOfImpact.b2_toiMaxRootIters = 0;

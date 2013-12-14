@@ -41,7 +41,7 @@ TestBodyTypes.prototype =
 			this.m_platform = this.m_world.CreateBody(bd);
 
 			var shape = new b2PolygonShape();
-			shape.SetAsBox(0.5, 4.0, new b2Vec2(4.0, 0.0), 0.5 * b2_pi);
+			shape.SetAsBox(0.5, 4.0, new b2Vec2(4.0, 0.0), 0.5 * Math.PI);
 
 			var fd = new b2FixtureDef();
 			fd.shape = shape;

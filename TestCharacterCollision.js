@@ -36,7 +36,7 @@ TestCharacterCollision.prototype =
 		// Chain shape
 		{
 			var bd = new b2BodyDef();
-			bd.angle = 0.25 * b2_pi;
+			bd.angle = 0.25 * Math.PI;
 			var ground = this.m_world.CreateBody(bd);
 
 			var vs = [new b2Vec2(5.0, 7.0), new b2Vec2(6.0, 8.0), new b2Vec2(7.0, 8.0), new b2Vec2(8.0, 7.0)];
@@ -133,11 +133,11 @@ TestCharacterCollision.prototype =
 			var body = this.m_world.CreateBody(bd);
 
 			var angle = 0.0;
-			var delta = b2_pi / 3.0;
+			var delta = Math.PI / 3.0;
 			var vertices = [];
 			for (var i = 0; i < 6; ++i)
 			{
-				vertices[i] = new b2Vec2(0.5 * cosf(angle), 0.5 * sinf(angle));
+				vertices[i] = new b2Vec2(0.5 * Math.cos(angle), 0.5 * Math.sin(angle));
 				angle += delta;
 			}
 

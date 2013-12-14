@@ -74,7 +74,7 @@ struct b2Vec2
 
 	/// Negate this vector.
 	b2Vec2 Negate() const { b2Vec2 v; v.Set(-this->x, -this->y); return v; }
-	
+
 	/// Read from and indexed element.
 	const float32 &get_i (const int32 &i) const
 	{
@@ -92,7 +92,7 @@ struct b2Vec2
 	{
 		this->x += v.x; this->y += v.y;
 	}
-	
+
 	/// Subtract a vector from this vector.
 	void Subtract(const b2Vec2& v)
 	{
@@ -627,7 +627,7 @@ inline b2Vec3 b2Mul_m33_v3(const b2Mat33& A, const b2Vec3& v)
 }
 
 /// Multiply a matrix times a vector.
-inline b2Vec2 b2Mul22_m33_v2(const b2Mat33& A, const b2Vec2& v)
+inline b2Vec2 b2Mul_m33_v2(const b2Mat33& A, const b2Vec2& v)
 {
 	return b2Vec2(A.ex.x * v.x + A.ey.x * v.y, A.ex.y * v.x + A.ey.y * v.y);
 }

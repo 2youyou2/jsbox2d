@@ -182,7 +182,7 @@ void b2WeldJoint::SolveVelocityConstraints(const b2SolverData& data)
 
 		b2Vec2 Cdot1 = b2Vec2::Subtract(b2Vec2::Subtract(b2Vec2::Add(vB, b2Cross_f_v2(wB, this->m_rB)), vA), b2Cross_f_v2(wA, this->m_rA));
 
-		b2Vec2 impulse1 = b2Mul22_m33_v2(this->m_mass, Cdot1).Negate();
+		b2Vec2 impulse1 = b2Mul_m22_v2(this->m_mass, Cdot1).Negate();
 		this->m_impulse.x += impulse1.x;
 		this->m_impulse.y += impulse1.y;
 
@@ -270,7 +270,7 @@ bool b2WeldJoint::SolvePositionConstraints(const b2SolverData& data)
 		angularError = b2Abs(C2);
 
 		b2Vec3 C(C1.x, C1.y, C2);
-	
+
 		b2Vec3 impulse = K.Solve33(C).Negate();
 		b2Vec2 P(impulse.x, impulse.y);
 

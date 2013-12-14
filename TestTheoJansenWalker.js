@@ -88,11 +88,11 @@ TestTheoJansenWalker.prototype =
 		this.CreateLeg(-1.0, wheelAnchor);
 		this.CreateLeg(1.0, wheelAnchor);
 
-		this.m_wheel.SetTransform(this.m_wheel.GetPosition(), 120.0 * b2_pi / 180.0);
+		this.m_wheel.SetTransform(this.m_wheel.GetPosition(), 120.0 * Math.PI / 180.0);
 		this.CreateLeg(-1.0, wheelAnchor);
 		this.CreateLeg(1.0, wheelAnchor);
 
-		this.m_wheel.SetTransform(this.m_wheel.GetPosition(), -120.0 * b2_pi / 180.0);
+		this.m_wheel.SetTransform(this.m_wheel.GetPosition(), -120.0 * Math.PI / 180.0);
 		this.CreateLeg(-1.0, wheelAnchor);
 		this.CreateLeg(1.0, wheelAnchor);
 	},

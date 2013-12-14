@@ -35,11 +35,11 @@ TestEdgeShapes.prototype =
 			var ground = this.m_world.CreateBody(bd);
 
 			var x1 = -20.0;
-			var y1 = 2.0 * cosf(x1 / 10.0 * b2_pi);
+			var y1 = 2.0 * Math.cos(x1 / 10.0 * Math.PI);
 			for (var i = 0; i < 80; ++i)
 			{
 				var x2 = x1 + 0.5;
-				var y2 = 2.0 * cosf(x2 / 10.0 * b2_pi);
+				var y2 = 2.0 * Math.cos(x2 / 10.0 * Math.PI);
 
 				var shape = new b2EdgeShape();
 				shape.Set(new b2Vec2(x1, y1), new b2Vec2(x2, y2));
@@ -73,8 +73,8 @@ TestEdgeShapes.prototype =
 
 		{
 			var w = 1.0;
-			var b = w / (2.0 + b2Sqrt(2.0));
-			var s = b2Sqrt(2.0) * b;
+			var b = w / (2.0 + Math.sqrt(2.0));
+			var s = Math.sqrt(2.0) * b;
 
 			var vertices = [];
 			vertices[0] = new b2Vec2(0.5 * s, 0.0);
@@ -118,7 +118,7 @@ TestEdgeShapes.prototype =
 		var x = b2RandomFloat(-10.0, 10.0);
 		var y = b2RandomFloat(10.0, 20.0);
 		bd.position.Set(x, y);
-		bd.angle = b2RandomFloat(-b2_pi, b2_pi);
+		bd.angle = b2RandomFloat(-Math.PI, Math.PI);
 		bd.type = b2Body.b2_dynamicBody;
 
 		if (index == 4)
@@ -188,7 +188,7 @@ TestEdgeShapes.prototype =
 
 		var L = 25.0;
 		var point1 = new b2Vec2(0.0, 10.0);
-		var d = new b2Vec2(L * cosf(this.m_angle), -L * b2Abs(sinf(this.m_angle)));
+		var d = new b2Vec2(L * Math.cos(this.m_angle), -L * Math.abs(Math.sin(this.m_angle)));
 		var point2 = b2Vec2.Add(point1, d);
 
 		var callback = new EdgeShapesCallback();
@@ -211,7 +211,7 @@ TestEdgeShapes.prototype =
 
 		if (advanceRay)
 		{
-			this.m_angle += 0.25 * b2_pi / 180.0;
+			this.m_angle += 0.25 * Math.PI / 180.0;
 		}
 	}
 };

@@ -56,15 +56,15 @@ TestPinball.prototype =
 			jd.motorSpeed = 0.0;
 			jd.localAnchorA = p1;
 			jd.bodyB = leftFlipper;
-			jd.lowerAngle = -30.0 * b2_pi / 180.0;
-			jd.upperAngle = 5.0 * b2_pi / 180.0;
+			jd.lowerAngle = -30.0 * Math.PI / 180.0;
+			jd.upperAngle = 5.0 * Math.PI / 180.0;
 			this.m_leftJoint = this.m_world.CreateJoint(jd);
 
 			jd.motorSpeed = 0.0;
 			jd.localAnchorA = p2;
 			jd.bodyB = rightFlipper;
-			jd.lowerAngle = -5.0 * b2_pi / 180.0;
-			jd.upperAngle = 30.0 * b2_pi / 180.0;
+			jd.lowerAngle = -5.0 * Math.PI / 180.0;
+			jd.upperAngle = 30.0 * Math.PI / 180.0;
 			this.m_rightJoint = this.m_world.CreateJoint(jd);
 		}
 

@@ -24,7 +24,7 @@ TestPrismatic.prototype =
 			var bd = new b2BodyDef();
 			bd.type = b2Body.b2_dynamicBody;
 			bd.position.Set(-10.0, 10.0);
-			bd.angle = 0.5 * b2_pi;
+			bd.angle = 0.5 * Math.PI;
 			bd.allowSleep = false;
 			var body = this.m_world.CreateBody(bd);
 			body.CreateFixture(shape, 5.0);

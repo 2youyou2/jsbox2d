@@ -36,7 +36,7 @@ TestTumbler.prototype =
 			jd.localAnchorA.Set(0.0, 10.0);
 			jd.localAnchorB.Set(0.0, 0.0);
 			jd.referenceAngle = 0.0;
-			jd.motorSpeed = 0.05 * b2_pi;
+			jd.motorSpeed = 0.05 * Math.PI;
 			jd.maxMotorTorque = 1e8;
 			jd.enableMotor = true;
 			this.m_joint = this.m_world.CreateJoint(jd);

@@ -81,8 +81,8 @@ TestCar.prototype =
 
 			var jd = new b2RevoluteJointDef();
 			jd.Initialize(ground, body, body.GetPosition());
-			jd.lowerAngle = -8.0 * b2_pi / 180.0;
-			jd.upperAngle = 8.0 * b2_pi / 180.0;
+			jd.lowerAngle = -8.0 * Math.PI / 180.0;
+			jd.upperAngle = 8.0 * Math.PI / 180.0;
 			jd.enableLimit = true;
 			this.m_world.CreateJoint(jd);
 
@@ -225,7 +225,7 @@ TestCar.prototype =
 			break;
 
 		case 'Q'.charCodeAt():
-			this.m_chz = b2Max(0.0, this.m_chz - 1.0);
+			this.m_chz = Math.max(0.0, this.m_chz - 1.0);
 			this.m_spring1.SetSpringFrequencyHz(this.m_chz);
 			this.m_spring2.SetSpringFrequencyHz(this.m_chz);
 			break;

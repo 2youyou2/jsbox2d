@@ -40,12 +40,12 @@ TestRope.prototype =
 		switch (key)
 		{
 		case 'Q'.charCodeAt():
-			this.m_angle = b2Max(-b2_pi, this.m_angle - 0.05 * b2_pi);
+			this.m_angle = Math.max(-Math.PI, this.m_angle - 0.05 * Math.PI);
 			this.m_rope.SetAngle(this.m_angle);
 			break;
 
 		case 'E'.charCodeAt():
-			this.m_angle = b2Min(b2_pi, this.m_angle + 0.05 * b2_pi);
+			this.m_angle = Math.min(Math.PI, this.m_angle + 0.05 * Math.PI);
 			this.m_rope.SetAngle(this.m_angle);
 			break;
 		}
@@ -67,7 +67,7 @@ TestRope.prototype =
 		this.m_rope.Draw(this.m_debugDraw);
 
 		this.m_drawStringFunc("Press (q,e) to adjust target angle");
-		this.m_drawStringFunc("Target angle = " + (this.m_angle * 180.0 / b2_pi) + " degrees");
+		this.m_drawStringFunc("Target angle = " + (this.m_angle * 180.0 / Math.PI) + " degrees");
 	}
 };
 

@@ -82,11 +82,11 @@ TestPolyCollision.prototype =
 			break;
 
 		case 'Q'.charCodeAt():
-			this.m_angleB += 0.1 * b2_pi;
+			this.m_angleB += 0.1 * Math.PI;
 			break;
 
 		case 'E'.charCodeAt():
-			this.m_angleB -= 0.1 * b2_pi;
+			this.m_angleB -= 0.1 * Math.PI;
 			break;
 		}
 

@@ -43,7 +43,7 @@ TestOneSidedPlatform.prototype =
 			shape.m_radius = this.m_radius;
 			this.m_character = body.CreateFixture(shape, 20.0);
 
-			body.SetLinearVelocity(b2Vec2(0.0, -50.0));
+			body.SetLinearVelocity(new b2Vec2(0.0, -50.0));
 		}
 	},
 

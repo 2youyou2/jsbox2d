@@ -169,8 +169,8 @@ TestRayCast.prototype =
 
 		{
 			var w = 1.0;
-			var b = w / (2.0 + b2Sqrt(2.0));
-			var s = b2Sqrt(2.0) * b;
+			var b = w / (2.0 + Math.sqrt(2.0));
+			var s = Math.sqrt(2.0) * b;
 
 			var vertices = [];
 			vertices[0] = new b2Vec2(0.5 * s, 0.0);
@@ -222,7 +222,7 @@ TestRayCast.prototype =
 		var x = b2RandomFloat(-10.0, 10.0);
 		var y = b2RandomFloat(0.0, 20.0);
 		bd.position.Set(x, y);
-		bd.angle = b2RandomFloat(-b2_pi, b2_pi);
+		bd.angle = b2RandomFloat(-Math.PI, Math.PI);
 
 		this.m_userData[this.m_bodyIndex] = index;
 		bd.userData = this.m_userData + this.m_bodyIndex;
@@ -331,7 +331,7 @@ TestRayCast.prototype =
 
 		var L = 11.0;
 		var point1 = new b2Vec2(0.0, 10.0);
-		var d = new b2Vec2(L * cosf(this.m_angle), L * sinf(this.m_angle));
+		var d = new b2Vec2(L * Math.cos(this.m_angle), L * Math.sin(this.m_angle));
 		var point2 = b2Vec2.Add(point1, d);
 
 		if (this.m_mode == TestRayCast.e_closest)
@@ -387,7 +387,7 @@ TestRayCast.prototype =
 
 		if (advanceRay)
 		{
-			this.m_angle += 0.25 * b2_pi / 180.0;
+			this.m_angle += 0.25 * Math.PI / 180.0;
 		}
 	}
 };

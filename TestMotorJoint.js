@@ -66,8 +66,8 @@ TestMotorJoint.prototype =
 		}
 
 		var linearOffset = new b2Vec2();
-		linearOffset.x = 6.0 * sinf(2.0 * this.m_time);
-		linearOffset.y = 8.0 + 4.0 * sinf(1.0 * this.m_time);
+		linearOffset.x = 6.0 * Math.sin(2.0 * this.m_time);
+		linearOffset.y = 8.0 + 4.0 * Math.sin(1.0 * this.m_time);
 
 		var angularOffset = 4.0 * this.m_time;
 

@@ -22,7 +22,7 @@ TestBreakable.prototype =
 			var bd = new b2BodyDef();
 			bd.type = b2Body.b2_dynamicBody;
 			bd.position.Set(0.0, 40.0);
-			bd.angle = 0.25 * b2_pi;
+			bd.angle = 0.25 * Math.PI;
 			this.m_body1 = this.m_world.CreateBody(bd);
 
 			this.m_shape1 = new b2PolygonShape();
@@ -53,7 +53,7 @@ TestBreakable.prototype =
 		var maxImpulse = 0.0;
 		for (var i = 0; i < count; ++i)
 		{
-			maxImpulse = b2Max(maxImpulse, impulse.normalImpulses[i]);
+			maxImpulse = Math.max(maxImpulse, impulse.normalImpulses[i]);
 		}
 
 		if (maxImpulse > 40.0)

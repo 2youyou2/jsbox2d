@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Compiling...</title>
+
+		<script src='compat.js' type='text/javascript'></script>
+		<script src='builder.js' type='text/javascript'></script>
+		<script src='build.js' type='text/javascript'></script>
+	</head>
+	<body>
+		<script>
+			window.onload = function()
+			{
+				window['currentDirectory'] = '/Box2D/build/compiler';
+				build();
+			};
+		</script>
+	</body>
+</html>

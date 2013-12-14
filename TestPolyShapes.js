@@ -124,8 +124,8 @@ TestPolyShapes.prototype =
 
 		{
 			var w = 1.0;
-			var b = w / (2.0 + b2Sqrt(2.0));
-			var s = b2Sqrt(2.0) * b;
+			var b = w / (2.0 + Math.sqrt(2.0));
+			var s = Math.sqrt(2.0) * b;
 
 			var vertices = [];
 			vertices[0] = new b2Vec2(0.5 * s, 0.0);
@@ -168,7 +168,7 @@ TestPolyShapes.prototype =
 
 		var x = b2RandomFloat(-2.0, 2.0);
 		bd.position.Set(x, 10.0);
-		bd.angle = b2RandomFloat(-b2_pi, b2_pi);
+		bd.angle = b2RandomFloat(-Math.PI, Math.PI);
 
 		if (index == 4)
 		{

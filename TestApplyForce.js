@@ -43,7 +43,7 @@ TestApplyForce.prototype =
 
 		{
 			var xf1 = new b2Transform();
-			xf1.q.Set(0.3524 * b2_pi);
+			xf1.q.Set(0.3524 * Math.PI);
 			xf1.p = xf1.q.GetXAxis();
 
 			var vertices = [];
@@ -59,7 +59,7 @@ TestApplyForce.prototype =
 			sd1.density = 4.0;
 
 			var xf2 = new b2Transform();
-			xf2.q.Set(-0.3524 * b2_pi);
+			xf2.q.Set(-0.3524 * Math.PI);
 			xf2.p = xf2.q.GetXAxis().Negate();
 
 			vertices[0] = b2Mul_t_v2(xf2, new b2Vec2(-1.0, 0.0));
@@ -79,7 +79,7 @@ TestApplyForce.prototype =
 			bd.linearDamping = 0.5;
 
 			bd.position.Set(0.0, 2.0);
-			bd.angle = b2_pi;
+			bd.angle = Math.PI;
 			bd.allowSleep = false;
 			this.m_body = this.m_world.CreateBody(bd);
 			this.m_body.CreateFixture(sd1);
@@ -110,7 +110,7 @@ TestApplyForce.prototype =
 				var mass = body.GetMass();
 
 				// For a circle: I = 0.5 * m * r * r ==> r = sqrt(2 * I / m)
-				var radius = b2Sqrt(2.0 * I / mass);
+				var radius = Math.sqrt(2.0 * I / mass);
 
 				var jd = new b2FrictionJointDef();
 				jd.localAnchorA.SetZero();

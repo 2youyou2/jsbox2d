@@ -33,7 +33,7 @@ TestCompoundShapes.prototype =
 				var bd = new b2BodyDef();
 				bd.type = b2Body.b2_dynamicBody;
 				bd.position.Set(x + 5.0, 1.05 + 2.5 * i);
-				bd.angle = b2RandomFloat(-b2_pi, b2_pi);
+				bd.angle = b2RandomFloat(-Math.PI, Math.PI);
 				var body = this.m_world.CreateBody(bd);
 				body.CreateFixture(circle1, 2.0);
 				body.CreateFixture(circle2, 0.0);
@@ -45,7 +45,7 @@ TestCompoundShapes.prototype =
 			polygon1.SetAsBox(0.25, 0.5);
 
 			var polygon2 = new b2PolygonShape();
-			polygon2.SetAsBox(0.25, 0.5, new b2Vec2(0.0, -0.5), 0.5 * b2_pi);
+			polygon2.SetAsBox(0.25, 0.5, new b2Vec2(0.0, -0.5), 0.5 * Math.PI);
 
 			for (var i = 0; i < 10; ++i)
 			{
@@ -53,7 +53,7 @@ TestCompoundShapes.prototype =
 				var bd = new b2BodyDef();
 				bd.type = b2Body.b2_dynamicBody;
 				bd.position.Set(x - 5.0, 1.05 + 2.5 * i);
-				bd.angle = b2RandomFloat(-b2_pi, b2_pi);
+				bd.angle = b2RandomFloat(-Math.PI, Math.PI);
 				var body = this.m_world.CreateBody(bd);
 				body.CreateFixture(polygon1, 2.0);
 				body.CreateFixture(polygon2, 2.0);
@@ -62,7 +62,7 @@ TestCompoundShapes.prototype =
 
 		{
 			var xf1 = new b2Transform();
-			xf1.q.Set(0.3524 * b2_pi);
+			xf1.q.Set(0.3524 * Math.PI);
 			xf1.p = xf1.q.GetXAxis();
 
 			var vertices = [];
@@ -74,7 +74,7 @@ TestCompoundShapes.prototype =
 			triangle1.Set(vertices, 3);
 
 			var xf2 = new b2Transform();
-			xf2.q.Set(-0.3524 * b2_pi);
+			xf2.q.Set(-0.3524 * Math.PI);
 			xf2.p = xf2.q.GetXAxis().Negate();
 
 			var triangle2 = new b2PolygonShape();
