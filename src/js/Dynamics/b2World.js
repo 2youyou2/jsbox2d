@@ -625,7 +625,7 @@ b2World.prototype =
 
 	/// Get the world body list. With the returned body, use b2Body::GetNext to get
 	/// the next body in the world list. A null body indicates the end of the list.
-	/// @return the head of the world body list.
+	/** @returns {b2Body} the head of the world body list. */
 	GetBodyList: function()
 	{
 		return this.m_bodyList;

@@ -38,6 +38,16 @@ b2FrictionJointDef.prototype =
 		this.bodyB = bB;
 		this.localAnchorA = this.bodyA.GetLocalPoint(anchor);
 		this.localAnchorB = this.bodyB.GetLocalPoint(anchor);
+	},
+
+	_deserialize: function(data, bodies, joints)
+	{
+		this.parent.prototype._deserialize.call(this, data, bodies, joints);
+
+		this.localAnchorA._deserialize(data['localAnchorA']);
+		this.localAnchorB._deserialize(data['localAnchorB']);
+		this.maxForce = data['maxForce'];
+		this.maxTorque = data['maxTorque'];
 	}
 };
 
@@ -255,7 +265,21 @@ b2FrictionJoint.prototype =
 		data.velocities[this.m_indexB].v.Assign(vB);
 		data.velocities[this.m_indexB].w = wB;
 	},
-	SolvePositionConstraints: function(data) { return true; }
+	SolvePositionConstraints: function(data) { return true; },
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['localAnchorA'] = this.m_localAnchorA._serialize();
+		obj['localAnchorB'] = this.m_localAnchorB._serialize();
+		obj['maxForce'] = this.m_maxForce;
+		obj['maxTorque'] = this.m_maxTorque;
+
+		return obj;
+	}
 };
 
 b2FrictionJoint._extend(b2Joint);

@@ -25,6 +25,24 @@ b2Filter.prototype =
 		filter.maskBits = this.maskBits;
 		filter.groupIndex = this.groupIndex;
 		return filter;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		obj['categoryBits'] = this.categoryBits;
+		obj['maskBits'] = this.maskBits;
+		obj['groupIndex'] = this.groupIndex;
+
+		return obj;
+	},
+
+	_deserialize: function(data)
+	{
+		this.categoryBits = data['categoryBits'];
+		this.maskBits = data['maskBits'];
+		this.groupIndex = data['groupIndex'];
 	}
 };
 
@@ -55,6 +73,18 @@ function b2FixtureDef()
 	/// Contact filtering data.
 	this.filter = new b2Filter();
 }
+
+b2FixtureDef.prototype =
+{
+	_deserialize: function(data)
+	{
+		this.friction = data['friction'];
+		this.restitution = data['restitution'];
+		this.density = data['density'];
+		this.isSensor = data['isSensor'];
+		this.filter._deserialize(data['filter']);
+	}
+};
 
 /// This proxy is used internally to connect fixtures to the broad-phase.
 function b2FixtureProxy()
@@ -364,5 +394,20 @@ b2Fixture.prototype =
 
 			broadPhase.MoveProxy(proxy.proxyId, proxy.aabb, displacement);
 		}
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		// this will be filled in later by the serializer
+		obj['shape'] = null;
+		obj['friction'] = this.m_friction;
+		obj['restitution'] = this.m_restitution;
+		obj['density'] = this.m_density;
+		obj['isSensor'] = this.m_isSensor;
+		obj['filter'] = this.m_filter._serialize();
+
+		return obj;
 	}
 };

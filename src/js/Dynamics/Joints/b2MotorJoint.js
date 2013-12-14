@@ -42,6 +42,17 @@ b2MotorJointDef.prototype =
 		var angleA = this.bodyA.GetAngle();
 		var angleB = this.bodyB.GetAngle();
 		this.angularOffset = angleB - angleA;
+	},
+
+	_deserialize: function(data, bodies, joints)
+	{
+		this.parent.prototype._deserialize.call(this, data, bodies, joints);
+
+		this.linearOffset._deserialize(data['linearOffset']);
+		this.angularOffset = data['angularOffset'];
+		this.maxForce = data['maxForce'];
+		this.maxTorque = data['maxTorque'];
+		this.correctionFactor = data['correctionFactor'];
 	}
 };
 
@@ -309,6 +320,21 @@ b2MotorJoint.prototype =
 	SolvePositionConstraints: function(data)
 	{
 		return true;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['linearOffset'] = this.m_linearOffset._serialize();
+		obj['angularOffset'] = this.m_angularOffset;
+		obj['maxForce'] = this.m_maxForce;
+		obj['maxTorque'] = this.m_maxTorque;
+		obj['correctionFactor'] = this.m_correctionFactor;
+
+		return obj;
 	}
 };
 

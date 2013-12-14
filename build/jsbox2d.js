@@ -17,6 +17,261 @@ Function.prototype._implement = function(parent)
 {
 	return this._extend(parent);
 };
+// The frontend to the JSON serializer.
+var b2JsonSerializer =
+{
+	/** @param {b2World} world */
+	serialize: function(world)
+	{
+		// compile list of shapes
+		// TODO: check for duplicate shapes
+		var shapes = [];
+
+		/** @type Number */
+		var i;
+
+		/** @type String */
+		var serialized;
+
+		/** @type b2Body */
+		var b;
+
+		/** @type b2Fixture */
+		var f;
+
+		/** @type b2Shape */
+		var shape;
+
+		for (b = world.GetBodyList(); b; b = b.GetNext())
+		{
+			for (f = b.GetFixtureList(); f; f = f.GetNext())
+			{
+				shape = f.GetShape();
+				f.__temp_shape_id = shapes.length;
+				shapes.push(shape._serialize());
+			}
+		}
+
+		// compile list of fixtures
+		// TODO: check for duplicate fixtures
+		var fixtures = [];
+
+		for (b = world.GetBodyList(); b; b = b.GetNext())
+		{
+			b.__temp_fixture_ids = [];
+
+			for (f = b.GetFixtureList(); f; f = f.GetNext())
+			{
+				serialized = f._serialize();
+				serialized['shape'] = f.__temp_shape_id;
+				delete f.__temp_shape_id;
+
+				b.__temp_fixture_ids.push(fixtures.length);
+
+				fixtures.push(serialized);
+			}
+		}
+
+		// compile list of bodies
+		var bodies = [];
+
+		for (b = world.GetBodyList(); b; b = b.GetNext())
+		{
+			serialized = b._serialize();
+			serialized.fixtures = [];
+
+			for (i = 0; i < b.__temp_fixture_ids.length; ++i)
+				serialized.fixtures.push(b.__temp_fixture_ids[i]);
+
+			delete b.__temp_fixture_ids;
+
+			b.__temp_body_id = bodies.length;
+			bodies.push(serialized);
+		};
+
+		// compile list of joints
+		var joints = [];
+
+		/** @type b2Joint */
+		var j;
+
+		for (j = world.GetJointList(), i = 0; j; j = j.GetNext(), ++i)
+			j.__temp_joint_id = i;
+
+		for (j = world.GetJointList(); j; j = j.GetNext())
+		{
+			// special case: don't serialize mouse joints
+			if (j.GetType() === b2Joint.e_mouseJoint)
+				continue;
+
+			serialized = j._serialize();
+
+			serialized['bodyA'] = j.GetBodyA().__temp_body_id;
+			serialized['bodyB'] = j.GetBodyB().__temp_body_id;
+
+			joints.push(serialized);
+		}
+
+		for (j = world.GetJointList(); j; j = j.GetNext())
+			delete j.__temp_joint_id;
+
+		for (b = world.GetBodyList(); b; b = b.GetNext())
+			delete b.__temp_body_id;
+
+		return { shapes: shapes, fixtures: fixtures, bodies: bodies, joints: joints };
+	},
+
+	/** @param {b2World} world */
+	deserialize: function(serialized, world, clear)
+	{
+		var deserialized = JSON.parse(serialized);
+
+		if (clear)
+		{
+			for (var b = world.GetBodyList(); b; )
+			{
+				var next = b.GetNext();
+				world.DestroyBody(b);
+				b = next;
+			}
+
+			for (var j = world.GetJointList(); j; )
+			{
+				var next = j.GetNext();
+				world.DestroyJoint(j);
+				j = next;
+			}
+		}
+
+		// decompile shapes
+		var shapes = [];
+
+		for (var i = 0; i < deserialized.shapes.length; ++i)
+		{
+			var shapeData = deserialized.shapes[i];
+			var shape;
+
+			switch (shapeData.m_type)
+			{
+				case b2Shape.e_circle:
+					shape = new b2CircleShape();
+					break;
+				case b2Shape.e_edge:
+					shape = new b2EdgeShape();
+					break;
+				case b2Shape.e_chain:
+					shape = new b2ChainShape();
+					break;
+				case b2Shape.e_polygon:
+					shape = new b2PolygonShape();
+					break;
+			}
+
+			shape._deserialize(shapeData);
+			shapes.push(shape);
+		}
+
+		// decompile fixtures
+		var fixtures = [];
+
+		for (i = 0; i < deserialized.fixtures.length; ++i)
+		{
+			var fixtureData = deserialized.fixtures[i];
+			var fixture = new b2FixtureDef();
+
+			fixture._deserialize(fixtureData);
+			fixture.shape = shapes[fixtureData['shape']];
+
+			fixtures.push(fixture);
+		}
+
+		// decompile bodies
+		var bodies = [];
+
+		for (i = 0; i < deserialized.bodies.length; ++i)
+		{
+			var bodyData = deserialized.bodies[i];
+			var def = new b2BodyDef();
+
+			def._deserialize(bodyData);
+
+			var body = world.CreateBody(def);
+
+			for (var x = 0; x < bodyData.fixtures.length; ++x)
+				body.CreateFixture(fixtures[bodyData.fixtures[x]]);
+
+			bodies.push(body);
+		}
+
+		// decompile joints
+		var joints = [];
+		var gears = [];
+
+		for (i = 0; i < deserialized.joints.length; ++i)
+		{
+			var jointData = deserialized.joints[i];
+			var jointDef;
+
+			switch (jointData.type)
+			{
+				case b2Joint.e_revoluteJoint:
+					jointDef = new b2RevoluteJointDef();
+					break;
+				case b2Joint.e_prismaticJoint:
+					jointDef = new b2PrismaticJointDef();
+					break;
+				case b2Joint.e_distanceJoint:
+					jointDef = new b2DistanceJointDef();
+					break;
+				case b2Joint.e_pulleyJoint:
+					jointDef = new b2PulleyJointDef();
+					break;
+				case b2Joint.e_gearJoint:
+					jointDef = new b2GearJointDef();
+					break;
+				case b2Joint.e_wheelJoint:
+					jointDef = new b2WheelJointDef();
+					break;
+				case b2Joint.e_weldJoint:
+					jointDef = new b2WeldJointDef();
+					break;
+				case b2Joint.e_frictionJoint:
+					jointDef = new b2FrictionJointDef();
+					break;
+				case b2Joint.e_ropeJoint:
+					jointDef = new b2RopeJointDef();
+					break;
+				case b2Joint.e_motorJoint:
+					jointDef = new b2MotorJointDef();
+					break;
+				default:
+					throw new Error('unknown joint');
+			}
+
+			jointDef._deserialize(jointData, bodies);
+
+			if (jointData.type === b2Joint.e_gearJoint)
+			{
+				gears.push([jointDef, joints.length]);
+				joints.push(null);
+			}
+			else
+			{
+				var joint = world.CreateJoint(jointDef);
+				joints.push(joint);
+			}
+		}
+
+		for (i = 0; i < gears.length; ++i)
+		{
+			gears[i][0].joint1 = joints[gears[i][0].joint1];
+			gears[i][0].joint2 = joints[gears[i][0].joint2];
+
+			joint = world.CreateJoint(gears[i][0]);
+			joints[gears[i][1]] = joint;
+		}
+	}
+};
 
 /*
 * Copyright (c) 2006-2009 Erin Catto http://www.box2d.org
@@ -309,6 +564,22 @@ b2Vec2.prototype =
 	Skew: function()
 	{
 		return new b2Vec2(-this.y, this.x);
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || [];
+
+		obj[0] = this.x;
+		obj[1] = this.y;
+
+		return obj;
+	},
+
+	_deserialize: function(data)
+	{
+		this.x = data[0];
+		this.y = data[1];
 	},
 
 	x: 0,
@@ -2662,6 +2933,8 @@ function b2MassData()
 /// is created. Shapes may encapsulate a one or more child shapes.
 function b2Shape()
 {
+	this.m_type = 0;
+	this.m_radius = 0;
 }
 
 b2Shape.prototype =
@@ -2699,7 +2972,22 @@ b2Shape.prototype =
 	/// The inertia tensor is computed about the local origin.
 	/// @param massData returns the mass data for this shape.
 	/// @param density the density in kilograms per meter squared.
-	ComputeMass: function(massData, density) { }
+	ComputeMass: function(massData, density) { },
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		obj['m_type'] = this.m_type;
+		obj['m_radius'] = this.m_radius;
+
+		return obj;
+	},
+
+	_deserialize: function(data)
+	{
+		this.m_radius = data['m_radius'];
+	}
 };
 
 b2Shape.e_circle = 0;
@@ -2826,6 +3114,24 @@ b2CircleShape.prototype =
 	{
 		b2Assert(index == 0);
 		return this.m_p;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['m_p'] = this.m_p._serialize();
+
+		return obj;
+	},
+
+	_deserialize: function(data)
+	{
+		this.parent.prototype._deserialize.call(this, data);
+
+		this.m_p._deserialize(data['m_p']);
 	}
 };
 
@@ -2982,6 +3288,49 @@ b2EdgeShape.prototype =
 		massData.mass = 0.0;
 		massData.center = b2Vec2.Multiply(0.5, b2Vec2.Add(this.m_vertex1, this.m_vertex2));
 		massData.I = 0.0;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['m_count'] = this.m_count;
+
+		obj['m_vertex1'] = this.m_vertex1._serialize();
+		obj['m_vertex2'] = this.m_vertex2._serialize();
+
+		obj['m_hasVertex0'] = this.m_hasVertex0;
+
+		if (this.m_hasVertex0)
+			obj['m_vertex0'] = this.m_vertex0._serialize();
+
+		obj['m_hasVertex3'] = this.m_hasVertex3;
+
+		if (this.m_hasVertex3)
+			obj['m_vertex3'] = this.m_vertex3._serialize();
+
+		return obj;
+	},
+
+	_deserialize: function(data)
+	{
+		this.parent.prototype._deserialize.call(this, data);
+
+		this.m_count = data['m_count'];
+		this.m_vertex1._deserialize(data['m_vertex1']);
+		this.m_vertex2._deserialize(data['m_vertex2']);
+
+		this.m_hasVertex0 = data['m_hasVertex0'];
+
+		if (this.m_hasVertex0)
+			this.m_vertex0._deserialize(data['m_vertex0']);
+
+		this.m_hasVertex3 = data['m_hasVertex3'];
+
+		if (this.m_hasVertex3)
+			this.m_vertex3._deserialize(data['m_vertex3']);
 	}
 };
 
@@ -3215,6 +3564,56 @@ b2ChainShape.prototype =
 		massData.mass = 0.0;
 		massData.center.SetZero();
 		massData.I = 0.0;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['m_count'] = this.m_count;
+
+		obj['m_vertices'] = [];
+
+		for (var i = 0; i < this.m_count; ++i)
+			obj['m_vertices'].push(this.m_vertices[i]._serialize());
+
+		obj['m_hasPrevVertex'] = this.m_hasPrevVertex;
+
+		if (this.m_hasPrevVertex)
+			obj['m_prevVertex'] = this.m_prevVertex._serialize();
+
+		obj['m_hasNextVertex'] = this.m_hasNextVertex;
+
+		if (this.m_hasNextVertex)
+			obj['m_nextVertex'] = this.m_nextVertex._serialize();
+
+		return obj;
+	},
+
+	_deserialize: function(data)
+	{
+		this.parent.prototype._deserialize.call(this, data);
+
+		this.m_count = data['m_count'];
+		this.m_vertices = [];
+
+		for (var i = 0; i < this.m_count; ++i)
+		{
+			this.m_vertices[i] = new b2Vec2();
+			this.m_vertices[i]._deserialize(data['m_vertices'][i]);
+		}
+
+		this.m_hasPrevVertex = data['m_hasPrevVertex'];
+
+		if (this.m_hasPrevVertex)
+			this.m_prevVertex._deserialize(data['m_prevVertex']);
+
+		this.m_hasNextVertex = data['m_hasNextVertex'];
+
+		if (this.m_hasNextVertex)
+			this.m_nextVertex._deserialize(data['m_nextVertex']);
 	}
 };
 
@@ -3668,6 +4067,46 @@ b2PolygonShape.prototype =
 		}
 
 		return true;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['m_count'] = this.m_count;
+		obj['m_centroid'] = this.m_centroid._serialize();
+
+		obj['m_vertices'] = [];
+		obj['m_normals'] = [];
+
+		for (var i = 0; i < this.m_count; ++i)
+		{
+			obj['m_vertices'].push(this.m_vertices[i]._serialize());
+			obj['m_normals'].push(this.m_normals[i]._serialize());
+		}
+
+		return obj;
+	},
+
+	_deserialize: function(data)
+	{
+		this.parent.prototype._deserialize.call(this, data);
+
+		this.m_count = data['m_count'];
+		this.m_centroid._deserialize(data['m_centroid']);
+
+		this.m_vertices = [];
+		this.m_normals = [];
+
+		for (var i = 0; i < this.m_count; ++i)
+		{
+			this.m_vertices[i] = new b2Vec2();
+			this.m_vertices[i]._deserialize(data['m_vertices'][i]);
+			this.m_normals[i] = new b2Vec2();
+			this.m_normals[i]._deserialize(data['m_normals'][i]);
+		}
 	}
 };
 
@@ -6155,6 +6594,26 @@ function b2BodyDef()
 
 	/// Scale the gravity applied to this body.
 	this.gravityScale = 1.0;
+}
+
+b2BodyDef.prototype =
+{
+	_deserialize: function(data)
+	{
+		this.type = data['type'];
+		this.position._deserialize(data['position']);
+		this.angle = data['angle'];
+		this.linearVelocity._deserialize(data['linearVelocity']);
+		this.angularVelocity = data['angularVelocity'];
+		this.linearDamping = data['linearDamping'];
+		this.angularDamping = data['angularDamping'];
+		this.allowSleep = data['allowSleep'];
+		this.awake = data['awake'];
+		this.fixedRotation = data['fixedRotation'];
+		this.bullet = data['bullet'];
+		this.active = data['active'];
+		this.gravityScale = data['gravityScale'];
+	}
 };
 
 function b2Body(bd, world)
@@ -7167,6 +7626,29 @@ b2Body.prototype =
 		this.m_sweep.a = this.m_sweep.a0;
 		this.m_xf.q.Set(this.m_sweep.a);
 		this.m_xf.p.Assign(b2Vec2.Subtract(this.m_sweep.c, b2Mul_r_v2(this.m_xf.q, this.m_sweep.localCenter)));
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		// this will be filled in later by the serializer
+		obj['fixtures'] = null;
+		obj['type'] = this.m_type;
+		obj['position'] = this.GetPosition()._serialize();
+		obj['angle'] = this.GetAngle();
+		obj['linearVelocity'] = this.GetLinearVelocity()._serialize();
+		obj['angularVelocity'] = this.GetAngularVelocity();
+		obj['linearDamping'] = this.GetLinearDamping();
+		obj['angularDamping'] = this.GetAngularDamping();
+		obj['allowSleep'] = this.IsSleepingAllowed();
+		obj['awake'] = this.IsAwake();
+		obj['fixedRotation'] = this.IsFixedRotation();
+		obj['bullet'] = this.IsBullet();
+		obj['active'] = this.IsActive();
+		obj['gravityScale'] = this.GetGravityScale();
+
+		return obj;
 	}
 };
 
@@ -7197,6 +7679,24 @@ b2Filter.prototype =
 		filter.maskBits = this.maskBits;
 		filter.groupIndex = this.groupIndex;
 		return filter;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		obj['categoryBits'] = this.categoryBits;
+		obj['maskBits'] = this.maskBits;
+		obj['groupIndex'] = this.groupIndex;
+
+		return obj;
+	},
+
+	_deserialize: function(data)
+	{
+		this.categoryBits = data['categoryBits'];
+		this.maskBits = data['maskBits'];
+		this.groupIndex = data['groupIndex'];
 	}
 };
 
@@ -7227,6 +7727,18 @@ function b2FixtureDef()
 	/// Contact filtering data.
 	this.filter = new b2Filter();
 }
+
+b2FixtureDef.prototype =
+{
+	_deserialize: function(data)
+	{
+		this.friction = data['friction'];
+		this.restitution = data['restitution'];
+		this.density = data['density'];
+		this.isSensor = data['isSensor'];
+		this.filter._deserialize(data['filter']);
+	}
+};
 
 /// This proxy is used internally to connect fixtures to the broad-phase.
 function b2FixtureProxy()
@@ -7536,6 +8048,21 @@ b2Fixture.prototype =
 
 			broadPhase.MoveProxy(proxy.proxyId, proxy.aabb, displacement);
 		}
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		// this will be filled in later by the serializer
+		obj['shape'] = null;
+		obj['friction'] = this.m_friction;
+		obj['restitution'] = this.m_restitution;
+		obj['density'] = this.m_density;
+		obj['isSensor'] = this.m_isSensor;
+		obj['filter'] = this.m_filter._serialize();
+
+		return obj;
 	}
 };
 
@@ -8349,7 +8876,7 @@ b2World.prototype =
 
 	/// Get the world body list. With the returned body, use b2Body::GetNext to get
 	/// the next body in the world list. A null body indicates the end of the list.
-	/// @return the head of the world body list.
+	/** @returns {b2Body} the head of the world body list. */
 	GetBodyList: function()
 	{
 		return this.m_bodyList;
@@ -11366,6 +11893,16 @@ function b2JointDef()
 	this.collideConnected = false;
 };
 
+b2JointDef.prototype =
+{
+	_deserialize: function(data, bodies, joints)
+	{
+		this.bodyA = bodies[data['bodyA']];
+		this.bodyB = bodies[data['bodyB']];
+		this.collideConnected = data['collideConnected'];
+	}
+};
+
 /// The base joint class. Joints are used to constraint two bodies together in
 /// various fashions. Some joints also feature limits and motors.
 function b2Joint(def)
@@ -11466,7 +12003,20 @@ b2Joint.prototype =
 	SolveVelocityConstraints: function(data) { },
 
 	// This returns true if the position errors are within tolerance.
-	SolvePositionConstraints: function(data) { }
+	SolvePositionConstraints: function(data) { },
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		// filled in later by serializer
+		obj['bodyA'] = null;
+		obj['bodyB'] = null;
+		obj['type'] = this.m_type;
+		obj['collideConnected'] = this.m_collideConnected;
+
+		return obj;
+	}
 };
 
 b2Joint.e_inactiveLimit = 0;
@@ -11604,6 +12154,21 @@ b2RevoluteJointDef.prototype =
 		this.localAnchorA = this.bodyA.GetLocalPoint(anchor);
 		this.localAnchorB = this.bodyB.GetLocalPoint(anchor);
 		this.referenceAngle = this.bodyB.GetAngle() - this.bodyA.GetAngle();
+	},
+
+	_deserialize: function(data, bodies, joints)
+	{
+		this.parent.prototype._deserialize.call(this, data, bodies, joints);
+
+		this.localAnchorA._deserialize(data['localAnchorA']);
+		this.localAnchorB._deserialize(data['localAnchorB']);
+		this.referenceAngle = data['referenceAngle'];
+		this.lowerAngle = data['lowerAngle'];
+		this.upperAngle = data['upperAngle'];
+		this.maxMotorTorque = data['maxMotorTorque'];
+		this.motorSpeed = data['motorSpeed'];
+		this.enableLimit = data['enableLimit'];
+		this.enableMotor = data['enableMotor'];
 	}
 };
 
@@ -12097,6 +12662,25 @@ b2RevoluteJoint.prototype =
 		data.positions[this.m_indexB].a = aB;
 
 		return positionError <= b2_linearSlop && angularError <= b2_angularSlop;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['localAnchorA'] = this.m_localAnchorA._serialize();
+		obj['localAnchorB'] = this.m_localAnchorB._serialize();
+		obj['referenceAngle'] = this.m_referenceAngle;
+		obj['lowerAngle'] = this.m_lowerAngle;
+		obj['upperAngle'] = this.m_upperAngle;
+		obj['maxMotorTorque'] = this.m_maxMotorTorque;
+		obj['motorSpeed'] = this.m_motorSpeed;
+		obj['enableLimit'] = this.m_enableLimit;
+		obj['enableMotor'] = this.m_enableMotor;
+
+		return obj;
 	}
 };
 
@@ -12383,6 +12967,17 @@ b2DistanceJointDef.prototype =
 		this.localAnchorB = this.bodyB.GetLocalPoint(anchor2);
 		var d = b2Vec2.Subtract(anchor2, anchor1);
 		this.length = d.Length();
+	},
+
+	_deserialize: function(data, bodies, joints)
+	{
+		this.parent.prototype._deserialize.call(this, data, bodies, joints);
+
+		this.localAnchorA._deserialize(data['localAnchorA']);
+		this.localAnchorB._deserialize(data['localAnchorB']);
+		this.length = data['length'];
+		this.frequencyHz = data['frequencyHz'];
+		this.dampingRatio = data['dampingRatio'];
 	}
 };
 
@@ -12638,6 +13233,21 @@ b2DistanceJoint.prototype =
 		data.positions[this.m_indexB].a = aB;
 
 		return b2Abs(C) < b2_linearSlop;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['localAnchorA'] = this.m_localAnchorA._serialize();
+		obj['localAnchorB'] = this.m_localAnchorB._serialize();
+		obj['length'] = this.m_length;
+		obj['frequencyHz'] = this.m_frequencyHz;
+		obj['dampingRatio'] = this.m_dampingRatio;
+
+		return obj;
 	}
 };
 
@@ -12673,7 +13283,7 @@ function b2PrismaticJointDef()
 	this.type = b2Joint.e_prismaticJoint;
 	this.localAnchorA = new b2Vec2();
 	this.localAnchorB = new b2Vec2();
-	this.localAxisA= new b2Vec2(1.0, 0.0);
+	this.localAxisA = new b2Vec2(1.0, 0.0);
 	this.referenceAngle = 0.0;
 	this.enableLimit = false;
 	this.lowerTranslation = 0.0;
@@ -12695,6 +13305,22 @@ b2PrismaticJointDef.prototype =
 		this.localAnchorB = this.bodyB.GetLocalPoint(anchor);
 		this.localAxisA = this.bodyA.GetLocalVector(axis);
 		this.referenceAngle = this.bodyB.GetAngle() - this.bodyA.GetAngle();
+	},
+
+	_deserialize: function(data, bodies, joints)
+	{
+		this.parent.prototype._deserialize.call(this, data, bodies, joints);
+
+		this.localAnchorA._deserialize(data['localAnchorA']);
+		this.localAnchorB._deserialize(data['localAnchorB']);
+		this.localAxisA._deserialize(data['localAxisA']);
+		this.referenceAngle = data['referenceAngle'];
+		this.enableLimit = data['enableLimit'];
+		this.lowerTranslation = data['lowerTranslation'];
+		this.upperTranslation = data['upperTranslation'];
+		this.enableMotor = data['enableMotor'];
+		this.maxMotorForce = data['maxMotorForce'];
+		this.motorSpeed = data['motorSpeed'];
 	}
 };
 
@@ -13252,6 +13878,26 @@ b2PrismaticJoint.prototype =
 		data.positions[this.m_indexB].a = aB;
 
 		return linearError <= b2_linearSlop && angularError <= b2_angularSlop;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['localAnchorA'] = this.m_localAnchorA._serialize();
+		obj['localAnchorB'] = this.m_localAnchorB._serialize();
+		obj['localAxisA'] = this.m_localXAxisA._serialize();
+		obj['referenceAngle'] = this.m_referenceAngle;
+		obj['enableLimit'] = this.m_enableLimit;
+		obj['lowerTranslation'] = this.m_lowerTranslation;
+		obj['upperTranslation'] = this.m_upperTranslation;
+		obj['enableMotor'] = this.m_enableMotor;
+		obj['maxMotorForce'] = this.m_maxMotorForce;
+		obj['motorSpeed'] = this.m_motorSpeed;
+
+		return obj;
 	}
 };
 
@@ -13296,6 +13942,16 @@ b2FrictionJointDef.prototype =
 		this.bodyB = bB;
 		this.localAnchorA = this.bodyA.GetLocalPoint(anchor);
 		this.localAnchorB = this.bodyB.GetLocalPoint(anchor);
+	},
+
+	_deserialize: function(data, bodies, joints)
+	{
+		this.parent.prototype._deserialize.call(this, data, bodies, joints);
+
+		this.localAnchorA._deserialize(data['localAnchorA']);
+		this.localAnchorB._deserialize(data['localAnchorB']);
+		this.maxForce = data['maxForce'];
+		this.maxTorque = data['maxTorque'];
 	}
 };
 
@@ -13513,7 +14169,21 @@ b2FrictionJoint.prototype =
 		data.velocities[this.m_indexB].v.Assign(vB);
 		data.velocities[this.m_indexB].w = wB;
 	},
-	SolvePositionConstraints: function(data) { return true; }
+	SolvePositionConstraints: function(data) { return true; },
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['localAnchorA'] = this.m_localAnchorA._serialize();
+		obj['localAnchorB'] = this.m_localAnchorB._serialize();
+		obj['maxForce'] = this.m_maxForce;
+		obj['maxTorque'] = this.m_maxTorque;
+
+		return obj;
+	}
 };
 
 b2FrictionJoint._extend(b2Joint);
@@ -13561,6 +14231,17 @@ b2WeldJointDef.prototype =
 		this.localAnchorA.Assign(this.bodyA.GetLocalPoint(anchor));
 		this.localAnchorB.Assign(this.bodyB.GetLocalPoint(anchor));
 		this.referenceAngle = this.bodyB.GetAngle() - this.bodyA.GetAngle();
+	},
+
+	_deserialize: function(data, bodies, joints)
+	{
+		this.parent.prototype._deserialize.call(this, data, bodies, joints);
+
+		this.localAnchorA._deserialize(data['localAnchorA']);
+		this.localAnchorB._deserialize(data['localAnchorB']);
+		this.referenceAngle = data['referenceAngle'];
+		this.frequencyHz = data['frequencyHz'];
+		this.dampingRatio = data['dampingRatio'];
 	}
 };
 
@@ -13860,6 +14541,21 @@ b2WeldJoint.prototype =
 		data.positions[this.m_indexB].a = aB;
 
 		return positionError <= b2_linearSlop && angularError <= b2_angularSlop;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['localAnchorA'] = this.m_localAnchorA._serialize();
+		obj['localAnchorB'] = this.m_localAnchorB._serialize();
+		obj['referenceAngle'] = this.m_referenceAngle;
+		obj['frequencyHz'] = this.m_frequencyHz;
+		obj['dampingRatio'] = this.m_dampingRatio;
+
+		return obj;
 	}
 };
 
@@ -13915,6 +14611,20 @@ b2WheelJointDef.prototype =
 		this.localAnchorA.Assign(this.bodyA.GetLocalPoint(anchor));
 		this.localAnchorB.Assign(this.bodyB.GetLocalPoint(anchor));
 		this.localAxisA.Assign(this.bodyA.GetLocalVector(axis));
+	},
+
+	_deserialize: function(data, bodies, joints)
+	{
+		this.parent.prototype._deserialize.call(this, data, bodies, joints);
+
+		this.localAnchorA._deserialize(data['localAnchorA']);
+		this.localAnchorB._deserialize(data['localAnchorB']);
+		this.localAxisA._deserialize(data['localAxisA']);
+		this.enableMotor = data['enableMotor'];
+		this.maxMotorTorque = data['maxMotorTorque'];
+		this.motorSpeed = data['motorSpeed'];
+		this.frequencyHz = data['frequencyHz'];
+		this.dampingRatio = data['dampingRatio'];
 	}
 };
 
@@ -14317,6 +15027,24 @@ b2WheelJoint.prototype =
 		data.positions[this.m_indexB].a = aB;
 
 		return b2Abs(C) <= b2_linearSlop;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['localAnchorA'] = this.m_localAnchorA._serialize();
+		obj['localAnchorB'] = this.m_localAnchorB._serialize();
+		obj['localAxisA'] = this.m_localAxisA._serialize();
+		obj['enableMotor'] = this.m_enableMotor;
+		obj['maxMotorTorque'] = this.m_maxMotorTorque;
+		obj['motorSpeed'] = this.m_motorSpeed;
+		obj['frequencyHz'] = this.m_frequencyHz;
+		obj['dampingRatio'] = this.m_dampingRatio;
+
+		return obj;
 	}
 };
 
@@ -14351,6 +15079,19 @@ function b2GearJointDef()
 	this.joint2 = null;
 	this.ratio = 1.0;
 }
+
+b2GearJointDef.prototype =
+{
+	_deserialize: function(data, bodies, joints)
+	{
+		this.parent.prototype._deserialize.call(this, data, bodies, joints);
+
+		// set up later on
+		this.joint1 = data['joint1'];
+		this.joint2 = data['joint2'];
+		this.ratio = data['ratio'];
+	}
+};
 
 b2GearJointDef._extend(b2JointDef);
 
@@ -14736,6 +15477,19 @@ b2GearJoint.prototype =
 
 		// TODO_ERIN not implemented
 		return linearError < b2_linearSlop;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['joint1'] = this.m_joint1.__temp_joint_id;
+		obj['joint2'] = this.m_joint2.__temp_joint_id;
+		obj['ratio'] = this.m_ratio;
+
+		return obj;
 	}
 };
 
@@ -14784,6 +15538,17 @@ b2MotorJointDef.prototype =
 		var angleA = this.bodyA.GetAngle();
 		var angleB = this.bodyB.GetAngle();
 		this.angularOffset = angleB - angleA;
+	},
+
+	_deserialize: function(data, bodies, joints)
+	{
+		this.parent.prototype._deserialize.call(this, data, bodies, joints);
+
+		this.linearOffset._deserialize(data['linearOffset']);
+		this.angularOffset = data['angularOffset'];
+		this.maxForce = data['maxForce'];
+		this.maxTorque = data['maxTorque'];
+		this.correctionFactor = data['correctionFactor'];
 	}
 };
 
@@ -15051,6 +15816,21 @@ b2MotorJoint.prototype =
 	SolvePositionConstraints: function(data)
 	{
 		return true;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['linearOffset'] = this.m_linearOffset._serialize();
+		obj['angularOffset'] = this.m_angularOffset;
+		obj['maxForce'] = this.m_maxForce;
+		obj['maxTorque'] = this.m_maxTorque;
+		obj['correctionFactor'] = this.m_correctionFactor;
+
+		return obj;
 	}
 };
 
@@ -15112,6 +15892,19 @@ b2PulleyJointDef.prototype =
 		this.lengthB = dB.Length();
 		this.ratio = r;
 		b2Assert(this.ratio > b2_epsilon);
+	},
+
+	_deserialize: function(data, bodies, joints)
+	{
+		this.parent.prototype._deserialize.call(this, data, bodies, joints);
+
+		this.groundAnchorA._deserialize(data['groundAnchorA']);
+		this.groundAnchorB._deserialize(data['groundAnchorB']);
+		this.localAnchorA._deserialize(data['localAnchorA']);
+		this.localAnchorB._deserialize(data['localAnchorB']);
+		this.lengthA = data['lengthA'];
+		this.lengthB = data['lengthB'];
+		this.ratio = data['ratio'];
 	}
 };
 
@@ -15400,6 +16193,23 @@ b2PulleyJoint.prototype =
 		data.positions[this.m_indexB].a = aB;
 
 		return linearError < b2_linearSlop;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['groundAnchorA'] = this.m_groundAnchorA._serialize();
+		obj['groundAnchorB'] = this.m_groundAnchorB._serialize();
+		obj['localAnchorA'] = this.m_localAnchorA._serialize();
+		obj['localAnchorB'] = this.m_localAnchorB._serialize();
+		obj['lengthA'] = this.m_lengthA;
+		obj['lengthB'] = this.m_lengthB;
+		obj['ratio'] = this.m_ratio;
+
+		return obj;
 	}
 };
 
@@ -15435,6 +16245,18 @@ function b2RopeJointDef()
 	this.localAnchorB = new b2Vec2(1.0, 0.0);
 	this.maxLength = 0.0;
 }
+
+b2RopeJointDef.prototype =
+{
+	_deserialize: function(data, bodies, joints)
+	{
+		this.parent.prototype._deserialize.call(this, data, bodies, joints);
+
+		this.localAnchorA._deserialize(data['localAnchorA']);
+		this.localAnchorB._deserialize(data['localAnchorB']);
+		this.maxLength = data['maxLength'];
+	}
+};
 
 b2RopeJointDef._extend(b2JointDef);
 
@@ -15644,6 +16466,19 @@ b2RopeJoint.prototype =
 		data.positions[this.m_indexB].a = aB;
 
 		return length - this.m_maxLength < b2_linearSlop;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['localAnchorA'] = this.m_localAnchorA._serialize();
+		obj['localAnchorB'] = this.m_localAnchorB._serialize();
+		obj['maxLength'] = this.m_maxLength;
+
+		return obj;
 	}
 };
 
@@ -15928,5 +16763,5 @@ b2Rope.prototype =
 };
 
 
-	window["b2_version"] = b2_version;window["b2Vec2"] = b2Vec2;window["b2Vec3"] = b2Vec3;window["b2Mat22"] = b2Mat22;window["b2Mat33"] = b2Mat33;window["b2Rot"] = b2Rot;window["b2Transform"] = b2Transform;window["b2Sweep"] = b2Sweep;window["b2Dot_v2_v2"] = b2Dot_v2_v2;window["b2Cross_v2_v2"] = b2Cross_v2_v2;window["b2Cross_v2_f"] = b2Cross_v2_f;window["b2Cross_f_v2"] = b2Cross_f_v2;window["b2Mul_m22_v2"] = b2Mul_m22_v2;window["b2MulT_m22_v2"] = b2MulT_m22_v2;window["b2Distance"] = b2Distance;window["b2DistanceSquared"] = b2DistanceSquared;window["b2Dot_v3_v3"] = b2Dot_v3_v3;window["b2Cross_v3_v3"] = b2Cross_v3_v3;window["b2Mul_m22_m22"] = b2Mul_m22_m22;window["b2MulT_m22_m22"] = b2MulT_m22_m22;window["b2Mul_m33_v3"] = b2Mul_m33_v3;window["b2Mul22_m33_v2"] = b2Mul22_m33_v2;window["b2Mul_r_r"] = b2Mul_r_r;window["b2MulT_r_r"] = b2MulT_r_r;window["b2Mul_r_v2"] = b2Mul_r_v2;window["b2MulT_r_v2"] = b2MulT_r_v2;window["b2Mul_t_v2"] = b2Mul_t_v2;window["b2Min_v2"] = b2Min_v2;window["b2Max_v2"] = b2Max_v2;window["b2Clamp"] = b2Clamp;window["b2MulT_t_v2"] = b2MulT_t_v2;window["b2Mul_t_t"] = b2Mul_t_t;window["b2MulT_t_t"] = b2MulT_t_t;window["b2Clamp_v2"] = b2Clamp_v2;window["b2NextPowerOfTwo"] = b2NextPowerOfTwo;window["b2Abs_v2"] = b2Abs_v2;window["b2Abs_m22"] = b2Abs_m22;window["b2IsPowerOfTwo"] = b2IsPowerOfTwo;window["b2RandomFloat"] = b2RandomFloat;window["b2Timer"] = b2Timer;window["b2Color"] = b2Color;window["b2Draw"] = b2Draw;window["b2ContactID"] = b2ContactID;window["b2ManifoldPoint"] = b2ManifoldPoint;window["b2Manifold"] = b2Manifold;window["b2WorldManifold"] = b2WorldManifold;window["b2GetPointStates"] = b2GetPointStates;window["b2ClipVertex"] = b2ClipVertex;window["b2RayCastInput"] = b2RayCastInput;window["b2RayCastOutput"] = b2RayCastOutput;window["b2AABB"] = b2AABB;window["b2CollideCircles"] = b2CollideCircles;window["b2CollidePolygonAndCircle"] = b2CollidePolygonAndCircle;window["b2FindMaxSeparation"] = b2FindMaxSeparation;window["b2FindIncidentEdge"] = b2FindIncidentEdge;window["b2CollidePolygons"] = b2CollidePolygons;window["b2CollideEdgeAndCircle"] = b2CollideEdgeAndCircle;window["b2EPAxis"] = b2EPAxis;window["b2TempPolygon"] = b2TempPolygon;window["b2ReferenceFace"] = b2ReferenceFace;window["b2EPCollider"] = b2EPCollider;window["b2CollideEdgeAndPolygon"] = b2CollideEdgeAndPolygon;window["b2ClipSegmentToLine"] = b2ClipSegmentToLine;window["b2TestShapeOverlap"] = b2TestShapeOverlap;window["b2TestOverlap"] = b2TestOverlap;window["b2Shape"] = b2Shape;window["b2CircleShape"] = b2CircleShape;window["b2EdgeShape"] = b2EdgeShape;window["b2ChainShape"] = b2ChainShape;window["b2PolygonShape"] = b2PolygonShape;window["b2Pair"] = b2Pair;window["b2PairLessThan"] = b2PairLessThan;window["b2BroadPhase"] = b2BroadPhase;window["b2DistanceProxy"] = b2DistanceProxy;window["b2SimplexCache"] = b2SimplexCache;window["b2DistanceInput"] = b2DistanceInput;window["b2DistanceOutput"] = b2DistanceOutput;window["b2SimplexVertex"] = b2SimplexVertex;window["b2Simplex"] = b2Simplex;window["b2DistanceFunc"] = b2DistanceFunc;window["b2TreeNode"] = b2TreeNode;window["b2DynamicTree"] = b2DynamicTree;window["b2TOIInput"] = b2TOIInput;window["b2TOIOutput"] = b2TOIOutput;window["b2SeparationFunction"] = b2SeparationFunction;window["b2TimeOfImpact"] = b2TimeOfImpact;window["b2BodyDef"] = b2BodyDef;window["b2Body"] = b2Body;window["b2Filter"] = b2Filter;window["b2FixtureDef"] = b2FixtureDef;window["b2Fixture"] = b2Fixture;window["b2DestructionListener"] = b2DestructionListener;window["b2ContactFilter"] = b2ContactFilter;window["b2ContactImpulse"] = b2ContactImpulse;window["b2ContactListener"] = b2ContactListener;window["b2QueryCallback"] = b2QueryCallback;window["b2RayCastCallback"] = b2RayCastCallback;window["b2Profile"] = b2Profile;window["b2TimeStep"] = b2TimeStep;window["b2Position"] = b2Position;window["b2Velocity"] = b2Velocity;window["b2SolverData"] = b2SolverData;window["b2World"] = b2World;window["b2MixFriction"] = b2MixFriction;window["b2MixRestitution"] = b2MixRestitution;window["b2ContactRegister"] = b2ContactRegister;window["b2ContactEdge"] = b2ContactEdge;window["b2Contact"] = b2Contact;window["b2CircleContact"] = b2CircleContact;window["b2PolygonContact"] = b2PolygonContact;window["b2ChainAndCircleContact"] = b2ChainAndCircleContact;window["b2ChainAndPolygonContact"] = b2ChainAndPolygonContact;window["b2EdgeAndCircleContact"] = b2EdgeAndCircleContact;window["b2EdgeAndPolygonContact"] = b2EdgeAndPolygonContact;window["b2PolygonAndCircleContact"] = b2PolygonAndCircleContact;window["b2_defaultFilter"] = b2_defaultFilter;window["b2_defaultListener"] = b2_defaultListener;window["b2ContactManager"] = b2ContactManager;window["b2VelocityConstraintPoint"] = b2VelocityConstraintPoint;window["b2ContactPositionConstraint"] = b2ContactPositionConstraint;window["b2ContactVelocityConstraint"] = b2ContactVelocityConstraint;window["b2PositionSolverManifold"] = b2PositionSolverManifold;window["b2ContactSolverDef"] = b2ContactSolverDef;window["b2ContactSolver"] = b2ContactSolver;window["b2Island"] = b2Island;window["b2Jacobian"] = b2Jacobian;window["b2JointEdge"] = b2JointEdge;window["b2JointDef"] = b2JointDef;window["b2Joint"] = b2Joint;window["b2RevoluteJointDef"] = b2RevoluteJointDef;window["b2RevoluteJoint"] = b2RevoluteJoint;window["b2MouseJointDef"] = b2MouseJointDef;window["b2MouseJoint"] = b2MouseJoint;window["b2DistanceJointDef"] = b2DistanceJointDef;window["b2DistanceJoint"] = b2DistanceJoint;window["b2PrismaticJointDef"] = b2PrismaticJointDef;window["b2PrismaticJoint"] = b2PrismaticJoint;window["b2FrictionJointDef"] = b2FrictionJointDef;window["b2FrictionJoint"] = b2FrictionJoint;window["b2WeldJointDef"] = b2WeldJointDef;window["b2WeldJoint"] = b2WeldJoint;window["b2WheelJointDef"] = b2WheelJointDef;window["b2WheelJoint"] = b2WheelJoint;window["b2GearJointDef"] = b2GearJointDef;window["b2GearJoint"] = b2GearJoint;window["b2MotorJointDef"] = b2MotorJointDef;window["b2MotorJoint"] = b2MotorJoint;window["b2PulleyJointDef"] = b2PulleyJointDef;window["b2PulleyJoint"] = b2PulleyJoint;window["b2RopeJointDef"] = b2RopeJointDef;window["b2RopeJoint"] = b2RopeJoint;window["b2RopeDef"] = b2RopeDef;window["b2Rope"] = b2Rope;window["b2_maxManifoldPoints"] = b2_maxManifoldPoints;window["b2_maxPolygonVertices"] = b2_maxPolygonVertices;window["b2_aabbExtension"] = b2_aabbExtension;window["b2_aabbMultiplier"] = b2_aabbMultiplier;window["b2_linearSlop"] = b2_linearSlop;window["b2_angularSlop"] = b2_angularSlop;window["b2_polygonRadius"] = b2_polygonRadius;window["b2_maxSubSteps"] = b2_maxSubSteps;window["b2_maxTOIContacts"] = b2_maxTOIContacts;window["b2_velocityThreshold"] = b2_velocityThreshold;window["b2_maxLinearCorrection"] = b2_maxLinearCorrection;window["b2_maxAngularCorrection"] = b2_maxAngularCorrection;window["b2_maxTranslation"] = b2_maxTranslation;window["b2_maxTranslationSquared"] = b2_maxTranslationSquared;window["b2_maxRotation"] = b2_maxRotation;window["b2_maxRotationSquared"] = b2_maxRotationSquared;window["b2_baumgarte"] = b2_baumgarte;window["b2_toiBaugarte"] = b2_toiBaugarte;window["b2_timeToSleep"] = b2_timeToSleep;window["b2_linearSleepTolerance"] = b2_linearSleepTolerance;window["b2_angularSleepTolerance"] = b2_angularSleepTolerance;window["b2Assert"] = b2Assert;window["b2_epsilon"] = b2_epsilon;
+	window["b2_version"] = b2_version;window["b2Vec2"] = b2Vec2;window["b2Vec3"] = b2Vec3;window["b2Mat22"] = b2Mat22;window["b2Mat33"] = b2Mat33;window["b2Rot"] = b2Rot;window["b2Transform"] = b2Transform;window["b2Sweep"] = b2Sweep;window["b2Dot_v2_v2"] = b2Dot_v2_v2;window["b2Cross_v2_v2"] = b2Cross_v2_v2;window["b2Cross_v2_f"] = b2Cross_v2_f;window["b2Cross_f_v2"] = b2Cross_f_v2;window["b2Mul_m22_v2"] = b2Mul_m22_v2;window["b2MulT_m22_v2"] = b2MulT_m22_v2;window["b2Distance"] = b2Distance;window["b2DistanceSquared"] = b2DistanceSquared;window["b2Dot_v3_v3"] = b2Dot_v3_v3;window["b2Cross_v3_v3"] = b2Cross_v3_v3;window["b2Mul_m22_m22"] = b2Mul_m22_m22;window["b2MulT_m22_m22"] = b2MulT_m22_m22;window["b2Mul_m33_v3"] = b2Mul_m33_v3;window["b2Mul22_m33_v2"] = b2Mul22_m33_v2;window["b2Mul_r_r"] = b2Mul_r_r;window["b2MulT_r_r"] = b2MulT_r_r;window["b2Mul_r_v2"] = b2Mul_r_v2;window["b2MulT_r_v2"] = b2MulT_r_v2;window["b2Mul_t_v2"] = b2Mul_t_v2;window["b2Min_v2"] = b2Min_v2;window["b2Max_v2"] = b2Max_v2;window["b2Clamp"] = b2Clamp;window["b2MulT_t_v2"] = b2MulT_t_v2;window["b2Mul_t_t"] = b2Mul_t_t;window["b2MulT_t_t"] = b2MulT_t_t;window["b2Clamp_v2"] = b2Clamp_v2;window["b2NextPowerOfTwo"] = b2NextPowerOfTwo;window["b2Abs_v2"] = b2Abs_v2;window["b2Abs_m22"] = b2Abs_m22;window["b2IsPowerOfTwo"] = b2IsPowerOfTwo;window["b2RandomFloat"] = b2RandomFloat;window["b2Timer"] = b2Timer;window["b2Color"] = b2Color;window["b2Draw"] = b2Draw;window["b2ContactID"] = b2ContactID;window["b2ManifoldPoint"] = b2ManifoldPoint;window["b2Manifold"] = b2Manifold;window["b2WorldManifold"] = b2WorldManifold;window["b2GetPointStates"] = b2GetPointStates;window["b2ClipVertex"] = b2ClipVertex;window["b2RayCastInput"] = b2RayCastInput;window["b2RayCastOutput"] = b2RayCastOutput;window["b2AABB"] = b2AABB;window["b2CollideCircles"] = b2CollideCircles;window["b2CollidePolygonAndCircle"] = b2CollidePolygonAndCircle;window["b2FindMaxSeparation"] = b2FindMaxSeparation;window["b2FindIncidentEdge"] = b2FindIncidentEdge;window["b2CollidePolygons"] = b2CollidePolygons;window["b2CollideEdgeAndCircle"] = b2CollideEdgeAndCircle;window["b2EPAxis"] = b2EPAxis;window["b2TempPolygon"] = b2TempPolygon;window["b2ReferenceFace"] = b2ReferenceFace;window["b2EPCollider"] = b2EPCollider;window["b2CollideEdgeAndPolygon"] = b2CollideEdgeAndPolygon;window["b2ClipSegmentToLine"] = b2ClipSegmentToLine;window["b2TestShapeOverlap"] = b2TestShapeOverlap;window["b2TestOverlap"] = b2TestOverlap;window["b2Shape"] = b2Shape;window["b2CircleShape"] = b2CircleShape;window["b2EdgeShape"] = b2EdgeShape;window["b2ChainShape"] = b2ChainShape;window["b2PolygonShape"] = b2PolygonShape;window["b2Pair"] = b2Pair;window["b2PairLessThan"] = b2PairLessThan;window["b2BroadPhase"] = b2BroadPhase;window["b2DistanceProxy"] = b2DistanceProxy;window["b2SimplexCache"] = b2SimplexCache;window["b2DistanceInput"] = b2DistanceInput;window["b2DistanceOutput"] = b2DistanceOutput;window["b2SimplexVertex"] = b2SimplexVertex;window["b2Simplex"] = b2Simplex;window["b2DistanceFunc"] = b2DistanceFunc;window["b2TreeNode"] = b2TreeNode;window["b2DynamicTree"] = b2DynamicTree;window["b2TOIInput"] = b2TOIInput;window["b2TOIOutput"] = b2TOIOutput;window["b2SeparationFunction"] = b2SeparationFunction;window["b2TimeOfImpact"] = b2TimeOfImpact;window["b2BodyDef"] = b2BodyDef;window["b2Body"] = b2Body;window["b2Filter"] = b2Filter;window["b2FixtureDef"] = b2FixtureDef;window["b2Fixture"] = b2Fixture;window["b2DestructionListener"] = b2DestructionListener;window["b2ContactFilter"] = b2ContactFilter;window["b2ContactImpulse"] = b2ContactImpulse;window["b2ContactListener"] = b2ContactListener;window["b2QueryCallback"] = b2QueryCallback;window["b2RayCastCallback"] = b2RayCastCallback;window["b2Profile"] = b2Profile;window["b2TimeStep"] = b2TimeStep;window["b2Position"] = b2Position;window["b2Velocity"] = b2Velocity;window["b2SolverData"] = b2SolverData;window["b2World"] = b2World;window["b2MixFriction"] = b2MixFriction;window["b2MixRestitution"] = b2MixRestitution;window["b2ContactRegister"] = b2ContactRegister;window["b2ContactEdge"] = b2ContactEdge;window["b2Contact"] = b2Contact;window["b2CircleContact"] = b2CircleContact;window["b2PolygonContact"] = b2PolygonContact;window["b2ChainAndCircleContact"] = b2ChainAndCircleContact;window["b2ChainAndPolygonContact"] = b2ChainAndPolygonContact;window["b2EdgeAndCircleContact"] = b2EdgeAndCircleContact;window["b2EdgeAndPolygonContact"] = b2EdgeAndPolygonContact;window["b2PolygonAndCircleContact"] = b2PolygonAndCircleContact;window["b2_defaultFilter"] = b2_defaultFilter;window["b2_defaultListener"] = b2_defaultListener;window["b2ContactManager"] = b2ContactManager;window["b2VelocityConstraintPoint"] = b2VelocityConstraintPoint;window["b2ContactPositionConstraint"] = b2ContactPositionConstraint;window["b2ContactVelocityConstraint"] = b2ContactVelocityConstraint;window["b2PositionSolverManifold"] = b2PositionSolverManifold;window["b2ContactSolverDef"] = b2ContactSolverDef;window["b2ContactSolver"] = b2ContactSolver;window["b2Island"] = b2Island;window["b2Jacobian"] = b2Jacobian;window["b2JointEdge"] = b2JointEdge;window["b2JointDef"] = b2JointDef;window["b2Joint"] = b2Joint;window["b2RevoluteJointDef"] = b2RevoluteJointDef;window["b2RevoluteJoint"] = b2RevoluteJoint;window["b2MouseJointDef"] = b2MouseJointDef;window["b2MouseJoint"] = b2MouseJoint;window["b2DistanceJointDef"] = b2DistanceJointDef;window["b2DistanceJoint"] = b2DistanceJoint;window["b2PrismaticJointDef"] = b2PrismaticJointDef;window["b2PrismaticJoint"] = b2PrismaticJoint;window["b2FrictionJointDef"] = b2FrictionJointDef;window["b2FrictionJoint"] = b2FrictionJoint;window["b2WeldJointDef"] = b2WeldJointDef;window["b2WeldJoint"] = b2WeldJoint;window["b2WheelJointDef"] = b2WheelJointDef;window["b2WheelJoint"] = b2WheelJoint;window["b2GearJointDef"] = b2GearJointDef;window["b2GearJoint"] = b2GearJoint;window["b2MotorJointDef"] = b2MotorJointDef;window["b2MotorJoint"] = b2MotorJoint;window["b2PulleyJointDef"] = b2PulleyJointDef;window["b2PulleyJoint"] = b2PulleyJoint;window["b2RopeJointDef"] = b2RopeJointDef;window["b2RopeJoint"] = b2RopeJoint;window["b2RopeDef"] = b2RopeDef;window["b2Rope"] = b2Rope;window["b2_maxManifoldPoints"] = b2_maxManifoldPoints;window["b2_maxPolygonVertices"] = b2_maxPolygonVertices;window["b2_aabbExtension"] = b2_aabbExtension;window["b2_aabbMultiplier"] = b2_aabbMultiplier;window["b2_linearSlop"] = b2_linearSlop;window["b2_angularSlop"] = b2_angularSlop;window["b2_polygonRadius"] = b2_polygonRadius;window["b2_maxSubSteps"] = b2_maxSubSteps;window["b2_maxTOIContacts"] = b2_maxTOIContacts;window["b2_velocityThreshold"] = b2_velocityThreshold;window["b2_maxLinearCorrection"] = b2_maxLinearCorrection;window["b2_maxAngularCorrection"] = b2_maxAngularCorrection;window["b2_maxTranslation"] = b2_maxTranslation;window["b2_maxTranslationSquared"] = b2_maxTranslationSquared;window["b2_maxRotation"] = b2_maxRotation;window["b2_maxRotationSquared"] = b2_maxRotationSquared;window["b2_baumgarte"] = b2_baumgarte;window["b2_toiBaugarte"] = b2_toiBaugarte;window["b2_timeToSleep"] = b2_timeToSleep;window["b2_linearSleepTolerance"] = b2_linearSleepTolerance;window["b2_angularSleepTolerance"] = b2_angularSleepTolerance;window["b2Assert"] = b2Assert;window["b2_epsilon"] = b2_epsilon;window["b2JsonSerializer"] = b2JsonSerializer;
 })();

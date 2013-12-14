@@ -55,6 +55,26 @@ function b2BodyDef()
 
 	/// Scale the gravity applied to this body.
 	this.gravityScale = 1.0;
+}
+
+b2BodyDef.prototype =
+{
+	_deserialize: function(data)
+	{
+		this.type = data['type'];
+		this.position._deserialize(data['position']);
+		this.angle = data['angle'];
+		this.linearVelocity._deserialize(data['linearVelocity']);
+		this.angularVelocity = data['angularVelocity'];
+		this.linearDamping = data['linearDamping'];
+		this.angularDamping = data['angularDamping'];
+		this.allowSleep = data['allowSleep'];
+		this.awake = data['awake'];
+		this.fixedRotation = data['fixedRotation'];
+		this.bullet = data['bullet'];
+		this.active = data['active'];
+		this.gravityScale = data['gravityScale'];
+	}
 };
 
 function b2Body(bd, world)
@@ -1067,5 +1087,28 @@ b2Body.prototype =
 		this.m_sweep.a = this.m_sweep.a0;
 		this.m_xf.q.Set(this.m_sweep.a);
 		this.m_xf.p.Assign(b2Vec2.Subtract(this.m_sweep.c, b2Mul_r_v2(this.m_xf.q, this.m_sweep.localCenter)));
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		// this will be filled in later by the serializer
+		obj['fixtures'] = null;
+		obj['type'] = this.m_type;
+		obj['position'] = this.GetPosition()._serialize();
+		obj['angle'] = this.GetAngle();
+		obj['linearVelocity'] = this.GetLinearVelocity()._serialize();
+		obj['angularVelocity'] = this.GetAngularVelocity();
+		obj['linearDamping'] = this.GetLinearDamping();
+		obj['angularDamping'] = this.GetAngularDamping();
+		obj['allowSleep'] = this.IsSleepingAllowed();
+		obj['awake'] = this.IsAwake();
+		obj['fixedRotation'] = this.IsFixedRotation();
+		obj['bullet'] = this.IsBullet();
+		obj['active'] = this.IsActive();
+		obj['gravityScale'] = this.GetGravityScale();
+
+		return obj;
 	}
 };

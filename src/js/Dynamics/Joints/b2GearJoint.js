@@ -28,6 +28,19 @@ function b2GearJointDef()
 	this.ratio = 1.0;
 }
 
+b2GearJointDef.prototype =
+{
+	_deserialize: function(data, bodies, joints)
+	{
+		this.parent.prototype._deserialize.call(this, data, bodies, joints);
+
+		// set up later on
+		this.joint1 = data['joint1'];
+		this.joint2 = data['joint2'];
+		this.ratio = data['ratio'];
+	}
+};
+
 b2GearJointDef._extend(b2JointDef);
 
 /// A gear joint is used to connect two joints together. Either joint
@@ -412,6 +425,19 @@ b2GearJoint.prototype =
 
 		// TODO_ERIN not implemented
 		return linearError < b2_linearSlop;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['joint1'] = this.m_joint1.__temp_joint_id;
+		obj['joint2'] = this.m_joint2.__temp_joint_id;
+		obj['ratio'] = this.m_ratio;
+
+		return obj;
 	}
 };
 

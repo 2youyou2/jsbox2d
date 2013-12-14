@@ -105,6 +105,8 @@ TestRevolute.prototype =
 
 	Keyboard: function(key)
 	{
+		this.parent.prototype.Keyboard.call(this, key);
+
 		switch (key)
 		{
 		case 'L'.charCodeAt():

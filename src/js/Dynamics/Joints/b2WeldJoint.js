@@ -42,6 +42,17 @@ b2WeldJointDef.prototype =
 		this.localAnchorA.Assign(this.bodyA.GetLocalPoint(anchor));
 		this.localAnchorB.Assign(this.bodyB.GetLocalPoint(anchor));
 		this.referenceAngle = this.bodyB.GetAngle() - this.bodyA.GetAngle();
+	},
+
+	_deserialize: function(data, bodies, joints)
+	{
+		this.parent.prototype._deserialize.call(this, data, bodies, joints);
+
+		this.localAnchorA._deserialize(data['localAnchorA']);
+		this.localAnchorB._deserialize(data['localAnchorB']);
+		this.referenceAngle = data['referenceAngle'];
+		this.frequencyHz = data['frequencyHz'];
+		this.dampingRatio = data['dampingRatio'];
 	}
 };
 
@@ -341,6 +352,21 @@ b2WeldJoint.prototype =
 		data.positions[this.m_indexB].a = aB;
 
 		return positionError <= b2_linearSlop && angularError <= b2_angularSlop;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['localAnchorA'] = this.m_localAnchorA._serialize();
+		obj['localAnchorB'] = this.m_localAnchorB._serialize();
+		obj['referenceAngle'] = this.m_referenceAngle;
+		obj['frequencyHz'] = this.m_frequencyHz;
+		obj['dampingRatio'] = this.m_dampingRatio;
+
+		return obj;
 	}
 };
 

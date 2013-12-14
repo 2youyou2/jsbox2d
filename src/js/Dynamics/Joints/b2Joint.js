@@ -46,6 +46,16 @@ function b2JointDef()
 	this.collideConnected = false;
 };
 
+b2JointDef.prototype =
+{
+	_deserialize: function(data, bodies, joints)
+	{
+		this.bodyA = bodies[data['bodyA']];
+		this.bodyB = bodies[data['bodyB']];
+		this.collideConnected = data['collideConnected'];
+	}
+};
+
 /// The base joint class. Joints are used to constraint two bodies together in
 /// various fashions. Some joints also feature limits and motors.
 function b2Joint(def)
@@ -146,7 +156,20 @@ b2Joint.prototype =
 	SolveVelocityConstraints: function(data) { },
 
 	// This returns true if the position errors are within tolerance.
-	SolvePositionConstraints: function(data) { }
+	SolvePositionConstraints: function(data) { },
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		// filled in later by serializer
+		obj['bodyA'] = null;
+		obj['bodyB'] = null;
+		obj['type'] = this.m_type;
+		obj['collideConnected'] = this.m_collideConnected;
+
+		return obj;
+	}
 };
 
 b2Joint.e_inactiveLimit = 0;

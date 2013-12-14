@@ -447,6 +447,46 @@ b2PolygonShape.prototype =
 		}
 
 		return true;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['m_count'] = this.m_count;
+		obj['m_centroid'] = this.m_centroid._serialize();
+
+		obj['m_vertices'] = [];
+		obj['m_normals'] = [];
+
+		for (var i = 0; i < this.m_count; ++i)
+		{
+			obj['m_vertices'].push(this.m_vertices[i]._serialize());
+			obj['m_normals'].push(this.m_normals[i]._serialize());
+		}
+
+		return obj;
+	},
+
+	_deserialize: function(data)
+	{
+		this.parent.prototype._deserialize.call(this, data);
+
+		this.m_count = data['m_count'];
+		this.m_centroid._deserialize(data['m_centroid']);
+
+		this.m_vertices = [];
+		this.m_normals = [];
+
+		for (var i = 0; i < this.m_count; ++i)
+		{
+			this.m_vertices[i] = new b2Vec2();
+			this.m_vertices[i]._deserialize(data['m_vertices'][i]);
+			this.m_normals[i] = new b2Vec2();
+			this.m_normals[i]._deserialize(data['m_normals'][i]);
+		}
 	}
 };
 

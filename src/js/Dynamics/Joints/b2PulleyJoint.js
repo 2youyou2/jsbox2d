@@ -55,6 +55,19 @@ b2PulleyJointDef.prototype =
 		this.lengthB = dB.Length();
 		this.ratio = r;
 		b2Assert(this.ratio > b2_epsilon);
+	},
+
+	_deserialize: function(data, bodies, joints)
+	{
+		this.parent.prototype._deserialize.call(this, data, bodies, joints);
+
+		this.groundAnchorA._deserialize(data['groundAnchorA']);
+		this.groundAnchorB._deserialize(data['groundAnchorB']);
+		this.localAnchorA._deserialize(data['localAnchorA']);
+		this.localAnchorB._deserialize(data['localAnchorB']);
+		this.lengthA = data['lengthA'];
+		this.lengthB = data['lengthB'];
+		this.ratio = data['ratio'];
 	}
 };
 
@@ -343,6 +356,23 @@ b2PulleyJoint.prototype =
 		data.positions[this.m_indexB].a = aB;
 
 		return linearError < b2_linearSlop;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['groundAnchorA'] = this.m_groundAnchorA._serialize();
+		obj['groundAnchorB'] = this.m_groundAnchorB._serialize();
+		obj['localAnchorA'] = this.m_localAnchorA._serialize();
+		obj['localAnchorB'] = this.m_localAnchorB._serialize();
+		obj['lengthA'] = this.m_lengthA;
+		obj['lengthB'] = this.m_lengthB;
+		obj['ratio'] = this.m_ratio;
+
+		return obj;
 	}
 };
 

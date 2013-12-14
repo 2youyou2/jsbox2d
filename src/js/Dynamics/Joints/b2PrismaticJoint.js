@@ -29,7 +29,7 @@ function b2PrismaticJointDef()
 	this.type = b2Joint.e_prismaticJoint;
 	this.localAnchorA = new b2Vec2();
 	this.localAnchorB = new b2Vec2();
-	this.localAxisA= new b2Vec2(1.0, 0.0);
+	this.localAxisA = new b2Vec2(1.0, 0.0);
 	this.referenceAngle = 0.0;
 	this.enableLimit = false;
 	this.lowerTranslation = 0.0;
@@ -51,6 +51,22 @@ b2PrismaticJointDef.prototype =
 		this.localAnchorB = this.bodyB.GetLocalPoint(anchor);
 		this.localAxisA = this.bodyA.GetLocalVector(axis);
 		this.referenceAngle = this.bodyB.GetAngle() - this.bodyA.GetAngle();
+	},
+
+	_deserialize: function(data, bodies, joints)
+	{
+		this.parent.prototype._deserialize.call(this, data, bodies, joints);
+
+		this.localAnchorA._deserialize(data['localAnchorA']);
+		this.localAnchorB._deserialize(data['localAnchorB']);
+		this.localAxisA._deserialize(data['localAxisA']);
+		this.referenceAngle = data['referenceAngle'];
+		this.enableLimit = data['enableLimit'];
+		this.lowerTranslation = data['lowerTranslation'];
+		this.upperTranslation = data['upperTranslation'];
+		this.enableMotor = data['enableMotor'];
+		this.maxMotorForce = data['maxMotorForce'];
+		this.motorSpeed = data['motorSpeed'];
 	}
 };
 
@@ -608,6 +624,26 @@ b2PrismaticJoint.prototype =
 		data.positions[this.m_indexB].a = aB;
 
 		return linearError <= b2_linearSlop && angularError <= b2_angularSlop;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['localAnchorA'] = this.m_localAnchorA._serialize();
+		obj['localAnchorB'] = this.m_localAnchorB._serialize();
+		obj['localAxisA'] = this.m_localXAxisA._serialize();
+		obj['referenceAngle'] = this.m_referenceAngle;
+		obj['enableLimit'] = this.m_enableLimit;
+		obj['lowerTranslation'] = this.m_lowerTranslation;
+		obj['upperTranslation'] = this.m_upperTranslation;
+		obj['enableMotor'] = this.m_enableMotor;
+		obj['maxMotorForce'] = this.m_maxMotorForce;
+		obj['motorSpeed'] = this.m_motorSpeed;
+
+		return obj;
 	}
 };
 

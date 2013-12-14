@@ -36,6 +36,8 @@ function b2MassData()
 /// is created. Shapes may encapsulate a one or more child shapes.
 function b2Shape()
 {
+	this.m_type = 0;
+	this.m_radius = 0;
 }
 
 b2Shape.prototype =
@@ -73,7 +75,22 @@ b2Shape.prototype =
 	/// The inertia tensor is computed about the local origin.
 	/// @param massData returns the mass data for this shape.
 	/// @param density the density in kilograms per meter squared.
-	ComputeMass: function(massData, density) { }
+	ComputeMass: function(massData, density) { },
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		obj['m_type'] = this.m_type;
+		obj['m_radius'] = this.m_radius;
+
+		return obj;
+	},
+
+	_deserialize: function(data)
+	{
+		this.m_radius = data['m_radius'];
+	}
 };
 
 b2Shape.e_circle = 0;

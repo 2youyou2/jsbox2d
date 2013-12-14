@@ -48,6 +48,20 @@ b2WheelJointDef.prototype =
 		this.localAnchorA.Assign(this.bodyA.GetLocalPoint(anchor));
 		this.localAnchorB.Assign(this.bodyB.GetLocalPoint(anchor));
 		this.localAxisA.Assign(this.bodyA.GetLocalVector(axis));
+	},
+
+	_deserialize: function(data, bodies, joints)
+	{
+		this.parent.prototype._deserialize.call(this, data, bodies, joints);
+
+		this.localAnchorA._deserialize(data['localAnchorA']);
+		this.localAnchorB._deserialize(data['localAnchorB']);
+		this.localAxisA._deserialize(data['localAxisA']);
+		this.enableMotor = data['enableMotor'];
+		this.maxMotorTorque = data['maxMotorTorque'];
+		this.motorSpeed = data['motorSpeed'];
+		this.frequencyHz = data['frequencyHz'];
+		this.dampingRatio = data['dampingRatio'];
 	}
 };
 
@@ -450,6 +464,24 @@ b2WheelJoint.prototype =
 		data.positions[this.m_indexB].a = aB;
 
 		return b2Abs(C) <= b2_linearSlop;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['localAnchorA'] = this.m_localAnchorA._serialize();
+		obj['localAnchorB'] = this.m_localAnchorB._serialize();
+		obj['localAxisA'] = this.m_localAxisA._serialize();
+		obj['enableMotor'] = this.m_enableMotor;
+		obj['maxMotorTorque'] = this.m_maxMotorTorque;
+		obj['motorSpeed'] = this.m_motorSpeed;
+		obj['frequencyHz'] = this.m_frequencyHz;
+		obj['dampingRatio'] = this.m_dampingRatio;
+
+		return obj;
 	}
 };
 

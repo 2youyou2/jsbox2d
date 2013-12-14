@@ -116,6 +116,24 @@ b2CircleShape.prototype =
 	{
 		b2Assert(index == 0);
 		return this.m_p;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['m_p'] = this.m_p._serialize();
+
+		return obj;
+	},
+
+	_deserialize: function(data)
+	{
+		this.parent.prototype._deserialize.call(this, data);
+
+		this.m_p._deserialize(data['m_p']);
 	}
 };
 

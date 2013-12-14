@@ -1,6 +1,7 @@
 (function()
 {
 '#include ../../src/js/System/Class.js';
+'#include ../../src/js/System/Serializer.js';
 
 '#include ../../src/js/Common/b2Settings.js';
 '#include ../../src/js/Common/b2Math.js';
@@ -109,5 +110,7 @@
 	b2RopeDef b2Rope
 
 	b2_maxManifoldPoints b2_maxPolygonVertices b2_aabbExtension b2_aabbMultiplier b2_linearSlop b2_angularSlop b2_polygonRadius b2_maxSubSteps b2_maxTOIContacts b2_velocityThreshold b2_maxLinearCorrection b2_maxAngularCorrection b2_maxTranslation b2_maxTranslationSquared b2_maxRotation b2_maxRotationSquared b2_baumgarte b2_toiBaugarte b2_timeToSleep b2_linearSleepTolerance b2_angularSleepTolerance b2Assert b2_epsilon
+
+	b2JsonSerializer
 ';
 })();

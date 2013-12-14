@@ -107,6 +107,8 @@ TestPinball.prototype =
 
 	Keyboard: function(key)
 	{
+		this.parent.prototype.Keyboard.call(this, key);
+
 		switch (key)
 		{
 		case 'A'.charCodeAt():
@@ -117,6 +119,8 @@ TestPinball.prototype =
 
 	KeyboardUp: function(key)
 	{
+		this.parent.prototype.KeyboardUp.call(this, key);
+
 		switch (key)
 		{
 		case 'A'.charCodeAt():

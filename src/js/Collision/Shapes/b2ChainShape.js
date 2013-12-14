@@ -227,6 +227,56 @@ b2ChainShape.prototype =
 		massData.mass = 0.0;
 		massData.center.SetZero();
 		massData.I = 0.0;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['m_count'] = this.m_count;
+
+		obj['m_vertices'] = [];
+
+		for (var i = 0; i < this.m_count; ++i)
+			obj['m_vertices'].push(this.m_vertices[i]._serialize());
+
+		obj['m_hasPrevVertex'] = this.m_hasPrevVertex;
+
+		if (this.m_hasPrevVertex)
+			obj['m_prevVertex'] = this.m_prevVertex._serialize();
+
+		obj['m_hasNextVertex'] = this.m_hasNextVertex;
+
+		if (this.m_hasNextVertex)
+			obj['m_nextVertex'] = this.m_nextVertex._serialize();
+
+		return obj;
+	},
+
+	_deserialize: function(data)
+	{
+		this.parent.prototype._deserialize.call(this, data);
+
+		this.m_count = data['m_count'];
+		this.m_vertices = [];
+
+		for (var i = 0; i < this.m_count; ++i)
+		{
+			this.m_vertices[i] = new b2Vec2();
+			this.m_vertices[i]._deserialize(data['m_vertices'][i]);
+		}
+
+		this.m_hasPrevVertex = data['m_hasPrevVertex'];
+
+		if (this.m_hasPrevVertex)
+			this.m_prevVertex._deserialize(data['m_prevVertex']);
+
+		this.m_hasNextVertex = data['m_hasNextVertex'];
+
+		if (this.m_hasNextVertex)
+			this.m_nextVertex._deserialize(data['m_nextVertex']);
 	}
 };
 

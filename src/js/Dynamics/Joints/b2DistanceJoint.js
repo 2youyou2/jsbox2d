@@ -47,6 +47,17 @@ b2DistanceJointDef.prototype =
 		this.localAnchorB = this.bodyB.GetLocalPoint(anchor2);
 		var d = b2Vec2.Subtract(anchor2, anchor1);
 		this.length = d.Length();
+	},
+
+	_deserialize: function(data, bodies, joints)
+	{
+		this.parent.prototype._deserialize.call(this, data, bodies, joints);
+
+		this.localAnchorA._deserialize(data['localAnchorA']);
+		this.localAnchorB._deserialize(data['localAnchorB']);
+		this.length = data['length'];
+		this.frequencyHz = data['frequencyHz'];
+		this.dampingRatio = data['dampingRatio'];
 	}
 };
 
@@ -302,6 +313,21 @@ b2DistanceJoint.prototype =
 		data.positions[this.m_indexB].a = aB;
 
 		return b2Abs(C) < b2_linearSlop;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['localAnchorA'] = this.m_localAnchorA._serialize();
+		obj['localAnchorB'] = this.m_localAnchorB._serialize();
+		obj['length'] = this.m_length;
+		obj['frequencyHz'] = this.m_frequencyHz;
+		obj['dampingRatio'] = this.m_dampingRatio;
+
+		return obj;
 	}
 };
 

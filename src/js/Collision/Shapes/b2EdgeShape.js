@@ -150,6 +150,49 @@ b2EdgeShape.prototype =
 		massData.mass = 0.0;
 		massData.center = b2Vec2.Multiply(0.5, b2Vec2.Add(this.m_vertex1, this.m_vertex2));
 		massData.I = 0.0;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['m_count'] = this.m_count;
+
+		obj['m_vertex1'] = this.m_vertex1._serialize();
+		obj['m_vertex2'] = this.m_vertex2._serialize();
+
+		obj['m_hasVertex0'] = this.m_hasVertex0;
+
+		if (this.m_hasVertex0)
+			obj['m_vertex0'] = this.m_vertex0._serialize();
+
+		obj['m_hasVertex3'] = this.m_hasVertex3;
+
+		if (this.m_hasVertex3)
+			obj['m_vertex3'] = this.m_vertex3._serialize();
+
+		return obj;
+	},
+
+	_deserialize: function(data)
+	{
+		this.parent.prototype._deserialize.call(this, data);
+
+		this.m_count = data['m_count'];
+		this.m_vertex1._deserialize(data['m_vertex1']);
+		this.m_vertex2._deserialize(data['m_vertex2']);
+
+		this.m_hasVertex0 = data['m_hasVertex0'];
+
+		if (this.m_hasVertex0)
+			this.m_vertex0._deserialize(data['m_vertex0']);
+
+		this.m_hasVertex3 = data['m_hasVertex3'];
+
+		if (this.m_hasVertex3)
+			this.m_vertex3._deserialize(data['m_vertex3']);
 	}
 };
 

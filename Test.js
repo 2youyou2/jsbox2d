@@ -249,10 +249,16 @@ Test.prototype =
 		}
 	},
 
+	m_lastBackup: null,
+
 	Keyboard: function(key)
 	{
 		if (key === 'P'.charCodeAt())
 			this.m_pause = !this.m_pause;
+		else if (key === 'Z'.charCodeAt())
+			console.log(this.m_lastBackup = JSON.stringify(b2JsonSerializer.serialize(this.m_world)));
+		else if (key === 'X'.charCodeAt())
+			b2JsonSerializer.deserialize(this.m_lastBackup, this.m_world, true);
 		else if (key === 'L'.charCodeAt())
 			this.m_singleStep = 1;
 	},

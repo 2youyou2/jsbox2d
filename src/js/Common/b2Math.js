@@ -153,6 +153,22 @@ b2Vec2.prototype =
 		return new b2Vec2(-this.y, this.x);
 	},
 
+	_serialize: function(out)
+	{
+		var obj = out || [];
+
+		obj[0] = this.x;
+		obj[1] = this.y;
+
+		return obj;
+	},
+
+	_deserialize: function(data)
+	{
+		this.x = data[0];
+		this.y = data[1];
+	},
+
 	x: 0,
 	y: 0
 };

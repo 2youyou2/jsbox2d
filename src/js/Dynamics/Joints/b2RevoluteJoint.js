@@ -54,6 +54,21 @@ b2RevoluteJointDef.prototype =
 		this.localAnchorA = this.bodyA.GetLocalPoint(anchor);
 		this.localAnchorB = this.bodyB.GetLocalPoint(anchor);
 		this.referenceAngle = this.bodyB.GetAngle() - this.bodyA.GetAngle();
+	},
+
+	_deserialize: function(data, bodies, joints)
+	{
+		this.parent.prototype._deserialize.call(this, data, bodies, joints);
+
+		this.localAnchorA._deserialize(data['localAnchorA']);
+		this.localAnchorB._deserialize(data['localAnchorB']);
+		this.referenceAngle = data['referenceAngle'];
+		this.lowerAngle = data['lowerAngle'];
+		this.upperAngle = data['upperAngle'];
+		this.maxMotorTorque = data['maxMotorTorque'];
+		this.motorSpeed = data['motorSpeed'];
+		this.enableLimit = data['enableLimit'];
+		this.enableMotor = data['enableMotor'];
 	}
 };
 
@@ -547,6 +562,25 @@ b2RevoluteJoint.prototype =
 		data.positions[this.m_indexB].a = aB;
 
 		return positionError <= b2_linearSlop && angularError <= b2_angularSlop;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['localAnchorA'] = this.m_localAnchorA._serialize();
+		obj['localAnchorB'] = this.m_localAnchorB._serialize();
+		obj['referenceAngle'] = this.m_referenceAngle;
+		obj['lowerAngle'] = this.m_lowerAngle;
+		obj['upperAngle'] = this.m_upperAngle;
+		obj['maxMotorTorque'] = this.m_maxMotorTorque;
+		obj['motorSpeed'] = this.m_motorSpeed;
+		obj['enableLimit'] = this.m_enableLimit;
+		obj['enableMotor'] = this.m_enableMotor;
+
+		return obj;
 	}
 };
 

@@ -30,6 +30,18 @@ function b2RopeJointDef()
 	this.maxLength = 0.0;
 }
 
+b2RopeJointDef.prototype =
+{
+	_deserialize: function(data, bodies, joints)
+	{
+		this.parent.prototype._deserialize.call(this, data, bodies, joints);
+
+		this.localAnchorA._deserialize(data['localAnchorA']);
+		this.localAnchorB._deserialize(data['localAnchorB']);
+		this.maxLength = data['maxLength'];
+	}
+};
+
 b2RopeJointDef._extend(b2JointDef);
 
 /// A rope joint enforces a maximum distance between two points
@@ -238,6 +250,19 @@ b2RopeJoint.prototype =
 		data.positions[this.m_indexB].a = aB;
 
 		return length - this.m_maxLength < b2_linearSlop;
+	},
+
+	_serialize: function(out)
+	{
+		var obj = out || {};
+
+		this.parent.prototype._serialize.call(this, obj);
+
+		obj['localAnchorA'] = this.m_localAnchorA._serialize();
+		obj['localAnchorB'] = this.m_localAnchorB._serialize();
+		obj['maxLength'] = this.m_maxLength;
+
+		return obj;
 	}
 };
 
