@@ -4,7 +4,7 @@
   <Content type="html">
      <![CDATA[
 		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
-		<script type="text/javascript" src="http://jsbox2d.googlecode.com/svn/tags/2.3.1.r1/jsbox2d.min.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/tags/2.3.1.r1/jsbox2d.min.js"></script>
 
 		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/CanvasDebug.js"></script>
 
