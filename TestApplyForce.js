@@ -56,7 +56,7 @@ TestApplyForce.prototype =
 
 			var sd1 = new b2FixtureDef();
 			sd1.shape = poly1;
-			sd1.density = 4.0;
+			sd1.density = 2.0;
 
 			var xf2 = new b2Transform();
 			xf2.q.Set(-0.3524 * Math.PI);
@@ -133,7 +133,7 @@ TestApplyForce.prototype =
 		case 'W'.charCodeAt():
 			{
 				var f = this.m_body.GetWorldVector(new b2Vec2(0.0, -200.0));
-				var p = this.m_body.GetWorldPoint(new b2Vec2(0.10, 2.0));
+				var p = this.m_body.GetWorldPoint(new b2Vec2(0, 2.0));
 				this.m_body.ApplyForce(f, p, true);
 			}
 			break;
