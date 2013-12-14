@@ -104,7 +104,7 @@ Test.prototype =
 
 		this.m_world.Step(timeStep, this.m_velIters, this.m_posIters);
 
-		this.m_debugDraw.context.translate((this.m_debugDraw.context.canvas.width / 2), (this.m_debugDraw.context.canvas.height / 2));
+		this.m_debugDraw.context.translate((this.m_debugDraw.context.canvas.width / 2), this.m_debugDraw.context.canvas.height - 128);
 		this.m_debugDraw.context.scale(14, -14);
 		this.m_debugDraw.context.translate(-this.m_center.x, -this.m_center.y);
 		this.m_debugDraw.context.lineWidth = 1 / 14;
