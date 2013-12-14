@@ -4803,7 +4803,7 @@ b2DynamicTree.prototype =
 		// Extend AABB.
 		var b = aabb.Clone();
 		var r = new b2Vec2(b2_aabbExtension, b2_aabbExtension);
-		b.lowerBound.Assign(b2Vec2.Add(b.lowerBound, r));
+		b.lowerBound.Assign(b2Vec2.Subtract(b.lowerBound, r));
 		b.upperBound.Assign(b2Vec2.Add(b.upperBound, r));
 
 		// Predict AABB displacement.
