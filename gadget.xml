@@ -6,6 +6,57 @@
 		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 		<script type="text/javascript" src="http://jsbox2d.googlecode.com/svn/tags/2.3.1.r1/jsbox2d.min.js"></script>
 
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/CanvasDebug.js"></script>
+
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/Test.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestPyramid.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestEdge.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestSphereStack.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestConveyorBelt.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestContinuous.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestVaryingRestitution.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestVaryingFriction.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestAddPair.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestTiles.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestTumbler.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestBridge.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestChain.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestRevolute.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestTheoJansenWalker.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestSliderCrank.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestConfined.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestPinball.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestBullet.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestCharacterCollision.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestCollisionFiltering.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestCollisionProcessing.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestCompoundShapes.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestSensor.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestDominos.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestApplyForce.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestWeb.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestBodyTypes.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestBreakable.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestConvexHull.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestCantilever.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestCar.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestDistance.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestEdgeShapes.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestGears.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestMobile.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestMobileBalanced.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestMotorJoint.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestOneSidedPlatform.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestPolyCollision.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestPolyShapes.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestPrismatic.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestPulleys.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestRayCast.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestRope.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestRopeJoint.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestShapeEditing.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestVerticalStack.js"></script>
+
 		<style>
 		/* FLEX STUFF */
 		.flex.container
@@ -123,10 +174,10 @@
 		}
 		</style>
 
-		<div class="flex container" style="width: 100%; height: 100%;">
+		<div class="flex container" style="width: 99%; height: 100%;">
 			<div class="flex container fillRestGrow">
 				<canvas style="background: #333333;" class="flex fillRestGrow" id="canvas"></canvas>
-				<div id='debugText' style="color: white; position: absolute; left: 0; top: 0;">DEBUG</div>
+				<div id='debugText' style="color: white; position: absolute; left: 0; top: 0;">Loading...</div>
 			</div>
 			<div class="flex anchor container column" style="width: 240px;">
 				<label for="test">Test</label>
@@ -202,6 +253,300 @@
 				<button id="restart">Restart (R)</button>
 			</div>
 		</div>
+
+		<script>
+			"use strict";
+
+			var canvas = document.getElementById('canvas');
+			var cQ = $(canvas);
+
+			canvas.width = canvas.clientWidth;
+			canvas.height = canvas.clientHeight;
+
+			var context = canvas.getContext('2d');
+
+			var tests =
+				[
+					TestPyramid,
+					TestEdge,
+					TestSphereStack,
+					TestConveyorBelt,
+					TestVaryingRestitution,
+					TestVaryingFriction,
+					TestContinuous,
+					TestAddPair,
+					TestTiles,
+					TestTumbler,
+					TestBridge,
+					TestChain,
+					TestRevolute,
+					TestTheoJansenWalker,
+					TestSliderCrank,
+					TestConfined,
+					TestPinball,
+					TestBullet,
+					TestCharacterCollision,
+					TestCollisionFiltering,
+					TestCollisionProcessing,
+					TestCompoundShapes,
+					TestSensor,
+					TestDominos,
+					TestApplyForce,
+					TestWeb,
+					TestBodyTypes,
+					TestBreakable,
+					TestConvexHull,
+					TestCantilever,
+					TestCar,
+					TestDistance,
+					TestEdgeShapes,
+					TestGears,
+					TestMobile,
+					TestMobileBalanced,
+					TestMotorJoint,
+					TestOneSidedPlatform,
+					TestPolyCollision,
+					TestPolyShapes,
+					TestPrismatic,
+					TestPulleys,
+					TestRayCast,
+					TestRope,
+					TestRopeJoint,
+					TestShapeEditing,
+					TestVerticalStack
+				];
+
+			tests.sort(function(a, b)
+			{
+				return a.name.localeCompare(b.name);
+			});
+
+			var testSelect = $('#test');
+
+			for (var i = 0; i < tests.length; ++i)
+				testSelect.append('<option>' + tests[i].name.substr(4) + '</option>');
+
+			testSelect[0].selectedIndex = 4;
+			var currentTest = null;
+
+			var debugDraw = new CanvasDebugDraw();
+			debugDraw.context = context;
+			debugDraw.SetFlags(b2Draw.e_shapeBit | b2Draw.e_jointBit);
+			var dbg = $('#debugText');
+
+			var drawLine = function(string)
+			{
+				dbg.html(dbg.html() + string + '<br/>');
+			};
+
+			testSelect.change(function()
+			{
+				var index = testSelect.prop("selectedIndex");
+				var test = tests[index];
+
+				var wasPaused = currentTest ? currentTest.m_pause : false;
+
+				currentTest = new test();
+				currentTest.m_debugDraw = debugDraw;
+				currentTest.m_world.SetDebugDraw(debugDraw);
+				currentTest.m_drawStringFunc = drawLine;
+				currentTest.Initialize();
+
+				currentTest.m_hz = 1 / $('#hertz').val();
+				currentTest.m_hz_raw = $('#hertz').val();
+				currentTest.m_velIters = $('#velIters').val();
+				currentTest.m_posIters = $('#posIters').val();
+				currentTest.m_world.SetAllowSleeping($('#allowSleep').is(':checked'));
+				currentTest.m_world.SetWarmStarting($('#warmStarting').is(':checked'));
+				currentTest.m_world.SetContinuousPhysics($('#toi').is(':checked'));
+				currentTest.m_world.SetSubStepping($('#substep').is(':checked'));
+
+				currentTest.m_pause = wasPaused;
+			});
+
+			$('#hertz').change(function()
+			{
+				currentTest.m_hz = 1 / $('#hertz').val();
+				currentTest.m_hz_raw = $('#hertz').val();
+				$('#label_hertz').find('.val').text($('#hertz').val());
+			});
+
+			$('#velIters').change(function()
+			{
+				currentTest.m_velIters = $('#velIters').val();
+				$('#label_velIters').find('.val').text($('#velIters').val());
+			});
+
+			$('#posIters').change(function()
+			{
+				currentTest.m_posIters = $('#posIters').val();
+				$('#label_posIters').find('.val').text($('#posIters').val());
+			});
+
+
+			$('#allowSleep').click(function()
+			{
+				currentTest.m_world.SetAllowSleeping($('#allowSleep').is(':checked'));
+			});
+
+			$('#warmStarting').click(function()
+			{
+				currentTest.m_world.SetWarmStarting($('#warmStarting').is(':checked'));
+			});
+
+			$('#toi').click(function()
+			{
+				currentTest.m_world.SetContinuousPhysics($('#toi').is(':checked'));
+			});
+
+			$('#substep').click(function()
+			{
+				currentTest.m_world.SetSubStepping($('#substep').is(':checked'));
+			});
+
+
+			$('#drawShapes').click(function()
+			{
+				debugDraw.ToggleFlags(b2Draw.e_shapeBit);
+			});
+
+			$('#drawJoints').click(function()
+			{
+				debugDraw.ToggleFlags(b2Draw.e_jointBit);
+			});
+
+			$('#drawAABBs').click(function()
+			{
+				debugDraw.ToggleFlags(b2Draw.e_aabbBit);
+			});
+
+			$('#drawCenters').click(function()
+			{
+				debugDraw.ToggleFlags(b2Draw.e_centerOfMassBit);
+			});
+
+			$('#drawContactPoints').click(function()
+			{
+				debugDraw.ToggleFlags(b2Draw.e_contactPoints);
+			});
+
+			$('#drawContactNormals').click(function()
+			{
+				debugDraw.ToggleFlags(b2Draw.e_contactNormals);
+			});
+
+			$('#drawContactImpulses').click(function()
+			{
+				debugDraw.ToggleFlags(b2Draw.e_contactImpulses);
+			});
+
+			$('#drawFrictionImpulses').click(function()
+			{
+				debugDraw.ToggleFlags(b2Draw.e_frictionImpulses);
+			});
+
+			$('#drawStatistics').click(function()
+			{
+				debugDraw.ToggleFlags(b2Draw.e_statistics);
+			});
+
+			$('#drawProfile').click(function()
+			{
+				debugDraw.ToggleFlags(b2Draw.e_profile);
+			});
+
+
+			$('#pause').click(function()
+			{
+				currentTest.m_pause = !currentTest.m_pause;
+			});
+
+			$('#step').click(function()
+			{
+				currentTest.m_pause = true;
+				currentTest.m_singleStep = true;
+			});
+
+			$('#restart').click(function()
+			{
+				testSelect.change();
+			});
+
+			cQ.mousedown(function(e)
+			{
+				var x = e.clientX;
+				var y = canvas.height - e.clientY;
+
+				x -= canvas.width / 2;
+				y -= canvas.height / 2;
+
+				x /= 14;
+				y /= 14;
+
+				currentTest.MouseDown(new b2Vec2(x, y));
+			});
+
+			cQ.mouseup(function(e)
+			{
+				var x = e.clientX;
+				var y = canvas.height - e.clientY;
+
+				x -= canvas.width / 2;
+				y -= canvas.height / 2;
+
+				x /= 14;
+				y /= 14;
+
+				currentTest.MouseUp(new b2Vec2(x, y));
+			});
+
+			cQ.mousemove(function(e)
+			{
+				var x = e.clientX;
+				var y = canvas.height - e.clientY;
+
+				x -= canvas.width / 2;
+				y -= canvas.height / 2;
+
+				x /= 14;
+				y /= 14;
+
+				currentTest.MouseMove(new b2Vec2(x, y));
+			});
+
+			$(document).keydown(function(e)
+			{
+				if (e.keyCode === 'R'.charCodeAt())
+					testSelect.change();
+				else
+					currentTest.Keyboard(e.keyCode);
+			});
+
+			$(document).keyup(function(e)
+			{
+				currentTest.KeyboardUp(e.keyCode);
+			});
+
+			testSelect.change();
+
+			window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
+                              window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+
+			// This is our little game loop.
+			function step()
+			{
+				dbg.text("");
+				context.save();
+				context.clearRect(0, 0, canvas.width, canvas.height);
+
+				currentTest.Step();
+				context.restore();
+
+				window.requestAnimationFrame(step);
+			}
+
+			window.requestAnimationFrame(step);
+		</script>
      ]]>
   </Content>
 </Module>
