@@ -3,6 +3,9 @@
   <ModulePrefs title="hello world example" />
   <Content type="html">
      <![CDATA[
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+		<script type="text/javascript" src="/gadgets/proxy?url=http://jsbox2d.googlecode.com/svn/tags/2.3.1.r1/jsbox2d.min.js"></script>
+
        Hello, world!
      ]]>
   </Content>
