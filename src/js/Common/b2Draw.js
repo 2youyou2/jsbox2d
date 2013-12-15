@@ -91,3 +91,4 @@ b2Draw.e_contactImpulses = 64;
 b2Draw.e_frictionImpulses = 128;
 b2Draw.e_statistics = 256;
 b2Draw.e_profile = 512;
+b2Draw.e_pairBit = 1024;

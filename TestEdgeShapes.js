@@ -199,7 +199,7 @@ TestEdgeShapes.prototype =
 
 		if (callback.m_fixture)
 		{
-			this.m_debugDraw.DrawPoint(callback.m_point, 5.0 / 14, new b2Color(0.4, 0.9, 0.4));
+			this.m_debugDraw.DrawPoint(callback.m_point, 5.0, new b2Color(0.4, 0.9, 0.4));
 
 			this.m_debugDraw.DrawSegment(point1, callback.m_point, new b2Color(0.8, 0.8, 0.8));
 

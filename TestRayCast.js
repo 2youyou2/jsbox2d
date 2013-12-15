@@ -343,7 +343,7 @@ TestRayCast.prototype =
 
 			if (callback.m_hit)
 			{
-				this.m_debugDraw.DrawPoint(callback.m_point, 5.0 / 14, new b2Color(0.4, 0.9, 0.4));
+				this.m_debugDraw.DrawPoint(callback.m_point, 5.0, new b2Color(0.4, 0.9, 0.4));
 				this.m_debugDraw.DrawSegment(point1, callback.m_point, new b2Color(0.8, 0.8, 0.8));
 				var head = b2Vec2.Add(callback.m_point, b2Vec2.Multiply(0.5, callback.m_normal));
 				this.m_debugDraw.DrawSegment(callback.m_point, head, new b2Color(0.9, 0.9, 0.4));
@@ -360,7 +360,7 @@ TestRayCast.prototype =
 
 			if (callback.m_hit)
 			{
-				this.m_debugDraw.DrawPoint(callback.m_point, 5.0 / 14, new b2Color(0.4, 0.9, 0.4));
+				this.m_debugDraw.DrawPoint(callback.m_point, 5.0, new b2Color(0.4, 0.9, 0.4));
 				this.m_debugDraw.DrawSegment(point1, callback.m_point, new b2Color(0.8, 0.8, 0.8));
 				var head = b2Vec2.Add(callback.m_point, b2Vec2.Multiply(0.5, callback.m_normal));
 				this.m_debugDraw.DrawSegment(callback.m_point, head, new b2Color(0.9, 0.9, 0.4));
@@ -380,7 +380,7 @@ TestRayCast.prototype =
 			{
 				var p = callback.m_points[i];
 				var n = callback.m_normals[i];
-				this.m_debugDraw.DrawPoint(p, 5.0 / 14, new b2Color(0.4, 0.9, 0.4));
+				this.m_debugDraw.DrawPoint(p, 5.0, new b2Color(0.4, 0.9, 0.4));
 				this.m_debugDraw.DrawSegment(point1, p, new b2Color(0.8, 0.8, 0.8));
 				var head = b2Vec2.Add(p, b2Vec2.Multiply(0.5, n));
 				this.m_debugDraw.DrawSegment(p, head, new b2Color(0.9, 0.9, 0.4));

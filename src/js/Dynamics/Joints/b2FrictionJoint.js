@@ -34,12 +34,12 @@ b2FrictionJointDef.prototype =
 {
 	/// Initialize the bodies, anchors, axis, and reference angle using the world
 	/// anchor and world axis.
-	Initialize: function(bodyA, bodyB, anchor)
+	Initialize: function(bA, bB, anchor)
 	{
 		this.bodyA = bA;
 		this.bodyB = bB;
-		this.localAnchorA = this.bodyA.GetLocalPoint(anchor);
-		this.localAnchorB = this.bodyB.GetLocalPoint(anchor);
+		this.localAnchorA.Assign(this.bodyA.GetLocalPoint(anchor));
+		this.localAnchorB.Assign(this.bodyB.GetLocalPoint(anchor));
 	},
 
 	_deserialize: function(data, bodies, joints)
@@ -61,8 +61,8 @@ function b2FrictionJoint(def)
 {
 	this.parent.call(this, def);
 
-	this.m_localAnchorA = def.localAnchorA;
-	this.m_localAnchorB = def.localAnchorB;
+	this.m_localAnchorA = def.localAnchorA.Clone();
+	this.m_localAnchorB = def.localAnchorB.Clone();
 
 	this.m_linearImpulse = new b2Vec2();
 	this.m_angularImpulse = 0.0;

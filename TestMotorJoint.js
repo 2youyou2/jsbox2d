@@ -76,7 +76,7 @@ TestMotorJoint.prototype =
 		this.m_joint.SetLinearOffset(linearOffset);
 		this.m_joint.SetAngularOffset(angularOffset);
 
-		this.m_debugDraw.DrawPoint(linearOffset, 4.0 / 14, new b2Color(0.9, 0.9, 0.9));
+		this.m_debugDraw.DrawPoint(linearOffset, 4.0, new b2Color(0.9, 0.9, 0.9));
 
 		this.parent.prototype.Step.call(this);
 		this.m_drawStringFunc("Keys: (s) pause");

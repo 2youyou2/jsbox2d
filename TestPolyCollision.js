@@ -57,7 +57,7 @@ TestPolyCollision.prototype =
 
 		for (var i = 0; i < manifold.pointCount; ++i)
 		{
-			this.m_debugDraw.DrawPoint(worldManifold.points[i], 4.0 / 14, new b2Color(0.9, 0.3, 0.3));
+			this.m_debugDraw.DrawPoint(worldManifold.points[i], 4.0, new b2Color(0.9, 0.3, 0.3));
 		}
 	},
 

@@ -102,10 +102,10 @@ TestDistance.prototype =
 		var x2 = output.pointB;
 
 		var c1 = new b2Color(1.0, 0.0, 0.0);
-		this.m_debugDraw.DrawPoint(x1, 4.0 / 14, c1);
+		this.m_debugDraw.DrawPoint(x1, 4.0, c1);
 
 		var c2 = new b2Color(1.0, 1.0, 0.0);
-		this.m_debugDraw.DrawPoint(x2, 4.0 / 14, c2);
+		this.m_debugDraw.DrawPoint(x2, 4.0, c2);
 	}
 };
 

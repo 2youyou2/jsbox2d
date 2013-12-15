@@ -59,7 +59,7 @@ TestConvexHull.prototype =
 		this.m_debugDraw.DrawPolygon(shape.m_vertices, shape.m_count, new b2Color(0.9, 0.9, 0.9));
 
 		for (var i = 0; i < this.m_count; ++i)
-			this.m_debugDraw.DrawPoint(this.m_points[i], 2.0 / 14, new b2Color(0.9, 0.5, 0.5));
+			this.m_debugDraw.DrawPoint(this.m_points[i], 2.0, new b2Color(0.9, 0.5, 0.5));
 
 		if (this.m_auto)
 		{

@@ -151,28 +151,28 @@ b2ChainShape.prototype =
 		edge.m_type = b2Shape.e_edge;
 		edge.m_radius = this.m_radius;
 
-		edge.m_vertex1 = this.m_vertices[index + 0].Clone();
-		edge.m_vertex2 = this.m_vertices[index + 1].Clone();
+		edge.m_vertex1 = this.m_vertices[index + 0];
+		edge.m_vertex2 = this.m_vertices[index + 1];
 
 		if (index > 0)
 		{
-			edge.m_vertex0 = this.m_vertices[index - 1].Clone();
+			edge.m_vertex0 = this.m_vertices[index - 1];
 			edge.m_hasVertex0 = true;
 		}
 		else
 		{
-			edge.m_vertex0 = this.m_prevVertex.Clone();
+			edge.m_vertex0 = this.m_prevVertex;
 			edge.m_hasVertex0 = this.m_hasPrevVertex;
 		}
 
 		if (index < this.m_count - 2)
 		{
-			edge.m_vertex3 = this.m_vertices[index + 2].Clone();
+			edge.m_vertex3 = this.m_vertices[index + 2];
 			edge.m_hasVertex3 = true;
 		}
 		else
 		{
-			edge.m_vertex3 = this.m_nextVertex.Clone();
+			edge.m_vertex3 = this.m_nextVertex;
 			edge.m_hasVertex3 = this.m_hasNextVertex;
 		}
 	},

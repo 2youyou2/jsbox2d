@@ -60,6 +60,7 @@
 		<script type="text/javascript" src="TestShapeEditing.js"></script>
 		<script type="text/javascript" src="TestVerticalStack.js"></script>
 		<script type="text/javascript" src="TestRUBE.js"></script>
+		<script type="text/javascript" src="TestRUBEJointTypes.js"></script>
 
 		<style>
 		/* FLEX STUFF */
@@ -241,6 +242,10 @@
 					<label for="drawFrictionImpulses">Friction Impulses</label>
 				</div>
 				<div>
+					<input id="drawPairs" type="checkbox"></input>
+					<label for="drawPairs">Contact Pairs</label>
+				</div>
+				<div>
 					<input id="drawCenters" type="checkbox"></input>
 					<label for="drawCenters">Center of Masses</label>
 				</div>
@@ -332,7 +337,8 @@
 					TestRopeJoint,
 					TestShapeEditing,
 					TestVerticalStack,
-					TestRUBE
+					TestRUBE,
+					TestRUBEJointTypes
 				];
 
 			tests.sort(function(a, b)
@@ -350,6 +356,7 @@
 
 			var debugDraw = new CanvasDebugDraw();
 			debugDraw.context = context;
+			debugDraw.scale = 14;
 			debugDraw.SetFlags(b2Draw.e_shapeBit | b2Draw.e_jointBit);
 			var dbg = $('#debugText');
 
@@ -381,6 +388,7 @@
 				currentTest.m_world.SetSubStepping($('#substep').is(':checked'));
 
 				currentTest.m_pause = wasPaused;
+				currentTest.m_scale = debugDraw.scale;
 			});
 
 			$('#hertz').change(function()
@@ -443,6 +451,11 @@
 			{
 				debugDraw.ToggleFlags(b2Draw.e_centerOfMassBit);
 			});
+			
+			$('#drawPairs').click(function()
+			{
+				debugDraw.ToggleFlags(b2Draw.e_pairBit);
+			});
 
 			$('#drawContactPoints').click(function()
 			{
@@ -503,8 +516,8 @@
 				x -= canvas.width / 2;
 				y -= 128;
 
-				x /= 14;
-				y /= 14;
+				x /= debugDraw.scale;
+				y /= debugDraw.scale;
 
 				if (e.which === 1)
 					currentTest.MouseDown(new b2Vec2(x, y));
@@ -525,8 +538,8 @@
 				x -= canvas.width / 2;
 				y -= 128;
 
-				x /= 14;
-				y /= 14;
+				x /= debugDraw.scale;
+				y /= debugDraw.scale;
 
 				if (e.which === 1)
 					currentTest.MouseUp(new b2Vec2(x, y));
@@ -543,8 +556,8 @@
 				x -= canvas.width / 2;
 				y -= 128;
 
-				x /= 14;
-				y /= 14;
+				x /= debugDraw.scale;
+				y /= debugDraw.scale;
 
 				if (e.which === 1)
 					currentTest.MouseMove(new b2Vec2(x, y));
@@ -561,6 +574,39 @@
 				e.preventDefault();
 				return false;
 			});
+
+
+		function mouseWheel(e)
+		{
+			var evt=window.event || e; //equalize event object
+			var delta=evt.detail? evt.detail*(-120) : evt.wheelDelta; //delta returns +120 when wheel is scrolled up, -120 when scrolled down
+
+			if (delta < 0)
+			{
+				debugDraw.scale--;
+				currentTest.m_scale--;
+			}
+			else
+			{
+				debugDraw.scale++;
+				currentTest.m_scale++;
+			}
+
+			if (evt.preventDefault) //disable default wheel action of scrolling page
+				evt.preventDefault();
+
+			return false;
+		}
+
+		var mousewheelevt=(/Firefox/i.test(navigator.userAgent))? "DOMMouseScroll" : "mousewheel"; //FF doesn't recognize mousewheel as of FF3.x
+
+		if (cQ[0].attachEvent) //if IE (and Opera depending on user setting)
+			cQ[0].attachEvent("on"+mousewheelevt, mouseWheel);
+		else if (cQ[0].addEventListener) //WC3 browsers
+			cQ[0].addEventListener(mousewheelevt, mouseWheel, false);
+
+
+			cQ[0].oncontextmenu = function() { return false; };
 
 			$(document).keydown(function(e)
 			{

@@ -40,6 +40,7 @@ function Test()
 	this.m_posIters = 3;
 
 	this.m_center = new b2Vec2();
+	this.m_scale = 14;
 }
 
 function QueryCallback(point)
@@ -105,9 +106,9 @@ Test.prototype =
 		this.m_world.Step(timeStep, this.m_velIters, this.m_posIters);
 
 		this.m_debugDraw.context.translate((this.m_debugDraw.context.canvas.width / 2), this.m_debugDraw.context.canvas.height - 128);
-		this.m_debugDraw.context.scale(14, -14);
+		this.m_debugDraw.context.scale(this.m_scale, -this.m_scale);
 		this.m_debugDraw.context.translate(-this.m_center.x, -this.m_center.y);
-		this.m_debugDraw.context.lineWidth = 1 / 14;
+		this.m_debugDraw.context.lineWidth = 1 / this.m_scale;
 
 		this.m_world.DrawDebugData();
 
@@ -128,12 +129,12 @@ Test.prototype =
 				if (point.state == b2Manifold.b2_addState)
 				{
 					// Add
-					this.m_debugDraw.DrawPoint(point.position, 10 / 14, new b2Color(0.3, 0.95, 0.3));
+					this.m_debugDraw.DrawPoint(point.position, 10, new b2Color(0.3, 0.95, 0.3));
 				}
 				else if (point.state == b2Manifold.b2_persistState)
 				{
 					// Persist
-					this.m_debugDraw.DrawPoint(point.position, 5.0 / 14, new b2Color(0.3, 0.3, 0.95));
+					this.m_debugDraw.DrawPoint(point.position, 5.0, new b2Color(0.3, 0.3, 0.95));
 				}
 
 				if (this.m_debugDraw.m_drawFlags & b2Draw.e_contactNormals)
@@ -166,8 +167,8 @@ Test.prototype =
 
 			var c = new b2Color();
 			c.Set(0.0, 1.0, 0.0);
-			this.m_debugDraw.DrawPoint(p1, 4.0 / 14, c);
-			this.m_debugDraw.DrawPoint(p2, 4.0 / 14, c);
+			this.m_debugDraw.DrawPoint(p1, 4.0, c);
+			this.m_debugDraw.DrawPoint(p2, 4.0, c);
 
 			c.Set(0.8, 0.8, 0.8);
 			this.m_debugDraw.DrawSegment(p1, p2, c);

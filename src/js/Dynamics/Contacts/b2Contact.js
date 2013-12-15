@@ -359,6 +359,7 @@ b2CircleContact.prototype =
 
 b2CircleContact._extend(b2Contact);
 
+var _local_temp_edgeShape = new b2EdgeShape();
 
 function b2ChainAndCircleContact()
 {
@@ -370,9 +371,8 @@ b2ChainAndCircleContact.prototype =
 	Evaluate: function(manifold, xfA, xfB)
 	{
 		var chain = this.m_fixtureA.GetShape();
-		var edge = new b2EdgeShape();
-		chain.GetChildEdge(edge, this.m_indexA);
-		b2CollideEdgeAndCircle(	manifold, edge, xfA,
+		chain.GetChildEdge(_local_temp_edgeShape, this.m_indexA);
+		b2CollideEdgeAndCircle(	manifold, _local_temp_edgeShape, xfA,
 								this.m_fixtureB.GetShape(), xfB);
 	},
 
@@ -397,9 +397,8 @@ b2ChainAndPolygonContact.prototype =
 	Evaluate: function(manifold, xfA, xfB)
 	{
 		var chain = this.m_fixtureA.GetShape();
-		var edge = new b2EdgeShape();
-		chain.GetChildEdge(edge, this.m_indexA);
-		b2CollideEdgeAndPolygon(	manifold, edge, xfA,
+		chain.GetChildEdge(_local_temp_edgeShape, this.m_indexA);
+		b2CollideEdgeAndPolygon(	manifold, _local_temp_edgeShape, xfA,
 									this.m_fixtureB.GetShape(), xfB);
 	},
 
@@ -564,6 +563,7 @@ b2Contact.AddType = function(fcn,
 	}
 
 	fcn.garbage = [];
+	fcn.alloc = 2;
 };
 
 b2Contact.InitializeRegisters = function()
@@ -575,6 +575,26 @@ b2Contact.InitializeRegisters = function()
 	b2Contact.AddType(b2EdgeAndPolygonContact, b2Shape.e_edge, b2Shape.e_polygon);
 	b2Contact.AddType(b2ChainAndCircleContact, b2Shape.e_chain, b2Shape.e_circle);
 	b2Contact.AddType(b2ChainAndPolygonContact, b2Shape.e_chain, b2Shape.e_polygon);
+};
+
+b2Contact.RetrieveGarbage = function(fcn)
+{
+	var contact;
+
+	if (contact = fcn.garbage.pop())
+		return contact;
+
+	// no more contacts, allocate some more
+	for (var i = 0; i < fcn.alloc - 1; ++i)
+		fcn.garbage.push(new fcn());
+
+	//if (fcn.alloc < 256)
+	{
+		fcn.alloc += 32;
+		console.log("Expanded storage for " + fcn.name + " to " + fcn.alloc);
+	}
+
+	return new fcn();
 };
 
 b2Contact.Create = function(fixtureA, indexA, fixtureB, indexB)
@@ -595,7 +615,7 @@ b2Contact.Create = function(fixtureA, indexA, fixtureB, indexB)
 
 	if (fcn)
 	{
-		var contact = fcn.garbage.pop() || new fcn();
+		var contact = b2Contact.RetrieveGarbage(fcn);
 
 		if (b2Contact.s_registers[type1][type2].primary)
 			contact.Create(fixtureA, indexA, fixtureB, indexB);

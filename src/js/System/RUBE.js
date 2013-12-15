@@ -108,6 +108,7 @@ var b2RUBELoader = (function()
 		def.fixedRotation = obj.fixedRotation || false;
 		def.linearDamping = obj.linearDamping || false;
 		def.linearVelocity = parseVector(obj.linearVelocity);
+		def.gravityScale = typeof(obj.gravityScale) !== 'undefined' ? obj.gravityScale : 1; // GRRRRRR
 
 		var md = new b2MassData();
 		md.mass = obj['massData-mass'] || 0;
@@ -148,9 +149,6 @@ var b2RUBELoader = (function()
 			throw new Error("unknown joint type");
 
 		var jd = new jointsList[obj.type]();
-		jd.bodyA = bodies[obj.bodyA || 0];
-		jd.bodyB = bodies[obj.bodyB || 0];
-		jd.collideConnected = obj.collideConnected || false;
 
 		switch (jd.type)
 		{
@@ -201,8 +199,8 @@ var b2RUBELoader = (function()
 				jd.maxLength = obj.maxLength || 0;
 				break;
 			case b2Joint.e_motorJoint:
-				jd.localAnchorA = parseVector(obj.anchorA);
-				jd.localAnchorB = parseVector(obj.anchorB);
+				jd.linearOffset = parseVector(obj.anchorA);
+				jd.angularOffset = obj.refAngle || 0;
 				jd.maxForce = obj.maxForce || 0;
 				jd.maxTorque = obj.maxTorque || 0;
 				jd.correctionFactor = obj.correctionFactor || 0;
@@ -217,12 +215,16 @@ var b2RUBELoader = (function()
 			case b2Joint.e_frictionJoint:
 				jd.localAnchorA = parseVector(obj.anchorA);
 				jd.localAnchorB = parseVector(obj.anchorB);
-				jd.maxForce = obj.refAngle || 0;
-				jd.maxTorque = obj.dampingRatio || 0;
+				jd.maxForce = obj.maxForce || 0;
+				jd.maxTorque = obj.maxTorque || 0;
 				break;
 			default:
 				throw new Error("wat?");
 		}
+
+		jd.bodyA = bodies[obj.bodyA || 0];
+		jd.bodyB = bodies[obj.bodyB || 0];
+		jd.collideConnected = obj.collideConnected || false;
 
 		var joint = world.CreateJoint(jd);
 
@@ -241,9 +243,9 @@ var b2RUBELoader = (function()
 		this.positionIterations = 0;
 		this.velocityIterations = 0;
 		this.stepsPerSecond = 0;
-		this.fixtures = [];
-		this.bodies = [];
-		this.joints = [];
+		this.fixtures = {};
+		this.bodies = {};
+		this.joints = {};
 
 		Object.seal(this);
 	}

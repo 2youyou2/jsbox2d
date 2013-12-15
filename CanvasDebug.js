@@ -92,6 +92,7 @@ CanvasDebugDraw.prototype =
 
 	DrawPoint: function(p, size, color)
 	{
+		size = size / this.scale;
 		var hs = size / 2;
 		this.context.fillStyle = this.ColorFor(color, 1.0);
 		this.context.fillRect(p.x - hs, p.y - hs, size, size);

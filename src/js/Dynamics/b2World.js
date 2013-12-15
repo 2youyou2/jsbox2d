@@ -546,13 +546,13 @@ b2World.prototype =
 
 			for (var c = this.m_contactManager.m_contactList; c; c = c.GetNext())
 			{
-				//b2Fixture* fixtureA = c.GetFixtureA();
-				//b2Fixture* fixtureB = c.GetFixtureB();
+				var fixtureA = c.GetFixtureA();
+				var fixtureB = c.GetFixtureB();
 
-				//b2Vec2 cA = fixtureA.GetAABB().GetCenter();
-				//b2Vec2 cB = fixtureB.GetAABB().GetCenter();
+				var cA = fixtureA.GetAABB(c.GetChildIndexA()).GetCenter();
+				var cB = fixtureB.GetAABB(c.GetChildIndexB()).GetCenter();
 
-				//this.g_debugDraw.DrawSegment(cA, cB, color);
+				this.g_debugDraw.DrawSegment(cA, cB, color);
 			}
 		}
 
@@ -1341,6 +1341,9 @@ b2World.prototype =
 		case b2Joint.e_mouseJoint:
 			// don't draw this
 			break;
+
+		case b2Joint.e_motorJoint:
+			this.g_debugDraw.DrawPoint(joint.GetLinearOffset(), 5.0, color);
 
 		default:
 			this.g_debugDraw.DrawSegment(x1, p1, color);

@@ -24,7 +24,7 @@
 function b2EdgeShape()
 {
 	this.parent.call(this);
-	
+
 	this.m_type = b2Shape.e_edge;
 	this.m_radius = b2_polygonRadius;
 	this.m_vertex0 = new b2Vec2();
@@ -162,8 +162,6 @@ b2EdgeShape.prototype =
 
 		this.parent.prototype._serialize.call(this, obj);
 
-		obj['m_count'] = this.m_count;
-
 		obj['m_vertex1'] = this.m_vertex1._serialize();
 		obj['m_vertex2'] = this.m_vertex2._serialize();
 
@@ -184,7 +182,6 @@ b2EdgeShape.prototype =
 	{
 		this.parent.prototype._deserialize.call(this, data);
 
-		this.m_count = data['m_count'];
 		this.m_vertex1._deserialize(data['m_vertex1']);
 		this.m_vertex2._deserialize(data['m_vertex2']);
 

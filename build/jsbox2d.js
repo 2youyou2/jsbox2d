@@ -1104,6 +1104,7 @@ b2Draw.e_contactImpulses = 64;
 b2Draw.e_frictionImpulses = 128;
 b2Draw.e_statistics = 256;
 b2Draw.e_profile = 512;
+b2Draw.e_pairBit = 1024;
 "use strict";
 
 if (typeof(performance) === 'undefined')
@@ -2930,7 +2931,7 @@ b2CircleShape._extend(b2Shape);
 function b2EdgeShape()
 {
 	this.parent.call(this);
-	
+
 	this.m_type = b2Shape.e_edge;
 	this.m_radius = b2_polygonRadius;
 	this.m_vertex0 = new b2Vec2();
@@ -3068,8 +3069,6 @@ b2EdgeShape.prototype =
 
 		this.parent.prototype._serialize.call(this, obj);
 
-		obj['m_count'] = this.m_count;
-
 		obj['m_vertex1'] = this.m_vertex1._serialize();
 		obj['m_vertex2'] = this.m_vertex2._serialize();
 
@@ -3090,7 +3089,6 @@ b2EdgeShape.prototype =
 	{
 		this.parent.prototype._deserialize.call(this, data);
 
-		this.m_count = data['m_count'];
 		this.m_vertex1._deserialize(data['m_vertex1']);
 		this.m_vertex2._deserialize(data['m_vertex2']);
 
@@ -3260,28 +3258,28 @@ b2ChainShape.prototype =
 		edge.m_type = b2Shape.e_edge;
 		edge.m_radius = this.m_radius;
 
-		edge.m_vertex1 = this.m_vertices[index + 0].Clone();
-		edge.m_vertex2 = this.m_vertices[index + 1].Clone();
+		edge.m_vertex1 = this.m_vertices[index + 0];
+		edge.m_vertex2 = this.m_vertices[index + 1];
 
 		if (index > 0)
 		{
-			edge.m_vertex0 = this.m_vertices[index - 1].Clone();
+			edge.m_vertex0 = this.m_vertices[index - 1];
 			edge.m_hasVertex0 = true;
 		}
 		else
 		{
-			edge.m_vertex0 = this.m_prevVertex.Clone();
+			edge.m_vertex0 = this.m_prevVertex;
 			edge.m_hasVertex0 = this.m_hasPrevVertex;
 		}
 
 		if (index < this.m_count - 2)
 		{
-			edge.m_vertex3 = this.m_vertices[index + 2].Clone();
+			edge.m_vertex3 = this.m_vertices[index + 2];
 			edge.m_hasVertex3 = true;
 		}
 		else
 		{
-			edge.m_vertex3 = this.m_nextVertex.Clone();
+			edge.m_vertex3 = this.m_nextVertex;
 			edge.m_hasVertex3 = this.m_hasNextVertex;
 		}
 	},
@@ -8584,13 +8582,13 @@ b2World.prototype =
 
 			for (var c = this.m_contactManager.m_contactList; c; c = c.GetNext())
 			{
-				//b2Fixture* fixtureA = c.GetFixtureA();
-				//b2Fixture* fixtureB = c.GetFixtureB();
+				var fixtureA = c.GetFixtureA();
+				var fixtureB = c.GetFixtureB();
 
-				//b2Vec2 cA = fixtureA.GetAABB().GetCenter();
-				//b2Vec2 cB = fixtureB.GetAABB().GetCenter();
+				var cA = fixtureA.GetAABB(c.GetChildIndexA()).GetCenter();
+				var cB = fixtureB.GetAABB(c.GetChildIndexB()).GetCenter();
 
-				//this.g_debugDraw.DrawSegment(cA, cB, color);
+				this.g_debugDraw.DrawSegment(cA, cB, color);
 			}
 		}
 
@@ -9380,6 +9378,9 @@ b2World.prototype =
 			// don't draw this
 			break;
 
+		case b2Joint.e_motorJoint:
+			this.g_debugDraw.DrawPoint(joint.GetLinearOffset(), 5.0, color);
+
 		default:
 			this.g_debugDraw.DrawSegment(x1, p1, color);
 			this.g_debugDraw.DrawSegment(p1, p2, color);
@@ -9815,6 +9816,7 @@ b2CircleContact.prototype =
 
 b2CircleContact._extend(b2Contact);
 
+var _local_temp_edgeShape = new b2EdgeShape();
 
 function b2ChainAndCircleContact()
 {
@@ -9826,9 +9828,8 @@ b2ChainAndCircleContact.prototype =
 	Evaluate: function(manifold, xfA, xfB)
 	{
 		var chain = this.m_fixtureA.GetShape();
-		var edge = new b2EdgeShape();
-		chain.GetChildEdge(edge, this.m_indexA);
-		b2CollideEdgeAndCircle(	manifold, edge, xfA,
+		chain.GetChildEdge(_local_temp_edgeShape, this.m_indexA);
+		b2CollideEdgeAndCircle(	manifold, _local_temp_edgeShape, xfA,
 								this.m_fixtureB.GetShape(), xfB);
 	},
 
@@ -9853,9 +9854,8 @@ b2ChainAndPolygonContact.prototype =
 	Evaluate: function(manifold, xfA, xfB)
 	{
 		var chain = this.m_fixtureA.GetShape();
-		var edge = new b2EdgeShape();
-		chain.GetChildEdge(edge, this.m_indexA);
-		b2CollideEdgeAndPolygon(	manifold, edge, xfA,
+		chain.GetChildEdge(_local_temp_edgeShape, this.m_indexA);
+		b2CollideEdgeAndPolygon(	manifold, _local_temp_edgeShape, xfA,
 									this.m_fixtureB.GetShape(), xfB);
 	},
 
@@ -10020,6 +10020,7 @@ b2Contact.AddType = function(fcn,
 	}
 
 	fcn.garbage = [];
+	fcn.alloc = 2;
 };
 
 b2Contact.InitializeRegisters = function()
@@ -10031,6 +10032,26 @@ b2Contact.InitializeRegisters = function()
 	b2Contact.AddType(b2EdgeAndPolygonContact, b2Shape.e_edge, b2Shape.e_polygon);
 	b2Contact.AddType(b2ChainAndCircleContact, b2Shape.e_chain, b2Shape.e_circle);
 	b2Contact.AddType(b2ChainAndPolygonContact, b2Shape.e_chain, b2Shape.e_polygon);
+};
+
+b2Contact.RetrieveGarbage = function(fcn)
+{
+	var contact;
+
+	if (contact = fcn.garbage.pop())
+		return contact;
+
+	// no more contacts, allocate some more
+	for (var i = 0; i < fcn.alloc - 1; ++i)
+		fcn.garbage.push(new fcn());
+
+	//if (fcn.alloc < 256)
+	{
+		fcn.alloc += 32;
+		console.log("Expanded storage for " + fcn.name + " to " + fcn.alloc);
+	}
+
+	return new fcn();
 };
 
 b2Contact.Create = function(fixtureA, indexA, fixtureB, indexB)
@@ -10051,7 +10072,7 @@ b2Contact.Create = function(fixtureA, indexA, fixtureB, indexB)
 
 	if (fcn)
 	{
-		var contact = fcn.garbage.pop() || new fcn();
+		var contact = b2Contact.RetrieveGarbage(fcn);
 
 		if (b2Contact.s_registers[type1][type2].primary)
 			contact.Create(fixtureA, indexA, fixtureB, indexB);
@@ -13697,12 +13718,12 @@ b2FrictionJointDef.prototype =
 {
 	/// Initialize the bodies, anchors, axis, and reference angle using the world
 	/// anchor and world axis.
-	Initialize: function(bodyA, bodyB, anchor)
+	Initialize: function(bA, bB, anchor)
 	{
 		this.bodyA = bA;
 		this.bodyB = bB;
-		this.localAnchorA = this.bodyA.GetLocalPoint(anchor);
-		this.localAnchorB = this.bodyB.GetLocalPoint(anchor);
+		this.localAnchorA.Assign(this.bodyA.GetLocalPoint(anchor));
+		this.localAnchorB.Assign(this.bodyB.GetLocalPoint(anchor));
 	},
 
 	_deserialize: function(data, bodies, joints)
@@ -13724,8 +13745,8 @@ function b2FrictionJoint(def)
 {
 	this.parent.call(this, def);
 
-	this.m_localAnchorA = def.localAnchorA;
-	this.m_localAnchorB = def.localAnchorB;
+	this.m_localAnchorA = def.localAnchorA.Clone();
+	this.m_localAnchorB = def.localAnchorB.Clone();
 
 	this.m_linearImpulse = new b2Vec2();
 	this.m_angularImpulse = 0.0;
@@ -16901,6 +16922,7 @@ var b2RUBELoader = (function()
 		def.fixedRotation = obj.fixedRotation || false;
 		def.linearDamping = obj.linearDamping || false;
 		def.linearVelocity = parseVector(obj.linearVelocity);
+		def.gravityScale = typeof(obj.gravityScale) !== 'undefined' ? obj.gravityScale : 1; // GRRRRRR
 
 		var md = new b2MassData();
 		md.mass = obj['massData-mass'] || 0;
@@ -16941,9 +16963,6 @@ var b2RUBELoader = (function()
 			throw new Error("unknown joint type");
 
 		var jd = new jointsList[obj.type]();
-		jd.bodyA = bodies[obj.bodyA || 0];
-		jd.bodyB = bodies[obj.bodyB || 0];
-		jd.collideConnected = obj.collideConnected || false;
 
 		switch (jd.type)
 		{
@@ -16994,8 +17013,8 @@ var b2RUBELoader = (function()
 				jd.maxLength = obj.maxLength || 0;
 				break;
 			case b2Joint.e_motorJoint:
-				jd.localAnchorA = parseVector(obj.anchorA);
-				jd.localAnchorB = parseVector(obj.anchorB);
+				jd.linearOffset = parseVector(obj.anchorA);
+				jd.angularOffset = obj.refAngle || 0;
 				jd.maxForce = obj.maxForce || 0;
 				jd.maxTorque = obj.maxTorque || 0;
 				jd.correctionFactor = obj.correctionFactor || 0;
@@ -17010,12 +17029,16 @@ var b2RUBELoader = (function()
 			case b2Joint.e_frictionJoint:
 				jd.localAnchorA = parseVector(obj.anchorA);
 				jd.localAnchorB = parseVector(obj.anchorB);
-				jd.maxForce = obj.refAngle || 0;
-				jd.maxTorque = obj.dampingRatio || 0;
+				jd.maxForce = obj.maxForce || 0;
+				jd.maxTorque = obj.maxTorque || 0;
 				break;
 			default:
 				throw new Error("wat?");
 		}
+
+		jd.bodyA = bodies[obj.bodyA || 0];
+		jd.bodyB = bodies[obj.bodyB || 0];
+		jd.collideConnected = obj.collideConnected || false;
 
 		var joint = world.CreateJoint(jd);
 
@@ -17034,9 +17057,9 @@ var b2RUBELoader = (function()
 		this.positionIterations = 0;
 		this.velocityIterations = 0;
 		this.stepsPerSecond = 0;
-		this.fixtures = [];
-		this.bodies = [];
-		this.joints = [];
+		this.fixtures = {};
+		this.bodies = {};
+		this.joints = {};
 
 		Object.seal(this);
 	}
