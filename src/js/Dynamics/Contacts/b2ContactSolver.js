@@ -189,7 +189,7 @@ function b2ContactSolver(def)
 			vcp.tangentMass = 0.0;
 			vcp.velocityBias = 0.0;
 
-			pc.localPoints[j] = cp.localPoint.Clone();
+			pc.localPoints[j] = cp.localPoint;
 		}
 	}
 }
@@ -214,17 +214,17 @@ b2ContactSolver.prototype =
 			var mB = vc.invMassB;
 			var iA = vc.invIA;
 			var iB = vc.invIB;
-			var localCenterA = pc.localCenterA.Clone();
-			var localCenterB = pc.localCenterB.Clone();
+			var localCenterA = pc.localCenterA;
+			var localCenterB = pc.localCenterB;
 
-			var cA = this.m_positions[indexA].c.Clone();
+			var cA = this.m_positions[indexA].c;
 			var aA = this.m_positions[indexA].a;
-			var vA = this.m_velocities[indexA].v.Clone();
+			var vA = this.m_velocities[indexA].v;
 			var wA = this.m_velocities[indexA].w;
 
-			var cB = this.m_positions[indexB].c.Clone();
+			var cB = this.m_positions[indexB].c;
 			var aB = this.m_positions[indexB].a;
-			var vB = this.m_velocities[indexB].v.Clone();
+			var vB = this.m_velocities[indexB].v;
 			var wB = this.m_velocities[indexB].w;
 
 			b2Assert(manifold.pointCount > 0);
@@ -322,9 +322,9 @@ b2ContactSolver.prototype =
 			var iB = vc.invIB;
 			var pointCount = vc.pointCount;
 
-			var vA = this.m_velocities[indexA].v.Clone();
+			var vA = this.m_velocities[indexA].v;
 			var wA = this.m_velocities[indexA].w;
-			var vB = this.m_velocities[indexB].v.Clone();
+			var vB = this.m_velocities[indexB].v;
 			var wB = this.m_velocities[indexB].w;
 
 			var normal = vc.normal;
@@ -360,9 +360,9 @@ b2ContactSolver.prototype =
 			var iB = vc.invIB;
 			var pointCount = vc.pointCount;
 
-			var vA = this.m_velocities[indexA].v.Clone();
+			var vA = this.m_velocities[indexA].v;
 			var wA = this.m_velocities[indexA].w;
-			var vB = this.m_velocities[indexB].v.Clone();
+			var vB = this.m_velocities[indexB].v;
 			var wB = this.m_velocities[indexB].w;
 
 			var normal = vc.normal;
@@ -650,9 +650,7 @@ b2ContactSolver.prototype =
 				}
 			}
 
-			this.m_velocities[indexA].v.Assign(vA);
 			this.m_velocities[indexA].w = wA;
-			this.m_velocities[indexB].v.Assign(vB);
 			this.m_velocities[indexB].w = wB;
 		}
 	},
@@ -681,18 +679,18 @@ b2ContactSolver.prototype =
 
 			var indexA = pc.indexA;
 			var indexB = pc.indexB;
-			var localCenterA = pc.localCenterA.Clone();
+			var localCenterA = pc.localCenterA;
 			var mA = pc.invMassA;
 			var iA = pc.invIA;
-			var localCenterB = pc.localCenterB.Clone();
+			var localCenterB = pc.localCenterB;
 			var mB = pc.invMassB;
 			var iB = pc.invIB;
 			var pointCount = pc.pointCount;
 
-			var cA = this.m_positions[indexA].c.Clone();
+			var cA = this.m_positions[indexA].c;
 			var aA = this.m_positions[indexA].a;
 
-			var cB = this.m_positions[indexB].c.Clone();
+			var cB = this.m_positions[indexB].c;
 			var aB = this.m_positions[indexB].a;
 
 			// Solve normal constraints
@@ -706,9 +704,9 @@ b2ContactSolver.prototype =
 
 				var psm = new b2PositionSolverManifold();
 				psm.Initialize(pc, xfA, xfB, j);
-				var normal = psm.normal.Clone();
+				var normal = psm.normal;
 
-				var point = psm.point.Clone();
+				var point = psm.point;
 				var separation = psm.separation;
 
 				var rA = b2Vec2.Subtract(point, cA);
@@ -737,10 +735,8 @@ b2ContactSolver.prototype =
 				aB += iB * b2Cross_v2_v2(rB, P);
 			}
 
-			this.m_positions[indexA].c.Assign(cA);
 			this.m_positions[indexA].a = aA;
 
-			this.m_positions[indexB].c.Assign(cB);
 			this.m_positions[indexB].a = aB;
 		}
 
@@ -758,8 +754,8 @@ b2ContactSolver.prototype =
 
 			var indexA = pc.indexA;
 			var indexB = pc.indexB;
-			var localCenterA = pc.localCenterA.Clone();
-			var localCenterB = pc.localCenterB.Clone();
+			var localCenterA = pc.localCenterA;
+			var localCenterB = pc.localCenterB;
 			var pointCount = pc.pointCount;
 
 			var mA = 0.0;
@@ -778,10 +774,10 @@ b2ContactSolver.prototype =
 				iB = pc.invIB;
 			}
 
-			var cA = this.m_positions[indexA].c.Clone();
+			var cA = this.m_positions[indexA].c;
 			var aA = this.m_positions[indexA].a;
 
-			var cB = this.m_positions[indexB].c.Clone();
+			var cB = this.m_positions[indexB].c;
 			var aB = this.m_positions[indexB].a;
 
 			// Solve normal constraints
@@ -795,9 +791,9 @@ b2ContactSolver.prototype =
 
 				var psm = new b2PositionSolverManifold();
 				psm.Initialize(pc, xfA, xfB, j);
-				var normal = psm.normal.Clone();
+				var normal = psm.normal;
 
-				var point = psm.point.Clone();
+				var point = psm.point;
 				var separation = psm.separation;
 
 				var rA = b2Vec2.Subtract(point, cA);
@@ -826,10 +822,8 @@ b2ContactSolver.prototype =
 				aB += iB * b2Cross_v2_v2(rB, P);
 			}
 
-			this.m_positions[indexA].c.Assign(cA);
 			this.m_positions[indexA].a = aA;
 
-			this.m_positions[indexB].c.Assign(cB);
 			this.m_positions[indexB].a = aB;
 		}
 

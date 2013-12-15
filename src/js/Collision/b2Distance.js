@@ -404,8 +404,8 @@ b2Simplex.prototype =
 	// a2 = d12_2 / d12
 	Solve2: function()
 	{
-		var w1 = this.m_v[0].w.Clone();
-		var w2 = this.m_v[1].w.Clone();
+		var w1 = this.m_v[0].w;
+		var w2 = this.m_v[1].w;
 		var e12 = b2Vec2.Subtract(w2, w1);
 
 		// w1 region
@@ -443,9 +443,9 @@ b2Simplex.prototype =
 	// - inside the triangle
 	Solve3: function()
 	{
-		var w1 = this.m_v[0].w.Clone();
-		var w2 = this.m_v[1].w.Clone();
-		var w3 = this.m_v[2].w.Clone();
+		var w1 = this.m_v[0].w;
+		var w2 = this.m_v[1].w;
+		var w3 = this.m_v[2].w;
 
 		// Edge12
 		// [1      1     ][a1] = [1]
@@ -563,8 +563,8 @@ function b2DistanceFunc(output,
 	var proxyA = input.proxyA;
 	var proxyB = input.proxyB;
 
-	var transformA = input.transformA.Clone();
-	var transformB = input.transformB.Clone();
+	var transformA = input.transformA;
+	var transformB = input.transformB;
 
 	// Initialize the simplex.
 	var simplex = new b2Simplex();

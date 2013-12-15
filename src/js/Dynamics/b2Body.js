@@ -183,6 +183,8 @@ b2Body.e_fixedRotationFlag = 0x0010;
 b2Body.e_activeFlag = 0x0020;
 b2Body.e_toiFlag = 0x0040;
 
+b2Body.m_local_oldCenter = new b2Vec2();
+
 /// A rigid body. These are created via b2World.CreateBody.
 b2Body.prototype =
 {
@@ -600,13 +602,13 @@ b2Body.prototype =
 		}
 
 		// Move center of mass.
-		var oldCenter = this.m_sweep.c.Clone();
+		b2Body.m_local_oldCenter.Assign(this.m_sweep.c);
 		this.m_sweep.localCenter.Assign(massData.center);
 		this.m_sweep.c0.Assign(b2Mul_t_v2(this.m_xf, this.m_sweep.localCenter));
 		this.m_sweep.c.Assign(this.m_sweep.c0);
 
 		// Update center of mass velocity.
-		this.m_linearVelocity.Add(b2Cross_f_v2(this.m_angularVelocity, b2Vec2.Subtract(this.m_sweep.c, oldCenter)));
+		this.m_linearVelocity.Add(b2Cross_f_v2(this.m_angularVelocity, b2Vec2.Subtract(this.m_sweep.c, b2Body.m_local_oldCenter)));
 	},
 
 	/// This resets the mass properties to the sum of the mass properties of the fixtures.
@@ -676,13 +678,13 @@ b2Body.prototype =
 		}
 
 		// Move center of mass.
-		var oldCenter = this.m_sweep.c.Clone();
+		b2Body.m_local_oldCenter.Assign(this.m_sweep.c);
 		this.m_sweep.localCenter.Assign(localCenter);
 		this.m_sweep.c0.Assign(b2Mul_t_v2(this.m_xf, this.m_sweep.localCenter));
 		this.m_sweep.c.Assign(this.m_sweep.c0);
 
 		// Update center of mass velocity.
-		this.m_linearVelocity.Add(b2Cross_f_v2(this.m_angularVelocity, b2Vec2.Subtract(this.m_sweep.c, oldCenter)));
+		this.m_linearVelocity.Add(b2Cross_f_v2(this.m_angularVelocity, b2Vec2.Subtract(this.m_sweep.c, b2Body.m_local_oldCenter)));
 	},
 
 	/// Get the world coordinates of a point given the local coordinates.

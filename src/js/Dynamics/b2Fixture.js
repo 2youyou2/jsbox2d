@@ -27,6 +27,13 @@ b2Filter.prototype =
 		return filter;
 	},
 
+	Assign: function(filter)
+	{
+		this.categoryBits = filter.categoryBits;
+		this.maskBits = filter.maskBits;
+		this.groupIndex = filter.groupIndex;
+	},
+
 	_serialize: function(out)
 	{
 		var obj = out || {};
@@ -315,7 +322,7 @@ b2Fixture.prototype =
 		this.m_body = body;
 		this.m_next = null;
 
-		this.m_filter = def.filter.Clone();
+		this.m_filter.Assign(def.filter);
 
 		this.m_isSensor = def.isSensor;
 

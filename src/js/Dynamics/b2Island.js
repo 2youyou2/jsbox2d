@@ -58,9 +58,9 @@ b2Island.prototype =
 		{
 			var b = this.m_bodies[i];
 
-			var c = b.m_sweep.c.Clone();
+			this.m_positions[i].c.Assign(b.m_sweep.c);
 			var a = b.m_sweep.a;
-			var v = b.m_linearVelocity.Clone();
+			this.m_velocities[i].v.Assign(b.m_linearVelocity);
 			var w = b.m_angularVelocity;
 
 			// Store positions for continuous collision.
@@ -70,7 +70,7 @@ b2Island.prototype =
 			if (b.m_type == b2Body.b2_dynamicBody)
 			{
 				// Integrate velocities.
-				v.Add(b2Vec2.Multiply(h, b2Vec2.Add(b2Vec2.Multiply(b.m_gravityScale, gravity), b2Vec2.Multiply(b.m_invMass, b.m_force))));
+				this.m_velocities[i].v.Add(b2Vec2.Multiply(h, b2Vec2.Add(b2Vec2.Multiply(b.m_gravityScale, gravity), b2Vec2.Multiply(b.m_invMass, b.m_force))));
 				w += h * b.m_invI * b.m_torque;
 
 				// Apply damping.
@@ -80,13 +80,11 @@ b2Island.prototype =
 				// v2 = exp(-c * dt) * v1
 				// Pade approximation:
 				// v2 = v1 * 1 / (1 + c * dt)
-				v.Multiply(1.0 / (1.0 + h * b.m_linearDamping));
+				this.m_velocities[i].v.Multiply(1.0 / (1.0 + h * b.m_linearDamping));
 				w *= 1.0 / (1.0 + h * b.m_angularDamping);
 			}
 
-			this.m_positions[i].c.Assign(c);
 			this.m_positions[i].a = a;
-			this.m_velocities[i].v.Assign(v);
 			this.m_velocities[i].w = w;
 		}
 
@@ -141,9 +139,9 @@ b2Island.prototype =
 		// Integrate positions
 		for (var i = 0; i < this.m_bodyCount; ++i)
 		{
-			var c = this.m_positions[i].c.Clone();
+			var c = this.m_positions[i].c;
 			var a = this.m_positions[i].a;
-			var v = this.m_velocities[i].v.Clone();
+			var v = this.m_velocities[i].v;
 			var w = this.m_velocities[i].w;
 
 			// Check for large velocities
@@ -165,9 +163,7 @@ b2Island.prototype =
 			c.Add(b2Vec2.Multiply(h, v));
 			a += h * w;
 
-			this.m_positions[i].c.Assign(c);
 			this.m_positions[i].a = a;
-			this.m_velocities[i].v.Assign(v);
 			this.m_velocities[i].w = w;
 		}
 
@@ -305,9 +301,9 @@ b2Island.prototype =
 		// Integrate positions
 		for (var i = 0; i < this.m_bodyCount; ++i)
 		{
-			var c = this.m_positions[i].c.Clone();
+			var c = this.m_positions[i].c;
 			var a = this.m_positions[i].a;
-			var v = this.m_velocities[i].v.Clone();
+			var v = this.m_velocities[i].v;
 			var w = this.m_velocities[i].w;
 
 			// Check for large velocities
@@ -329,9 +325,7 @@ b2Island.prototype =
 			c.Add(b2Vec2.Multiply(h, v));
 			a += h * w;
 
-			this.m_positions[i].c.Assign(c);
 			this.m_positions[i].a = a;
-			this.m_velocities[i].v.Assign(v);
 			this.m_velocities[i].w = w;
 
 			// Sync bodies

@@ -74,6 +74,10 @@ b2WorldRayCastWrapper.prototype =
 	}
 };
 
+b2World.m_local_sweep_backupA = new b2Sweep();
+b2World.m_local_sweep_backupB = new b2Sweep();
+b2World.m_local_sweep_backupC = new b2Sweep();
+
 b2World.prototype =
 {
 	Destroy: function()
@@ -1135,8 +1139,8 @@ b2World.prototype =
 			var bA = fA.GetBody();
 			var bB = fB.GetBody();
 
-			var backup1 = bA.m_sweep.Clone();
-			var backup2 = bB.m_sweep.Clone();
+			b2World.m_local_sweep_backupA.Assign(bA.m_sweep);
+			b2World.m_local_sweep_backupB.Assign(bB.m_sweep);
 
 			bA.Advance(minAlpha);
 			bB.Advance(minAlpha);
@@ -1151,8 +1155,8 @@ b2World.prototype =
 			{
 				// Restore the sweeps.
 				minContact.SetEnabled(false);
-				bA.m_sweep.Assign(backup1);
-				bB.m_sweep.Assign(backup2);
+				bA.m_sweep.Assign(b2World.m_local_sweep_backupA);
+				bB.m_sweep.Assign(b2World.m_local_sweep_backupB);
 				bA.SynchronizeTransform();
 				bB.SynchronizeTransform();
 				continue;
@@ -1215,7 +1219,7 @@ b2World.prototype =
 						}
 
 						// Tentatively advance the body to the TOI.
-						var backup = other.m_sweep.Clone();
+						b2World.m_local_sweep_backupC.Assign(other.m_sweep);
 						if ((other.m_flags & b2Body.e_islandFlag) == 0)
 						{
 							other.Advance(minAlpha);
@@ -1227,7 +1231,7 @@ b2World.prototype =
 						// Was the contact disabled by the user?
 						if (contact.IsEnabled() == false)
 						{
-							other.m_sweep.Assign(backup);
+							other.m_sweep.Assign(b2World.m_local_sweep_backupC);
 							other.SynchronizeTransform();
 							continue;
 						}
@@ -1235,7 +1239,7 @@ b2World.prototype =
 						// Are there contact points?
 						if (contact.IsTouching() == false)
 						{
-							other.m_sweep.Assign(backup);
+							other.m_sweep.Assign(b2World.m_local_sweep_backupC);
 							other.SynchronizeTransform();
 							continue;
 						}

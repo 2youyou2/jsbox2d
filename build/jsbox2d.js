@@ -223,7 +223,8 @@ b2Vec2.prototype =
 
 	Assign: function(l)
 	{
-		this.Set(l.x, l.y);
+		this.x = l.x;
+		this.y = l.y;
 	},
 
 	/// Negate this vector.
@@ -659,8 +660,14 @@ b2Rot.prototype =
 /// the position and orientation of rigid frames.
 function b2Transform(position, rotation)
 {
-	this.p = position ? position.Clone() : new b2Vec2();
-	this.q = rotation ? rotation.Clone() : new b2Rot();
+	this.p = new b2Vec2();
+	this.q = new b2Rot();
+
+	if (position)
+	{
+		this.p.Assign(position);
+		this.q.Assign(rotation);
+	}
 }
 
 b2Transform.prototype =
@@ -1235,6 +1242,19 @@ b2Manifold.prototype =
 			manifold.points[i] = this.points[i].Clone();
 
 		return manifold;
+	},
+
+	// NOTE: this version of assign is very specific and
+	// should NOT be used in your own code.
+	Assign: function(manifold)
+	{
+		this.pointCount = manifold.pointCount;
+		this.type = manifold.type;
+		this.localPoint.Assign(manifold.localPoint);
+		this.localNormal.Assign(manifold.localNormal);
+
+		for (var i = 0; i < this.pointCount; ++i)
+			this.points[i] = manifold.points[i]; // !! NO CLONE
 	}
 };
 
@@ -1757,15 +1777,13 @@ function b2FindIncidentEdge(c,
 	var i1 = index;
 	var i2 = i1 + 1 < count2 ? i1 + 1 : 0;
 
-	c[0] = new b2ClipVertex();
-	c[0].v = b2Mul_t_v2(xf2, vertices2[i1]);
+	c[0].v.Assign(b2Mul_t_v2(xf2, vertices2[i1]));
 	c[0].id.indexA = edge1;
 	c[0].id.indexB = i1;
 	c[0].id.typeA = b2ContactID.e_face;
 	c[0].id.typeB = b2ContactID.e_vertex;
 
-	c[1] = new b2ClipVertex();
-	c[1].v = b2Mul_t_v2(xf2, vertices2[i2]);
+	c[1].v.Assign(b2Mul_t_v2(xf2, vertices2[i2]));
 	c[1].id.indexA = edge1;
 	c[1].id.indexB = i2;
 	c[1].id.typeA = b2ContactID.e_face;
@@ -1792,7 +1810,7 @@ function b2CollidePolygons(manifold,
 
 	var poly1;	// reference polygon
 	var poly2;	// incident polygon
-	var xf1 = new b2Transform(), xf2 = new b2Transform();
+	var xf1, xf2;
 	var edge1 = 0;					// reference edge
 	var flip = 0;
 	var k_tol = 0.1 * b2_linearSlop;
@@ -1818,8 +1836,7 @@ function b2CollidePolygons(manifold,
 		flip = 0;
 	}
 
-	var incidentEdge = new Array(2);
-	b2FindIncidentEdge(incidentEdge, poly1, xf1, edge1, poly2, xf2);
+	b2FindIncidentEdge(b2CollidePolygons._local_incidentEdges, poly1, xf1, edge1, poly2, xf2);
 
 	var count1 = poly1.m_count;
 	var vertices1 = poly1.m_vertices;
@@ -1855,13 +1872,13 @@ function b2CollidePolygons(manifold,
 	var np;
 
 	// Clip to box side 1
-	np = b2ClipSegmentToLine(clipPoints1, incidentEdge, tangent.Negate(), sideOffset1, iv1);
+	np = b2ClipSegmentToLine(clipPoints1, b2CollidePolygons._local_incidentEdges, tangent.Negate(), sideOffset1, iv1);
 
 	if (np < 2)
 		return;
 
 	// Clip to negative box side 1
-	np = b2ClipSegmentToLine(clipPoints2, clipPoints1,  tangent, sideOffset2, iv2);
+	np = b2ClipSegmentToLine(clipPoints2, clipPoints1, tangent, sideOffset2, iv2);
 
 	if (np < 2)
 	{
@@ -1898,6 +1915,8 @@ function b2CollidePolygons(manifold,
 
 	manifold.pointCount = pointCount;
 }
+
+b2CollidePolygons._local_incidentEdges = [new b2ClipVertex(), new b2ClipVertex()];
 
 /// Compute the collision manifold between an edge and a circle.
 function b2CollideEdgeAndCircle(manifold,
@@ -4563,8 +4582,8 @@ b2Simplex.prototype =
 	// a2 = d12_2 / d12
 	Solve2: function()
 	{
-		var w1 = this.m_v[0].w.Clone();
-		var w2 = this.m_v[1].w.Clone();
+		var w1 = this.m_v[0].w;
+		var w2 = this.m_v[1].w;
 		var e12 = b2Vec2.Subtract(w2, w1);
 
 		// w1 region
@@ -4602,9 +4621,9 @@ b2Simplex.prototype =
 	// - inside the triangle
 	Solve3: function()
 	{
-		var w1 = this.m_v[0].w.Clone();
-		var w2 = this.m_v[1].w.Clone();
-		var w3 = this.m_v[2].w.Clone();
+		var w1 = this.m_v[0].w;
+		var w2 = this.m_v[1].w;
+		var w3 = this.m_v[2].w;
 
 		// Edge12
 		// [1      1     ][a1] = [1]
@@ -4722,8 +4741,8 @@ function b2DistanceFunc(output,
 	var proxyA = input.proxyA;
 	var proxyB = input.proxyB;
 
-	var transformA = input.transformA.Clone();
-	var transformB = input.transformB.Clone();
+	var transformA = input.transformA;
+	var transformB = input.transformB;
 
 	// Initialize the simplex.
 	var simplex = new b2Simplex();
@@ -4950,6 +4969,8 @@ function b2DynamicTree()
 	this.m_insertionCount = 0;
 }
 
+b2DynamicTree.aabbExtensionFattener = new b2Vec2(b2_aabbExtension, b2_aabbExtension);
+
 b2DynamicTree.prototype =
 {
 	/// Create a proxy. Provide a tight fitting AABB and a userData pointer.
@@ -4958,9 +4979,8 @@ b2DynamicTree.prototype =
 		var proxyId = this.AllocateNode();
 
 		// Fatten the aabb.
-		var r = new b2Vec2(b2_aabbExtension, b2_aabbExtension);
-		this.m_nodes[proxyId].aabb.lowerBound.Assign(b2Vec2.Subtract(aabb.lowerBound, r));
-		this.m_nodes[proxyId].aabb.upperBound.Assign(b2Vec2.Add(aabb.upperBound, r));
+		this.m_nodes[proxyId].aabb.lowerBound.Assign(b2Vec2.Subtract(aabb.lowerBound, b2DynamicTree.aabbExtensionFattener));
+		this.m_nodes[proxyId].aabb.upperBound.Assign(b2Vec2.Add(aabb.upperBound, b2DynamicTree.aabbExtensionFattener));
 		this.m_nodes[proxyId].userData = userData;
 		this.m_nodes[proxyId].height = 0;
 
@@ -4997,33 +5017,30 @@ b2DynamicTree.prototype =
 		this.RemoveLeaf(proxyId);
 
 		// Extend AABB.
-		var b = aabb.Clone();
-		var r = new b2Vec2(b2_aabbExtension, b2_aabbExtension);
-		b.lowerBound.Assign(b2Vec2.Subtract(b.lowerBound, r));
-		b.upperBound.Assign(b2Vec2.Add(b.upperBound, r));
+		this.m_nodes[proxyId].aabb.Assign(aabb);
+		this.m_nodes[proxyId].aabb.lowerBound.Subtract(b2DynamicTree.aabbExtensionFattener);
+		this.m_nodes[proxyId].aabb.upperBound.Add(b2DynamicTree.aabbExtensionFattener);
 
 		// Predict AABB displacement.
 		var d = b2Vec2.Multiply(b2_aabbMultiplier, displacement);
 
 		if (d.x < 0.0)
 		{
-			b.lowerBound.x += d.x;
+			this.m_nodes[proxyId].aabb.lowerBound.x += d.x;
 		}
 		else
 		{
-			b.upperBound.x += d.x;
+			this.m_nodes[proxyId].aabb.upperBound.x += d.x;
 		}
 
 		if (d.y < 0.0)
 		{
-			b.lowerBound.y += d.y;
+			this.m_nodes[proxyId].aabb.lowerBound.y += d.y;
 		}
 		else
 		{
-			b.upperBound.y += d.y;
+			this.m_nodes[proxyId].aabb.upperBound.y += d.y;
 		}
-
-		this.m_nodes[proxyId].aabb.Assign(b);
 
 		this.InsertLeaf(proxyId);
 		return true;
@@ -6089,13 +6106,13 @@ function b2TimeOfImpact(output, input)
 	var proxyA = input.proxyA;
 	var proxyB = input.proxyB;
 
-	var sweepA = input.sweepA.Clone();
-	var sweepB = input.sweepB.Clone();
+	b2TimeOfImpact._temp_sweepA.Assign(input.sweepA);
+	b2TimeOfImpact._temp_sweepB.Assign(input.sweepB);
 
 	// Large rotations can make the root finder fail, so we normalize the
 	// sweep angles.
-	sweepA.Normalize();
-	sweepB.Normalize();
+	b2TimeOfImpact._temp_sweepA.Normalize();
+	b2TimeOfImpact._temp_sweepB.Normalize();
 
 	var tMax = input.tMax;
 
@@ -6120,14 +6137,11 @@ function b2TimeOfImpact(output, input)
 	// This loop terminates when an axis is repeated (no progress is made).
 	for(;;)
 	{
-		var xfA = new b2Transform(), xfB = new b2Transform();
-		sweepA.GetTransform(xfA, t1);
-		sweepB.GetTransform(xfB, t1);
+		b2TimeOfImpact._temp_sweepA.GetTransform(distanceInput.transformA, t1);
+		b2TimeOfImpact._temp_sweepB.GetTransform(distanceInput.transformB, t1);
 
 		// Get the distance between shapes. We can also use the results
 		// to get a separating axis.
-		distanceInput.transformA.Assign(xfA);
-		distanceInput.transformB.Assign(xfB);
 		var distanceOutput = new b2DistanceOutput();
 		b2DistanceFunc(distanceOutput, cache, distanceInput);
 
@@ -6150,7 +6164,7 @@ function b2TimeOfImpact(output, input)
 
 		// Initialize the separating axis.
 		var fcn = new b2SeparationFunction();
-		fcn.Initialize(cache, proxyA, sweepA, proxyB, sweepB, t1);
+		fcn.Initialize(cache, proxyA, b2TimeOfImpact._temp_sweepA, proxyB, b2TimeOfImpact._temp_sweepB, t1);
 
 		// Compute the TOI on the separating axis. We do this by successively
 		// resolving the deepest point. This loop is bounded by the number of vertices.
@@ -6285,6 +6299,9 @@ function b2TimeOfImpact(output, input)
 	b2TimeOfImpact.b2_toiMaxTime = b2Max(b2TimeOfImpact.b2_toiMaxTime, time);
 	b2TimeOfImpact.b2_toiTime += time;
 }
+
+b2TimeOfImpact._temp_sweepA = new b2Sweep();
+b2TimeOfImpact._temp_sweepB = new b2Sweep();
 
 b2TimeOfImpact.b2_toiTime = 0;
 b2TimeOfImpact.b2_toiMaxTime = 0;
@@ -6478,6 +6495,8 @@ b2Body.e_bulletFlag = 0x0008;
 b2Body.e_fixedRotationFlag = 0x0010;
 b2Body.e_activeFlag = 0x0020;
 b2Body.e_toiFlag = 0x0040;
+
+b2Body.m_local_oldCenter = new b2Vec2();
 
 /// A rigid body. These are created via b2World.CreateBody.
 b2Body.prototype =
@@ -6896,13 +6915,13 @@ b2Body.prototype =
 		}
 
 		// Move center of mass.
-		var oldCenter = this.m_sweep.c.Clone();
+		b2Body.m_local_oldCenter.Assign(this.m_sweep.c);
 		this.m_sweep.localCenter.Assign(massData.center);
 		this.m_sweep.c0.Assign(b2Mul_t_v2(this.m_xf, this.m_sweep.localCenter));
 		this.m_sweep.c.Assign(this.m_sweep.c0);
 
 		// Update center of mass velocity.
-		this.m_linearVelocity.Add(b2Cross_f_v2(this.m_angularVelocity, b2Vec2.Subtract(this.m_sweep.c, oldCenter)));
+		this.m_linearVelocity.Add(b2Cross_f_v2(this.m_angularVelocity, b2Vec2.Subtract(this.m_sweep.c, b2Body.m_local_oldCenter)));
 	},
 
 	/// This resets the mass properties to the sum of the mass properties of the fixtures.
@@ -6972,13 +6991,13 @@ b2Body.prototype =
 		}
 
 		// Move center of mass.
-		var oldCenter = this.m_sweep.c.Clone();
+		b2Body.m_local_oldCenter.Assign(this.m_sweep.c);
 		this.m_sweep.localCenter.Assign(localCenter);
 		this.m_sweep.c0.Assign(b2Mul_t_v2(this.m_xf, this.m_sweep.localCenter));
 		this.m_sweep.c.Assign(this.m_sweep.c0);
 
 		// Update center of mass velocity.
-		this.m_linearVelocity.Add(b2Cross_f_v2(this.m_angularVelocity, b2Vec2.Subtract(this.m_sweep.c, oldCenter)));
+		this.m_linearVelocity.Add(b2Cross_f_v2(this.m_angularVelocity, b2Vec2.Subtract(this.m_sweep.c, b2Body.m_local_oldCenter)));
 	},
 
 	/// Get the world coordinates of a point given the local coordinates.
@@ -7440,6 +7459,13 @@ b2Filter.prototype =
 		return filter;
 	},
 
+	Assign: function(filter)
+	{
+		this.categoryBits = filter.categoryBits;
+		this.maskBits = filter.maskBits;
+		this.groupIndex = filter.groupIndex;
+	},
+
 	_serialize: function(out)
 	{
 		var obj = out || {};
@@ -7728,7 +7754,7 @@ b2Fixture.prototype =
 		this.m_body = body;
 		this.m_next = null;
 
-		this.m_filter = def.filter.Clone();
+		this.m_filter.Assign(def.filter);
 
 		this.m_isSensor = def.isSensor;
 
@@ -8085,6 +8111,10 @@ b2WorldRayCastWrapper.prototype =
 		return input.maxFraction;
 	}
 };
+
+b2World.m_local_sweep_backupA = new b2Sweep();
+b2World.m_local_sweep_backupB = new b2Sweep();
+b2World.m_local_sweep_backupC = new b2Sweep();
 
 b2World.prototype =
 {
@@ -9147,8 +9177,8 @@ b2World.prototype =
 			var bA = fA.GetBody();
 			var bB = fB.GetBody();
 
-			var backup1 = bA.m_sweep.Clone();
-			var backup2 = bB.m_sweep.Clone();
+			b2World.m_local_sweep_backupA.Assign(bA.m_sweep);
+			b2World.m_local_sweep_backupB.Assign(bB.m_sweep);
 
 			bA.Advance(minAlpha);
 			bB.Advance(minAlpha);
@@ -9163,8 +9193,8 @@ b2World.prototype =
 			{
 				// Restore the sweeps.
 				minContact.SetEnabled(false);
-				bA.m_sweep.Assign(backup1);
-				bB.m_sweep.Assign(backup2);
+				bA.m_sweep.Assign(b2World.m_local_sweep_backupA);
+				bB.m_sweep.Assign(b2World.m_local_sweep_backupB);
 				bA.SynchronizeTransform();
 				bB.SynchronizeTransform();
 				continue;
@@ -9227,7 +9257,7 @@ b2World.prototype =
 						}
 
 						// Tentatively advance the body to the TOI.
-						var backup = other.m_sweep.Clone();
+						b2World.m_local_sweep_backupC.Assign(other.m_sweep);
 						if ((other.m_flags & b2Body.e_islandFlag) == 0)
 						{
 							other.Advance(minAlpha);
@@ -9239,7 +9269,7 @@ b2World.prototype =
 						// Was the contact disabled by the user?
 						if (contact.IsEnabled() == false)
 						{
-							other.m_sweep.Assign(backup);
+							other.m_sweep.Assign(b2World.m_local_sweep_backupC);
 							other.SynchronizeTransform();
 							continue;
 						}
@@ -9247,7 +9277,7 @@ b2World.prototype =
 						// Are there contact points?
 						if (contact.IsTouching() == false)
 						{
-							other.m_sweep.Assign(backup);
+							other.m_sweep.Assign(b2World.m_local_sweep_backupC);
 							other.SynchronizeTransform();
 							continue;
 						}
@@ -9442,8 +9472,7 @@ function b2MixRestitution(restitution1, restitution2)
 
 function b2ContactRegister()
 {
-	this.createFcn = null;
-	this.destroyFcn = null;
+	this.fcn = null;
 	this.primary = false;
 };
 
@@ -9463,57 +9492,62 @@ function b2ContactEdge()
 /// The class manages contact between two shapes. A contact exists for each overlapping
 /// AABB in the broad-phase (except if filtered). Therefore a contact object may exist
 /// that has no contact points.
-function b2Contact(fA, indexA, fB, indexB)
+function b2Contact()
 {
-	// Nodes for connecting bodies.
 	this.m_nodeA = new b2ContactEdge();
 	this.m_nodeB = new b2ContactEdge();
 
 	this.m_manifold = new b2Manifold();
-
-	this.m_toi = 0;
-
-	this.m_flags = b2Contact.e_enabledFlag;
-
-	this.m_fixtureA = fA || null;
-	this.m_fixtureB = fB || null;
-
-	this.m_indexA = indexA || 0;
-	this.m_indexB = indexB || 0;
-
-	this.m_manifold.pointCount = 0;
-
-	this.m_prev = null;
-	this.m_next = null;
-
-	this.m_nodeA.contact = null;
-	this.m_nodeA.prev = null;
-	this.m_nodeA.next = null;
-	this.m_nodeA.other = null;
-
-	this.m_nodeB.contact = null;
-	this.m_nodeB.prev = null;
-	this.m_nodeB.next = null;
-	this.m_nodeB.other = null;
-
-	this.m_toiCount = 0;
-
-	if (fA)
-	{
-		this.m_friction = b2MixFriction(this.m_fixtureA.m_friction, this.m_fixtureB.m_friction);
-		this.m_restitution = b2MixRestitution(this.m_fixtureA.m_restitution, this.m_fixtureB.m_restitution);
-	}
-	else
-	{
-		this.m_friction = 0;
-		this.m_restitution = 0;
-	}
-
-	this.m_tangentSpeed = 0.0;
 }
+
+b2Contact.m_local_tempManifold = new b2Manifold();
 
 b2Contact.prototype =
 {
+	Create: function(fA, indexA, fB, indexB)
+	{
+		// Nodes for connecting bodies.
+		this.m_toi = 0;
+
+		this.m_flags = b2Contact.e_enabledFlag;
+
+		this.m_fixtureA = fA || null;
+		this.m_fixtureB = fB || null;
+
+		this.m_indexA = indexA || 0;
+		this.m_indexB = indexB || 0;
+
+		this.m_manifold.pointCount = 0;
+
+		this.m_prev = null;
+		this.m_next = null;
+
+		this.m_nodeA.contact = null;
+		this.m_nodeA.prev = null;
+		this.m_nodeA.next = null;
+		this.m_nodeA.other = null;
+
+		this.m_nodeB.contact = null;
+		this.m_nodeB.prev = null;
+		this.m_nodeB.next = null;
+		this.m_nodeB.other = null;
+
+		this.m_toiCount = 0;
+
+		if (fA)
+		{
+			this.m_friction = b2MixFriction(this.m_fixtureA.m_friction, this.m_fixtureB.m_friction);
+			this.m_restitution = b2MixRestitution(this.m_fixtureA.m_restitution, this.m_fixtureB.m_restitution);
+		}
+		else
+		{
+			this.m_friction = 0;
+			this.m_restitution = 0;
+		}
+
+		this.m_tangentSpeed = 0.0;
+	},
+
 	/// Get the contact manifold. Do not modify the manifold unless you understand the
 	/// internals of Box2D.
 	GetManifold: function()
@@ -9529,7 +9563,7 @@ b2Contact.prototype =
 		var shapeA = this.m_fixtureA.GetShape();
 		var shapeB = this.m_fixtureB.GetShape();
 
-		worldManifold.Initialize(this.m_manifold.Clone(), bodyA.GetTransform().Clone(), shapeA.m_radius, bodyB.GetTransform().Clone(), shapeB.m_radius);
+		worldManifold.Initialize(this.m_manifold, bodyA.GetTransform(), shapeA.m_radius, bodyB.GetTransform(), shapeB.m_radius);
 	},
 
 	/// Is this contact touching?
@@ -9648,9 +9682,11 @@ b2Contact.prototype =
 		this.m_flags |= b2Contact.e_filterFlag;
 	},
 
+	m_oldManifold: null,
+
 	Update: function(listener)
 	{
-		var oldManifold = this.m_manifold.Clone();
+		b2Contact.m_local_tempManifold.Assign(this.m_manifold);
 
 		// Re-enable this contact.
 		this.m_flags |= b2Contact.e_enabledFlag;
@@ -9664,8 +9700,8 @@ b2Contact.prototype =
 
 		var bodyA = this.m_fixtureA.GetBody();
 		var bodyB = this.m_fixtureB.GetBody();
-		var xfA = bodyA.GetTransform().Clone();
-		var xfB = bodyB.GetTransform().Clone();
+		var xfA = bodyA.GetTransform();
+		var xfB = bodyB.GetTransform();
 
 		// Is this contact a sensor?
 		if (sensor)
@@ -9691,9 +9727,9 @@ b2Contact.prototype =
 				mp2.tangentImpulse = 0.0;
 				var id2 = mp2.id;
 
-				for (var j = 0; j < oldManifold.pointCount; ++j)
+				for (var j = 0; j < b2Contact.m_local_tempManifold.pointCount; ++j)
 				{
-					var mp1 = oldManifold.points[j];
+					var mp1 = b2Contact.m_local_tempManifold.points[j];
 
 					if (mp1.id.Get() == id2.Get())
 					{
@@ -9732,7 +9768,7 @@ b2Contact.prototype =
 
 		if (sensor == false && touching && listener)
 		{
-			listener.PreSolve(this, oldManifold);
+			listener.PreSolve(this, b2Contact.m_local_tempManifold);
 		}
 	}
 };
@@ -9755,11 +9791,9 @@ b2Contact.e_bulletHitFlag = 0x0010;
 // This contact has a valid TOI in this->m_toi
 b2Contact.e_toiFlag = 0x0020;
 
-function b2CircleContact(fixtureA, fixtureB)
+function b2CircleContact()
 {
-	this.parent.call(this, fixtureA, 0, fixtureB, 0);
-	b2Assert(this.m_fixtureA.GetType() == b2Shape.e_circle);
-	b2Assert(this.m_fixtureB.GetType() == b2Shape.e_circle);
+	this.parent.call(this);
 }
 
 b2CircleContact.prototype =
@@ -9769,55 +9803,22 @@ b2CircleContact.prototype =
 		b2CollideCircles(manifold,
 						this.m_fixtureA.GetShape(), xfA,
 						this.m_fixtureB.GetShape(), xfB);
+	},
+
+	Create: function(fixtureA, unused1, fixtureB, unused2)
+	{
+		this.parent.prototype.Create.call(this, fixtureA, 0, fixtureB, 0);
+		b2Assert(this.m_fixtureA.GetType() == b2Shape.e_circle);
+		b2Assert(this.m_fixtureB.GetType() == b2Shape.e_circle);
 	}
-};
-
-b2CircleContact.Create = function(fixtureA, unused1, fixtureB, unused2)
-{
-	return new b2CircleContact(fixtureA, fixtureB);
-};
-
-b2CircleContact.Destroy = function(contact)
-{
 };
 
 b2CircleContact._extend(b2Contact);
 
 
-function b2PolygonContact(fixtureA, fixtureB)
+function b2ChainAndCircleContact()
 {
-	this.parent.call(this, fixtureA, 0, fixtureB, 0);
-	b2Assert(this.m_fixtureA.GetType() == b2Shape.e_polygon);
-	b2Assert(this.m_fixtureB.GetType() == b2Shape.e_polygon);
-}
-
-b2PolygonContact.prototype =
-{
-	Evaluate: function(manifold, xfA, xfB)
-	{
-		b2CollidePolygons(manifold,
-						this.m_fixtureA.GetShape(), xfA,
-						this.m_fixtureB.GetShape(), xfB);
-	}
-};
-
-b2PolygonContact.Create = function(fixtureA, unused1, fixtureB, unused2)
-{
-	return new b2PolygonContact(fixtureA, fixtureB);
-};
-
-b2PolygonContact.Destroy = function(contact)
-{
-};
-
-b2PolygonContact._extend(b2Contact);
-
-
-function b2ChainAndCircleContact(fixtureA, indexA, fixtureB, indexB)
-{
-	this.parent.call(this, fixtureA, indexA, fixtureB, indexB);
-	b2Assert(this.m_fixtureA.GetType() == b2Shape.e_chain);
-	b2Assert(this.m_fixtureB.GetType() == b2Shape.e_circle);
+	this.parent.call(this);
 }
 
 b2ChainAndCircleContact.prototype =
@@ -9829,26 +9830,22 @@ b2ChainAndCircleContact.prototype =
 		chain.GetChildEdge(edge, this.m_indexA);
 		b2CollideEdgeAndCircle(	manifold, edge, xfA,
 								this.m_fixtureB.GetShape(), xfB);
+	},
+
+	Create: function(fixtureA, indexA, fixtureB, indexB)
+	{
+		this.parent.prototype.Create.call(this, fixtureA, indexA, fixtureB, indexB);
+		b2Assert(this.m_fixtureA.GetType() == b2Shape.e_chain);
+		b2Assert(this.m_fixtureB.GetType() == b2Shape.e_circle);
 	}
-};
-
-b2ChainAndCircleContact.Create = function(fixtureA, indexA, fixtureB, indexB)
-{
-	return new b2ChainAndCircleContact(fixtureA, indexA, fixtureB, indexB);
-};
-
-b2ChainAndCircleContact.Destroy = function(contact)
-{
 };
 
 b2ChainAndCircleContact._extend(b2Contact);
 
 
-function b2ChainAndPolygonContact(fixtureA, indexA, fixtureB, indexB)
+function b2ChainAndPolygonContact()
 {
-	this.parent.call(this, fixtureA, indexA, fixtureB, indexB);
-	b2Assert(this.m_fixtureA.GetType() == b2Shape.e_chain);
-	b2Assert(this.m_fixtureB.GetType() == b2Shape.e_polygon);
+	this.parent.call(this);
 }
 
 b2ChainAndPolygonContact.prototype =
@@ -9860,6 +9857,13 @@ b2ChainAndPolygonContact.prototype =
 		chain.GetChildEdge(edge, this.m_indexA);
 		b2CollideEdgeAndPolygon(	manifold, edge, xfA,
 									this.m_fixtureB.GetShape(), xfB);
+	},
+
+	Create: function(fixtureA, indexA, fixtureB, indexB)
+	{
+		this.parent.prototype.Create.call(this, fixtureA, indexA, fixtureB, indexB);
+		b2Assert(this.m_fixtureA.GetType() == b2Shape.e_chain);
+		b2Assert(this.m_fixtureB.GetType() == b2Shape.e_polygon);
 	}
 };
 
@@ -9868,18 +9872,12 @@ b2ChainAndPolygonContact.Create = function(fixtureA, indexA, fixtureB, indexB)
 	return new b2ChainAndPolygonContact(fixtureA, indexA, fixtureB, indexB);
 };
 
-b2ChainAndPolygonContact.Destroy = function(contact)
-{
-};
-
 b2ChainAndPolygonContact._extend(b2Contact);
 
 
-function b2EdgeAndCircleContact(fixtureA, fixtureB)
+function b2EdgeAndCircleContact()
 {
-	this.parent.call(this, fixtureA, 0, fixtureB, 0);
-	b2Assert(this.m_fixtureA.GetType() == b2Shape.e_edge);
-	b2Assert(this.m_fixtureB.GetType() == b2Shape.e_circle);
+	this.parent.call(this);
 }
 
 b2EdgeAndCircleContact.prototype =
@@ -9889,6 +9887,13 @@ b2EdgeAndCircleContact.prototype =
 		b2CollideEdgeAndCircle(	manifold,
 								this.m_fixtureA.GetShape(), xfA,
 								this.m_fixtureB.GetShape(), xfB);
+	},
+
+	Create: function(fixtureA, indexA, fixtureB, indexB)
+	{
+		this.parent.prototype.Create.call(this, fixtureA, 0, fixtureB, 0);
+		b2Assert(this.m_fixtureA.GetType() == b2Shape.e_edge);
+		b2Assert(this.m_fixtureB.GetType() == b2Shape.e_circle);
 	}
 };
 
@@ -9897,18 +9902,12 @@ b2EdgeAndCircleContact.Create = function(fixtureA, indexA, fixtureB, indexB)
 	return new b2EdgeAndCircleContact(fixtureA, fixtureB);
 };
 
-b2EdgeAndCircleContact.Destroy = function(contact)
-{
-};
-
 b2EdgeAndCircleContact._extend(b2Contact);
 
 
-function b2EdgeAndPolygonContact(fixtureA, fixtureB)
+function b2EdgeAndPolygonContact()
 {
-	this.parent.call(this, fixtureA, 0, fixtureB, 0);
-	b2Assert(this.m_fixtureA.GetType() == b2Shape.e_edge);
-	b2Assert(this.m_fixtureB.GetType() == b2Shape.e_polygon);
+	this.parent.call(this);
 }
 
 b2EdgeAndPolygonContact.prototype =
@@ -9918,6 +9917,13 @@ b2EdgeAndPolygonContact.prototype =
 		b2CollideEdgeAndPolygon(	manifold,
 									this.m_fixtureA.GetShape(), xfA,
 									this.m_fixtureB.GetShape(), xfB);
+	},
+
+	Create: function(fixtureA, indexA, fixtureB, indexB)
+	{
+		this.parent.prototype.Create.call(this, fixtureA, 0, fixtureB, 0);
+		b2Assert(this.m_fixtureA.GetType() == b2Shape.e_edge);
+		b2Assert(this.m_fixtureB.GetType() == b2Shape.e_polygon);
 	}
 };
 
@@ -9926,18 +9932,12 @@ b2EdgeAndPolygonContact.Create = function(fixtureA, indexA, fixtureB, indexB)
 	return new b2EdgeAndPolygonContact(fixtureA, fixtureB);
 };
 
-b2EdgeAndPolygonContact.Destroy = function(contact)
-{
-};
-
 b2EdgeAndPolygonContact._extend(b2Contact);
 
 
-function b2PolygonAndCircleContact(fixtureA, fixtureB)
+function b2PolygonAndCircleContact()
 {
-	this.parent.call(this, fixtureA, 0, fixtureB, 0);
-	b2Assert(this.m_fixtureA.GetType() == b2Shape.e_polygon);
-	b2Assert(this.m_fixtureB.GetType() == b2Shape.e_circle);
+	this.parent.call(this);
 }
 
 b2PolygonAndCircleContact.prototype =
@@ -9947,6 +9947,13 @@ b2PolygonAndCircleContact.prototype =
 		b2CollidePolygonAndCircle(	manifold,
 									this.m_fixtureA.GetShape(), xfA,
 									this.m_fixtureB.GetShape(), xfB);
+	},
+
+	Create: function(fixtureA, indexA, fixtureB, indexB)
+	{
+		this.parent.prototype.Create.call(this, fixtureA, 0, fixtureB, 0);
+		b2Assert(this.m_fixtureA.GetType() == b2Shape.e_polygon);
+		b2Assert(this.m_fixtureB.GetType() == b2Shape.e_circle);
 	}
 };
 
@@ -9955,19 +9962,13 @@ b2PolygonAndCircleContact.Create = function(fixtureA, indexA, fixtureB, indexB)
 	return new b2PolygonAndCircleContact(fixtureA, fixtureB);
 };
 
-b2PolygonAndCircleContact.Destroy = function(contact)
-{
-};
-
 b2PolygonAndCircleContact._extend(b2Contact);
 
 
 
-function b2PolygonContact(fixtureA, fixtureB)
+function b2PolygonContact()
 {
-	this.parent.call(this, fixtureA, 0, fixtureB, 0);
-	b2Assert(this.m_fixtureA.GetType() == b2Shape.e_polygon);
-	b2Assert(this.m_fixtureB.GetType() == b2Shape.e_polygon);
+	this.parent.call(this);
 }
 
 b2PolygonContact.prototype =
@@ -9977,6 +9978,13 @@ b2PolygonContact.prototype =
 		b2CollidePolygons(	manifold,
 							this.m_fixtureA.GetShape(), xfA,
 							this.m_fixtureB.GetShape(), xfB);
+	},
+
+	Create: function(fixtureA, indexA, fixtureB, indexB)
+	{
+		this.parent.prototype.Create.call(this, fixtureA, 0, fixtureB, 0);
+		b2Assert(this.m_fixtureA.GetType() == b2Shape.e_polygon);
+		b2Assert(this.m_fixtureB.GetType() == b2Shape.e_polygon);
 	}
 };
 
@@ -9985,14 +9993,10 @@ b2PolygonContact.Create = function(fixtureA, indexA, fixtureB, indexB)
 	return new b2PolygonContact(fixtureA, fixtureB);
 };
 
-b2PolygonContact.Destroy = function(contact)
-{
-};
-
 b2PolygonContact._extend(b2Contact);
 
 
-b2Contact.AddType = function(createFcn, destoryFcn,
+b2Contact.AddType = function(fcn,
 						type1, type2)
 {
 	b2Assert(0 <= type1 && type1 < b2Shape.e_typeCount);
@@ -10002,8 +10006,7 @@ b2Contact.AddType = function(createFcn, destoryFcn,
 		b2Contact.s_registers[type1] = [];
 
 	b2Contact.s_registers[type1][type2] = new b2ContactRegister();
-	b2Contact.s_registers[type1][type2].createFcn = createFcn;
-	b2Contact.s_registers[type1][type2].destroyFcn = destoryFcn;
+	b2Contact.s_registers[type1][type2].fcn = fcn;
 	b2Contact.s_registers[type1][type2].primary = true;
 
 	if (type1 != type2)
@@ -10012,21 +10015,22 @@ b2Contact.AddType = function(createFcn, destoryFcn,
 			b2Contact.s_registers[type2] = [];
 
 		b2Contact.s_registers[type2][type1] = new b2ContactRegister();
-		b2Contact.s_registers[type2][type1].createFcn = createFcn;
-		b2Contact.s_registers[type2][type1].destroyFcn = destoryFcn;
+		b2Contact.s_registers[type2][type1].fcn = fcn;
 		b2Contact.s_registers[type2][type1].primary = false;
 	}
+
+	fcn.garbage = [];
 };
 
 b2Contact.InitializeRegisters = function()
 {
-	b2Contact.AddType(b2CircleContact.Create, b2CircleContact.Destroy, b2Shape.e_circle, b2Shape.e_circle);
-	b2Contact.AddType(b2PolygonAndCircleContact.Create, b2PolygonAndCircleContact.Destroy, b2Shape.e_polygon, b2Shape.e_circle);
-	b2Contact.AddType(b2PolygonContact.Create, b2PolygonContact.Destroy, b2Shape.e_polygon, b2Shape.e_polygon);
-	b2Contact.AddType(b2EdgeAndCircleContact.Create, b2EdgeAndCircleContact.Destroy, b2Shape.e_edge, b2Shape.e_circle);
-	b2Contact.AddType(b2EdgeAndPolygonContact.Create, b2EdgeAndPolygonContact.Destroy, b2Shape.e_edge, b2Shape.e_polygon);
-	b2Contact.AddType(b2ChainAndCircleContact.Create, b2ChainAndCircleContact.Destroy, b2Shape.e_chain, b2Shape.e_circle);
-	b2Contact.AddType(b2ChainAndPolygonContact.Create, b2ChainAndPolygonContact.Destroy, b2Shape.e_chain, b2Shape.e_polygon);
+	b2Contact.AddType(b2CircleContact, b2Shape.e_circle, b2Shape.e_circle);
+	b2Contact.AddType(b2PolygonAndCircleContact, b2Shape.e_polygon, b2Shape.e_circle);
+	b2Contact.AddType(b2PolygonContact, b2Shape.e_polygon, b2Shape.e_polygon);
+	b2Contact.AddType(b2EdgeAndCircleContact, b2Shape.e_edge, b2Shape.e_circle);
+	b2Contact.AddType(b2EdgeAndPolygonContact, b2Shape.e_edge, b2Shape.e_polygon);
+	b2Contact.AddType(b2ChainAndCircleContact, b2Shape.e_chain, b2Shape.e_circle);
+	b2Contact.AddType(b2ChainAndPolygonContact, b2Shape.e_chain, b2Shape.e_polygon);
 };
 
 b2Contact.Create = function(fixtureA, indexA, fixtureB, indexB)
@@ -10043,22 +10047,21 @@ b2Contact.Create = function(fixtureA, indexA, fixtureB, indexB)
 	b2Assert(0 <= type1 && type1 < b2Shape.e_typeCount);
 	b2Assert(0 <= type2 && type2 < b2Shape.e_typeCount);
 
-	var createFcn = b2Contact.s_registers[type1][type2].createFcn;
-	if (createFcn)
+	var fcn = b2Contact.s_registers[type1][type2].fcn;
+
+	if (fcn)
 	{
+		var contact = fcn.garbage.pop() || new fcn();
+
 		if (b2Contact.s_registers[type1][type2].primary)
-		{
-			return createFcn(fixtureA, indexA, fixtureB, indexB);
-		}
+			contact.Create(fixtureA, indexA, fixtureB, indexB);
 		else
-		{
-			return createFcn(fixtureB, indexB, fixtureA, indexA);
-		}
+			contact.Create(fixtureB, indexB, fixtureA, indexA);
+
+		return contact;
 	}
-	else
-	{
-		return null;
-	}
+
+	return null;
 };
 
 b2Contact.Destroy = function(contact)
@@ -10082,8 +10085,7 @@ b2Contact.Destroy = function(contact)
 	b2Assert(0 <= typeA && typeB < b2Shape.e_typeCount);
 	b2Assert(0 <= typeA && typeB < b2Shape.e_typeCount);
 
-	var destroyFcn = b2Contact.s_registers[typeA][typeB].destroyFcn;
-	destroyFcn(contact);
+	b2Contact.s_registers[typeA][typeB].fcn.garbage.push(contact);
 };
 
 b2Contact.s_registers = [];
@@ -10556,7 +10558,7 @@ function b2ContactSolver(def)
 			vcp.tangentMass = 0.0;
 			vcp.velocityBias = 0.0;
 
-			pc.localPoints[j] = cp.localPoint.Clone();
+			pc.localPoints[j] = cp.localPoint;
 		}
 	}
 }
@@ -10581,17 +10583,17 @@ b2ContactSolver.prototype =
 			var mB = vc.invMassB;
 			var iA = vc.invIA;
 			var iB = vc.invIB;
-			var localCenterA = pc.localCenterA.Clone();
-			var localCenterB = pc.localCenterB.Clone();
+			var localCenterA = pc.localCenterA;
+			var localCenterB = pc.localCenterB;
 
-			var cA = this.m_positions[indexA].c.Clone();
+			var cA = this.m_positions[indexA].c;
 			var aA = this.m_positions[indexA].a;
-			var vA = this.m_velocities[indexA].v.Clone();
+			var vA = this.m_velocities[indexA].v;
 			var wA = this.m_velocities[indexA].w;
 
-			var cB = this.m_positions[indexB].c.Clone();
+			var cB = this.m_positions[indexB].c;
 			var aB = this.m_positions[indexB].a;
-			var vB = this.m_velocities[indexB].v.Clone();
+			var vB = this.m_velocities[indexB].v;
 			var wB = this.m_velocities[indexB].w;
 
 			b2Assert(manifold.pointCount > 0);
@@ -10689,9 +10691,9 @@ b2ContactSolver.prototype =
 			var iB = vc.invIB;
 			var pointCount = vc.pointCount;
 
-			var vA = this.m_velocities[indexA].v.Clone();
+			var vA = this.m_velocities[indexA].v;
 			var wA = this.m_velocities[indexA].w;
-			var vB = this.m_velocities[indexB].v.Clone();
+			var vB = this.m_velocities[indexB].v;
 			var wB = this.m_velocities[indexB].w;
 
 			var normal = vc.normal;
@@ -10727,9 +10729,9 @@ b2ContactSolver.prototype =
 			var iB = vc.invIB;
 			var pointCount = vc.pointCount;
 
-			var vA = this.m_velocities[indexA].v.Clone();
+			var vA = this.m_velocities[indexA].v;
 			var wA = this.m_velocities[indexA].w;
-			var vB = this.m_velocities[indexB].v.Clone();
+			var vB = this.m_velocities[indexB].v;
 			var wB = this.m_velocities[indexB].w;
 
 			var normal = vc.normal;
@@ -11017,9 +11019,7 @@ b2ContactSolver.prototype =
 				}
 			}
 
-			this.m_velocities[indexA].v.Assign(vA);
 			this.m_velocities[indexA].w = wA;
-			this.m_velocities[indexB].v.Assign(vB);
 			this.m_velocities[indexB].w = wB;
 		}
 	},
@@ -11048,18 +11048,18 @@ b2ContactSolver.prototype =
 
 			var indexA = pc.indexA;
 			var indexB = pc.indexB;
-			var localCenterA = pc.localCenterA.Clone();
+			var localCenterA = pc.localCenterA;
 			var mA = pc.invMassA;
 			var iA = pc.invIA;
-			var localCenterB = pc.localCenterB.Clone();
+			var localCenterB = pc.localCenterB;
 			var mB = pc.invMassB;
 			var iB = pc.invIB;
 			var pointCount = pc.pointCount;
 
-			var cA = this.m_positions[indexA].c.Clone();
+			var cA = this.m_positions[indexA].c;
 			var aA = this.m_positions[indexA].a;
 
-			var cB = this.m_positions[indexB].c.Clone();
+			var cB = this.m_positions[indexB].c;
 			var aB = this.m_positions[indexB].a;
 
 			// Solve normal constraints
@@ -11073,9 +11073,9 @@ b2ContactSolver.prototype =
 
 				var psm = new b2PositionSolverManifold();
 				psm.Initialize(pc, xfA, xfB, j);
-				var normal = psm.normal.Clone();
+				var normal = psm.normal;
 
-				var point = psm.point.Clone();
+				var point = psm.point;
 				var separation = psm.separation;
 
 				var rA = b2Vec2.Subtract(point, cA);
@@ -11104,10 +11104,8 @@ b2ContactSolver.prototype =
 				aB += iB * b2Cross_v2_v2(rB, P);
 			}
 
-			this.m_positions[indexA].c.Assign(cA);
 			this.m_positions[indexA].a = aA;
 
-			this.m_positions[indexB].c.Assign(cB);
 			this.m_positions[indexB].a = aB;
 		}
 
@@ -11125,8 +11123,8 @@ b2ContactSolver.prototype =
 
 			var indexA = pc.indexA;
 			var indexB = pc.indexB;
-			var localCenterA = pc.localCenterA.Clone();
-			var localCenterB = pc.localCenterB.Clone();
+			var localCenterA = pc.localCenterA;
+			var localCenterB = pc.localCenterB;
 			var pointCount = pc.pointCount;
 
 			var mA = 0.0;
@@ -11145,10 +11143,10 @@ b2ContactSolver.prototype =
 				iB = pc.invIB;
 			}
 
-			var cA = this.m_positions[indexA].c.Clone();
+			var cA = this.m_positions[indexA].c;
 			var aA = this.m_positions[indexA].a;
 
-			var cB = this.m_positions[indexB].c.Clone();
+			var cB = this.m_positions[indexB].c;
 			var aB = this.m_positions[indexB].a;
 
 			// Solve normal constraints
@@ -11162,9 +11160,9 @@ b2ContactSolver.prototype =
 
 				var psm = new b2PositionSolverManifold();
 				psm.Initialize(pc, xfA, xfB, j);
-				var normal = psm.normal.Clone();
+				var normal = psm.normal;
 
-				var point = psm.point.Clone();
+				var point = psm.point;
 				var separation = psm.separation;
 
 				var rA = b2Vec2.Subtract(point, cA);
@@ -11193,10 +11191,8 @@ b2ContactSolver.prototype =
 				aB += iB * b2Cross_v2_v2(rB, P);
 			}
 
-			this.m_positions[indexA].c.Assign(cA);
 			this.m_positions[indexA].a = aA;
 
-			this.m_positions[indexB].c.Assign(cB);
 			this.m_positions[indexB].a = aB;
 		}
 
@@ -11265,9 +11261,9 @@ b2Island.prototype =
 		{
 			var b = this.m_bodies[i];
 
-			var c = b.m_sweep.c.Clone();
+			this.m_positions[i].c.Assign(b.m_sweep.c);
 			var a = b.m_sweep.a;
-			var v = b.m_linearVelocity.Clone();
+			this.m_velocities[i].v.Assign(b.m_linearVelocity);
 			var w = b.m_angularVelocity;
 
 			// Store positions for continuous collision.
@@ -11277,7 +11273,7 @@ b2Island.prototype =
 			if (b.m_type == b2Body.b2_dynamicBody)
 			{
 				// Integrate velocities.
-				v.Add(b2Vec2.Multiply(h, b2Vec2.Add(b2Vec2.Multiply(b.m_gravityScale, gravity), b2Vec2.Multiply(b.m_invMass, b.m_force))));
+				this.m_velocities[i].v.Add(b2Vec2.Multiply(h, b2Vec2.Add(b2Vec2.Multiply(b.m_gravityScale, gravity), b2Vec2.Multiply(b.m_invMass, b.m_force))));
 				w += h * b.m_invI * b.m_torque;
 
 				// Apply damping.
@@ -11287,13 +11283,11 @@ b2Island.prototype =
 				// v2 = exp(-c * dt) * v1
 				// Pade approximation:
 				// v2 = v1 * 1 / (1 + c * dt)
-				v.Multiply(1.0 / (1.0 + h * b.m_linearDamping));
+				this.m_velocities[i].v.Multiply(1.0 / (1.0 + h * b.m_linearDamping));
 				w *= 1.0 / (1.0 + h * b.m_angularDamping);
 			}
 
-			this.m_positions[i].c.Assign(c);
 			this.m_positions[i].a = a;
-			this.m_velocities[i].v.Assign(v);
 			this.m_velocities[i].w = w;
 		}
 
@@ -11348,9 +11342,9 @@ b2Island.prototype =
 		// Integrate positions
 		for (var i = 0; i < this.m_bodyCount; ++i)
 		{
-			var c = this.m_positions[i].c.Clone();
+			var c = this.m_positions[i].c;
 			var a = this.m_positions[i].a;
-			var v = this.m_velocities[i].v.Clone();
+			var v = this.m_velocities[i].v;
 			var w = this.m_velocities[i].w;
 
 			// Check for large velocities
@@ -11372,9 +11366,7 @@ b2Island.prototype =
 			c.Add(b2Vec2.Multiply(h, v));
 			a += h * w;
 
-			this.m_positions[i].c.Assign(c);
 			this.m_positions[i].a = a;
-			this.m_velocities[i].v.Assign(v);
 			this.m_velocities[i].w = w;
 		}
 
@@ -11512,9 +11504,9 @@ b2Island.prototype =
 		// Integrate positions
 		for (var i = 0; i < this.m_bodyCount; ++i)
 		{
-			var c = this.m_positions[i].c.Clone();
+			var c = this.m_positions[i].c;
 			var a = this.m_positions[i].a;
-			var v = this.m_velocities[i].v.Clone();
+			var v = this.m_velocities[i].v;
 			var w = this.m_velocities[i].w;
 
 			// Check for large velocities
@@ -11536,9 +11528,7 @@ b2Island.prototype =
 			c.Add(b2Vec2.Multiply(h, v));
 			a += h * w;
 
-			this.m_positions[i].c.Assign(c);
 			this.m_positions[i].a = a;
-			this.m_velocities[i].v.Assign(v);
 			this.m_velocities[i].w = w;
 
 			// Sync bodies
@@ -17053,9 +17043,6 @@ var b2RUBELoader = (function()
 
 	function parseWorld(obj, world)
 	{
-		if (obj.metaworld) // .rube support
-			return parseWorld(obj.metaworld, world);
-
 		var params = new b2RubeParameters();
 
 		params.world = world = world || new b2World(new b2Vec2(0, 0));
@@ -17074,7 +17061,7 @@ var b2RUBELoader = (function()
 		world.SetSubStepping(obj.subStepping || false);
 
 		var bodies = [];
-		var bl = obj.body || obj.metabody;
+		var bl = obj.body;
 
 		if (bl)
 		{
@@ -17099,7 +17086,7 @@ var b2RUBELoader = (function()
 		}
 
 		var joints = [];
-		var jl = obj.joint || obj.metajoint;
+		var jl = obj.joint;
 
 		if (jl)
 		{

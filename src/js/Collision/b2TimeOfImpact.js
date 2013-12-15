@@ -260,13 +260,13 @@ function b2TimeOfImpact(output, input)
 	var proxyA = input.proxyA;
 	var proxyB = input.proxyB;
 
-	var sweepA = input.sweepA.Clone();
-	var sweepB = input.sweepB.Clone();
+	b2TimeOfImpact._temp_sweepA.Assign(input.sweepA);
+	b2TimeOfImpact._temp_sweepB.Assign(input.sweepB);
 
 	// Large rotations can make the root finder fail, so we normalize the
 	// sweep angles.
-	sweepA.Normalize();
-	sweepB.Normalize();
+	b2TimeOfImpact._temp_sweepA.Normalize();
+	b2TimeOfImpact._temp_sweepB.Normalize();
 
 	var tMax = input.tMax;
 
@@ -291,14 +291,11 @@ function b2TimeOfImpact(output, input)
 	// This loop terminates when an axis is repeated (no progress is made).
 	for(;;)
 	{
-		var xfA = new b2Transform(), xfB = new b2Transform();
-		sweepA.GetTransform(xfA, t1);
-		sweepB.GetTransform(xfB, t1);
+		b2TimeOfImpact._temp_sweepA.GetTransform(distanceInput.transformA, t1);
+		b2TimeOfImpact._temp_sweepB.GetTransform(distanceInput.transformB, t1);
 
 		// Get the distance between shapes. We can also use the results
 		// to get a separating axis.
-		distanceInput.transformA.Assign(xfA);
-		distanceInput.transformB.Assign(xfB);
 		var distanceOutput = new b2DistanceOutput();
 		b2DistanceFunc(distanceOutput, cache, distanceInput);
 
@@ -321,7 +318,7 @@ function b2TimeOfImpact(output, input)
 
 		// Initialize the separating axis.
 		var fcn = new b2SeparationFunction();
-		fcn.Initialize(cache, proxyA, sweepA, proxyB, sweepB, t1);
+		fcn.Initialize(cache, proxyA, b2TimeOfImpact._temp_sweepA, proxyB, b2TimeOfImpact._temp_sweepB, t1);
 
 		// Compute the TOI on the separating axis. We do this by successively
 		// resolving the deepest point. This loop is bounded by the number of vertices.
@@ -456,6 +453,9 @@ function b2TimeOfImpact(output, input)
 	b2TimeOfImpact.b2_toiMaxTime = b2Max(b2TimeOfImpact.b2_toiMaxTime, time);
 	b2TimeOfImpact.b2_toiTime += time;
 }
+
+b2TimeOfImpact._temp_sweepA = new b2Sweep();
+b2TimeOfImpact._temp_sweepB = new b2Sweep();
 
 b2TimeOfImpact.b2_toiTime = 0;
 b2TimeOfImpact.b2_toiMaxTime = 0;

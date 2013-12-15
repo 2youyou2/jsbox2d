@@ -108,6 +108,19 @@ b2Manifold.prototype =
 			manifold.points[i] = this.points[i].Clone();
 
 		return manifold;
+	},
+
+	// NOTE: this version of assign is very specific and
+	// should NOT be used in your own code.
+	Assign: function(manifold)
+	{
+		this.pointCount = manifold.pointCount;
+		this.type = manifold.type;
+		this.localPoint.Assign(manifold.localPoint);
+		this.localNormal.Assign(manifold.localNormal);
+
+		for (var i = 0; i < this.pointCount; ++i)
+			this.points[i] = manifold.points[i]; // !! NO CLONE
 	}
 };
 
@@ -630,15 +643,13 @@ function b2FindIncidentEdge(c,
 	var i1 = index;
 	var i2 = i1 + 1 < count2 ? i1 + 1 : 0;
 
-	c[0] = new b2ClipVertex();
-	c[0].v = b2Mul_t_v2(xf2, vertices2[i1]);
+	c[0].v.Assign(b2Mul_t_v2(xf2, vertices2[i1]));
 	c[0].id.indexA = edge1;
 	c[0].id.indexB = i1;
 	c[0].id.typeA = b2ContactID.e_face;
 	c[0].id.typeB = b2ContactID.e_vertex;
 
-	c[1] = new b2ClipVertex();
-	c[1].v = b2Mul_t_v2(xf2, vertices2[i2]);
+	c[1].v.Assign(b2Mul_t_v2(xf2, vertices2[i2]));
 	c[1].id.indexA = edge1;
 	c[1].id.indexB = i2;
 	c[1].id.typeA = b2ContactID.e_face;
@@ -665,7 +676,7 @@ function b2CollidePolygons(manifold,
 
 	var poly1;	// reference polygon
 	var poly2;	// incident polygon
-	var xf1 = new b2Transform(), xf2 = new b2Transform();
+	var xf1, xf2;
 	var edge1 = 0;					// reference edge
 	var flip = 0;
 	var k_tol = 0.1 * b2_linearSlop;
@@ -691,8 +702,7 @@ function b2CollidePolygons(manifold,
 		flip = 0;
 	}
 
-	var incidentEdge = new Array(2);
-	b2FindIncidentEdge(incidentEdge, poly1, xf1, edge1, poly2, xf2);
+	b2FindIncidentEdge(b2CollidePolygons._local_incidentEdges, poly1, xf1, edge1, poly2, xf2);
 
 	var count1 = poly1.m_count;
 	var vertices1 = poly1.m_vertices;
@@ -728,13 +738,13 @@ function b2CollidePolygons(manifold,
 	var np;
 
 	// Clip to box side 1
-	np = b2ClipSegmentToLine(clipPoints1, incidentEdge, tangent.Negate(), sideOffset1, iv1);
+	np = b2ClipSegmentToLine(clipPoints1, b2CollidePolygons._local_incidentEdges, tangent.Negate(), sideOffset1, iv1);
 
 	if (np < 2)
 		return;
 
 	// Clip to negative box side 1
-	np = b2ClipSegmentToLine(clipPoints2, clipPoints1,  tangent, sideOffset2, iv2);
+	np = b2ClipSegmentToLine(clipPoints2, clipPoints1, tangent, sideOffset2, iv2);
 
 	if (np < 2)
 	{
@@ -771,6 +781,8 @@ function b2CollidePolygons(manifold,
 
 	manifold.pointCount = pointCount;
 }
+
+b2CollidePolygons._local_incidentEdges = [new b2ClipVertex(), new b2ClipVertex()];
 
 /// Compute the collision manifold between an edge and a circle.
 function b2CollideEdgeAndCircle(manifold,

@@ -71,6 +71,8 @@ function b2DynamicTree()
 	this.m_insertionCount = 0;
 }
 
+b2DynamicTree.aabbExtensionFattener = new b2Vec2(b2_aabbExtension, b2_aabbExtension);
+
 b2DynamicTree.prototype =
 {
 	/// Create a proxy. Provide a tight fitting AABB and a userData pointer.
@@ -79,9 +81,8 @@ b2DynamicTree.prototype =
 		var proxyId = this.AllocateNode();
 
 		// Fatten the aabb.
-		var r = new b2Vec2(b2_aabbExtension, b2_aabbExtension);
-		this.m_nodes[proxyId].aabb.lowerBound.Assign(b2Vec2.Subtract(aabb.lowerBound, r));
-		this.m_nodes[proxyId].aabb.upperBound.Assign(b2Vec2.Add(aabb.upperBound, r));
+		this.m_nodes[proxyId].aabb.lowerBound.Assign(b2Vec2.Subtract(aabb.lowerBound, b2DynamicTree.aabbExtensionFattener));
+		this.m_nodes[proxyId].aabb.upperBound.Assign(b2Vec2.Add(aabb.upperBound, b2DynamicTree.aabbExtensionFattener));
 		this.m_nodes[proxyId].userData = userData;
 		this.m_nodes[proxyId].height = 0;
 
@@ -118,33 +119,30 @@ b2DynamicTree.prototype =
 		this.RemoveLeaf(proxyId);
 
 		// Extend AABB.
-		var b = aabb.Clone();
-		var r = new b2Vec2(b2_aabbExtension, b2_aabbExtension);
-		b.lowerBound.Assign(b2Vec2.Subtract(b.lowerBound, r));
-		b.upperBound.Assign(b2Vec2.Add(b.upperBound, r));
+		this.m_nodes[proxyId].aabb.Assign(aabb);
+		this.m_nodes[proxyId].aabb.lowerBound.Subtract(b2DynamicTree.aabbExtensionFattener);
+		this.m_nodes[proxyId].aabb.upperBound.Add(b2DynamicTree.aabbExtensionFattener);
 
 		// Predict AABB displacement.
 		var d = b2Vec2.Multiply(b2_aabbMultiplier, displacement);
 
 		if (d.x < 0.0)
 		{
-			b.lowerBound.x += d.x;
+			this.m_nodes[proxyId].aabb.lowerBound.x += d.x;
 		}
 		else
 		{
-			b.upperBound.x += d.x;
+			this.m_nodes[proxyId].aabb.upperBound.x += d.x;
 		}
 
 		if (d.y < 0.0)
 		{
-			b.lowerBound.y += d.y;
+			this.m_nodes[proxyId].aabb.lowerBound.y += d.y;
 		}
 		else
 		{
-			b.upperBound.y += d.y;
+			this.m_nodes[proxyId].aabb.upperBound.y += d.y;
 		}
-
-		this.m_nodes[proxyId].aabb.Assign(b);
 
 		this.InsertLeaf(proxyId);
 		return true;

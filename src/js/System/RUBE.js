@@ -250,9 +250,6 @@ var b2RUBELoader = (function()
 
 	function parseWorld(obj, world)
 	{
-		if (obj.metaworld) // .rube support
-			return parseWorld(obj.metaworld, world);
-
 		var params = new b2RubeParameters();
 
 		params.world = world = world || new b2World(new b2Vec2(0, 0));
@@ -271,7 +268,7 @@ var b2RUBELoader = (function()
 		world.SetSubStepping(obj.subStepping || false);
 
 		var bodies = [];
-		var bl = obj.body || obj.metabody;
+		var bl = obj.body;
 
 		if (bl)
 		{
@@ -296,7 +293,7 @@ var b2RUBELoader = (function()
 		}
 
 		var joints = [];
-		var jl = obj.joint || obj.metajoint;
+		var jl = obj.joint;
 
 		if (jl)
 		{

@@ -65,7 +65,8 @@ b2Vec2.prototype =
 
 	Assign: function(l)
 	{
-		this.Set(l.x, l.y);
+		this.x = l.x;
+		this.y = l.y;
 	},
 
 	/// Negate this vector.
@@ -501,8 +502,14 @@ b2Rot.prototype =
 /// the position and orientation of rigid frames.
 function b2Transform(position, rotation)
 {
-	this.p = position ? position.Clone() : new b2Vec2();
-	this.q = rotation ? rotation.Clone() : new b2Rot();
+	this.p = new b2Vec2();
+	this.q = new b2Rot();
+
+	if (position)
+	{
+		this.p.Assign(position);
+		this.q.Assign(rotation);
+	}
 }
 
 b2Transform.prototype =
