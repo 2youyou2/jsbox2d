@@ -591,7 +591,7 @@ b2Contact.RetrieveGarbage = function(fcn)
 	//if (fcn.alloc < 256)
 	{
 		fcn.alloc += 32;
-		console.log("Expanded storage for " + fcn.name + " to " + fcn.alloc);
+		//console.log("Expanded storage for " + fcn.name + " to " + fcn.alloc);
 	}
 
 	return new fcn();
