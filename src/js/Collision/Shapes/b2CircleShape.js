@@ -21,9 +21,13 @@
 /// A circle shape.
 function b2CircleShape()
 {
+	this.parent.call(this);
+	
 	this.m_type = b2Shape.e_circle;
 	this.m_radius = 0;
 	this.m_p = new b2Vec2();
+
+	Object.seal(this);
 }
 
 b2CircleShape.prototype =

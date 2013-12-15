@@ -29,6 +29,8 @@ function b2WeldJointDef()
 	this.referenceAngle = 0.0;
 	this.frequencyHz = 0.0;
 	this.dampingRatio = 0.0;
+
+	Object.seal(this);
 }
 
 b2WeldJointDef.prototype =

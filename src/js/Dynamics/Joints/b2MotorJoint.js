@@ -26,6 +26,8 @@ function b2MotorJointDef()
 	this.maxForce = 1.0;
 	this.maxTorque = 1.0;
 	this.correctionFactor = 0.3;
+
+	Object.seal(this);
 }
 
 /// Motor joint definition.

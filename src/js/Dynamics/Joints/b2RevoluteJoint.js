@@ -41,6 +41,8 @@ function b2RevoluteJointDef()
 	this.motorSpeed = 0.0;
 	this.enableLimit = false;
 	this.enableMotor = false;
+
+	Object.seal(this);
 }
 
 b2RevoluteJointDef.prototype =

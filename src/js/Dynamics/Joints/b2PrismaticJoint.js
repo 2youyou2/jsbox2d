@@ -37,6 +37,8 @@ function b2PrismaticJointDef()
 	this.enableMotor = false;
 	this.maxMotorForce = 0.0;
 	this.motorSpeed = 0.0;
+
+	Object.seal(this);
 }
 
 b2PrismaticJointDef.prototype =

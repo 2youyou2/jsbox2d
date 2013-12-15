@@ -33,6 +33,8 @@ function b2PulleyJointDef()
 	this.lengthB = 0.0;
 	this.ratio = 1.0;
 	this.collideConnected = true;
+
+	Object.seal(this);
 }
 
 b2PulleyJointDef.prototype =

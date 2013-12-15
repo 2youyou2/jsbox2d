@@ -24,6 +24,8 @@
 /// In most cases you should not need many vertices for a convex polygon.
 function b2PolygonShape()
 {
+	this.parent.call(this);
+	
 	this.m_type = b2Shape.e_polygon;
 	this.m_radius = b2_polygonRadius;
 	this.m_count = 0;
@@ -31,6 +33,8 @@ function b2PolygonShape()
 
 	this.m_vertices = new Array(b2_maxPolygonVertices);
 	this.m_normals = new Array(b2_maxPolygonVertices);
+
+	Object.seal(this);
 }
 
 b2PolygonShape.prototype =

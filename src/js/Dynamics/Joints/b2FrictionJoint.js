@@ -26,6 +26,8 @@ function b2FrictionJointDef()
 	this.localAnchorB = new b2Vec2();
 	this.maxForce = 0.0;
 	this.maxTorque = 0.0;
+
+	Object.seal(this);
 }
 
 b2FrictionJointDef.prototype =

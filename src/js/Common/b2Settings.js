@@ -22,7 +22,7 @@ function b2Assert(A)
 {
 	if (!A)
 	{
-		console.log(A);
+		console.log("Assertion failed! Pls debug.");
 		debugger;
 	}
 }

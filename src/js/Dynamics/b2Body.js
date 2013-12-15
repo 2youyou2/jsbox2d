@@ -55,6 +55,8 @@ function b2BodyDef()
 
 	/// Scale the gravity applied to this body.
 	this.gravityScale = 1.0;
+
+	Object.seal(this);
 }
 
 b2BodyDef.prototype =

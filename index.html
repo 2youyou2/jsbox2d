@@ -59,6 +59,7 @@
 		<script type="text/javascript" src="TestRopeJoint.js"></script>
 		<script type="text/javascript" src="TestShapeEditing.js"></script>
 		<script type="text/javascript" src="TestVerticalStack.js"></script>
+		<script type="text/javascript" src="TestRUBE.js"></script>
 
 		<style>
 		/* FLEX STUFF */
@@ -317,7 +318,8 @@
 					TestRope,
 					TestRopeJoint,
 					TestShapeEditing,
-					TestVerticalStack
+					TestVerticalStack,
+					TestRUBE
 				];
 
 			tests.sort(function(a, b)
@@ -476,6 +478,10 @@
 				testSelect.change();
 			});
 
+			var m_clickPos;
+
+			cQ.attr("tabindex", 0);
+
 			cQ.mousedown(function(e)
 			{
 				var x = e.clientX;
@@ -487,7 +493,15 @@
 				x /= 14;
 				y /= 14;
 
-				currentTest.MouseDown(new b2Vec2(x, y));
+				if (e.which === 1)
+					currentTest.MouseDown(new b2Vec2(x, y));
+				else if (e.which === 3)
+					m_clickPos = [x, y];
+
+				cQ.focus();
+
+				e.preventDefault();
+				return false;
 			});
 
 			cQ.mouseup(function(e)
@@ -501,7 +515,11 @@
 				x /= 14;
 				y /= 14;
 
-				currentTest.MouseUp(new b2Vec2(x, y));
+				if (e.which === 1)
+					currentTest.MouseUp(new b2Vec2(x, y));
+
+				e.preventDefault();
+				return false;
 			});
 
 			cQ.mousemove(function(e)
@@ -515,7 +533,20 @@
 				x /= 14;
 				y /= 14;
 
-				currentTest.MouseMove(new b2Vec2(x, y));
+				if (e.which === 1)
+					currentTest.MouseMove(new b2Vec2(x, y));
+				else if (e.which === 3)
+				{
+					var diff = [x - m_clickPos[0], y - m_clickPos[1]];
+
+					currentTest.m_center.x -= diff[0];
+					currentTest.m_center.y -= diff[1];
+
+					m_clickPos = [x, y];
+				}
+
+				e.preventDefault();
+				return false;
 			});
 
 			$(document).keydown(function(e)

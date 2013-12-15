@@ -26,6 +26,8 @@
 /// WARNING: The chain will not collide properly if there are self-intersections.
 function b2ChainShape()
 {
+	this.parent.call(this);
+
 	this.m_type = b2Shape.e_chain;
 	this.m_radius = b2_polygonRadius;
 	this.m_vertices = null;
@@ -34,6 +36,8 @@ function b2ChainShape()
 	this.m_nextVertex = new b2Vec2();
 	this.m_hasPrevVertex = false;
 	this.m_hasNextVertex = false;
+
+	Object.seal(this);
 }
 
 b2ChainShape.prototype =

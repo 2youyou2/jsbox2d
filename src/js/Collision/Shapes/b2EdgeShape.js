@@ -23,6 +23,8 @@
 /// correct contact normals.
 function b2EdgeShape()
 {
+	this.parent.call(this);
+	
 	this.m_type = b2Shape.e_edge;
 	this.m_radius = b2_polygonRadius;
 	this.m_vertex0 = new b2Vec2();
@@ -31,6 +33,8 @@ function b2EdgeShape()
 	this.m_vertex3 = new b2Vec2();
 	this.m_hasVertex0 = false;
 	this.m_hasVertex3 = false;
+
+	Object.seal(this);
 }
 
 b2EdgeShape.prototype =

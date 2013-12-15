@@ -72,6 +72,8 @@ function b2FixtureDef()
 
 	/// Contact filtering data.
 	this.filter = new b2Filter();
+
+	Object.seal(this);
 }
 
 b2FixtureDef.prototype =

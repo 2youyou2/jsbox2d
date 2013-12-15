@@ -9,6 +9,8 @@ function b2MouseJointDef()
 	this.maxForce = 0.0;
 	this.frequencyHz = 5.0;
 	this.dampingRatio = 0.7;
+
+	Object.seal(this);
 }
 
 b2MouseJointDef._extend(b2JointDef);

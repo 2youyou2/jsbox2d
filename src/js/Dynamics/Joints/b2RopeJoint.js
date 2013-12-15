@@ -28,6 +28,8 @@ function b2RopeJointDef()
 	this.localAnchorA = new b2Vec2(-1.0, 0.0);
 	this.localAnchorB = new b2Vec2(1.0, 0.0);
 	this.maxLength = 0.0;
+
+	Object.seal(this);
 }
 
 b2RopeJointDef.prototype =

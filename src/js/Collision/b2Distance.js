@@ -49,7 +49,7 @@ b2DistanceProxy.prototype =
 		case b2Shape.e_circle:
 			{
 				var circle = shape;
-				this.m_vertices = [ circle.m_p.Clone() ];
+				this.m_vertices = [ circle.m_p ];
 				this.m_count = 1;
 				this.m_radius = circle.m_radius;
 			}
@@ -59,11 +59,7 @@ b2DistanceProxy.prototype =
 			{
 				var polygon = shape;
 
-				this.m_vertices = new Array(polygon.m_count);
-
-				for (var i = 0; i < polygon.m_count; ++i)
-					this.m_vertices[i] = polygon.m_vertices[i].Clone();
-
+				this.m_vertices = polygon.m_vertices;
 				this.m_count = polygon.m_count;
 				this.m_radius = polygon.m_radius;
 			}
@@ -74,14 +70,14 @@ b2DistanceProxy.prototype =
 				var chain = shape;
 				b2Assert(0 <= index && index < chain.m_count);
 
-				this.m_buffer[0].Assign(chain.m_vertices[index]);
+				this.m_buffer[0] = chain.m_vertices[index];
 				if (index + 1 < chain.m_count)
 				{
-					this.m_buffer[1].Assign(chain.m_vertices[index + 1]);
+					this.m_buffer[1] = chain.m_vertices[index + 1];
 				}
 				else
 				{
-					this.m_buffer[1].Assign(chain.m_vertices[0]);
+					this.m_buffer[1] = chain.m_vertices[0];
 				}
 
 				this.m_vertices = this.m_buffer;
@@ -93,7 +89,7 @@ b2DistanceProxy.prototype =
 		case b2Shape.e_edge:
 			{
 				var edge = shape;
-				this.m_vertices = [ edge.m_vertex1.Clone(), edge.m_vertex2.Clone() ];
+				this.m_vertices = [ edge.m_vertex1, edge.m_vertex2 ];
 				this.m_count = 2;
 				this.m_radius = edge.m_radius;
 			}

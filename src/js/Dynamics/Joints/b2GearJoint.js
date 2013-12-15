@@ -26,6 +26,8 @@ function b2GearJointDef()
 	this.joint1 = null;
 	this.joint2 = null;
 	this.ratio = 1.0;
+
+	Object.seal(this);
 }
 
 b2GearJointDef.prototype =
