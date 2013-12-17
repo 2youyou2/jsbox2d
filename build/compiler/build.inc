@@ -1,6 +1,7 @@
 (function()
 {
 '#include ../../src/js/System/Class.js';
+'#include ../../src/js/System/Profiling.js';
 
 '#include ../../src/js/Common/b2Settings.js';
 '#include ../../src/js/Common/b2Math.js';
@@ -73,7 +74,7 @@
 
 	b2DestructionListener b2ContactFilter b2ContactImpulse b2ContactListener b2QueryCallback b2RayCastCallback
 
-	b2Profile b2TimeStep b2Position b2Velocity b2SolverData
+	b2TimeStep b2Position b2Velocity b2SolverData
 
 	b2World
 
@@ -116,5 +117,7 @@
 	b2JsonSerializer
 
 	b2RUBELoader
+
+	b2Profiler
 ';
 })();

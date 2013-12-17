@@ -438,11 +438,14 @@ function b2CollideCircles(manifold,
 {
 	manifold.pointCount = 0;
 
-	var pA = b2Mul_t_v2(xfA, circleA.m_p);
-	var pB = b2Mul_t_v2(xfB, circleB.m_p);
+	var pAx = (xfA.q.c * circleA.m_p.x - xfA.q.s * circleA.m_p.y) + xfA.p.x;//b2Mul_t_v2(xfA, circleA.m_p);
+	var pAy = (xfA.q.s * circleA.m_p.x + xfA.q.c * circleA.m_p.y) + xfA.p.y;
+	var pBx = (xfB.q.c * circleB.m_p.x - xfB.q.s * circleB.m_p.y) + xfB.p.x;//b2Mul_t_v2(xfB, circleB.m_p);
+	var pBy = (xfB.q.s * circleB.m_p.x + xfB.q.c * circleB.m_p.y) + xfB.p.y;
 
-	var d = b2Vec2.Subtract(pB, pA);
-	var distSqr = b2Dot_v2_v2(d, d);
+	var dx = pBx - pAx;//b2Vec2.Subtract(pB, pA);
+	var dy = pBy - pAy;
+	var distSqr = dx * dx + dy * dy; //b2Dot_v2_v2(d, d);
 	var rA = circleA.m_radius, rB = circleB.m_radius;
 	var radius = rA + rB;
 	if (distSqr > radius * radius)
@@ -452,11 +455,13 @@ function b2CollideCircles(manifold,
 
 	manifold.type = b2Manifold.e_circles;
 	manifold.localPoint = circleA.m_p;
-	manifold.localNormal.SetZero();
+	manifold.localNormal.x = manifold.localNormal.y = 0;
 	manifold.pointCount = 1;
 
-	manifold.points[0] = new b2ManifoldPoint();
-	manifold.points[0].localPoint.Assign(circleB.m_p);
+	if (!manifold.points[0])
+		manifold.points[0] = new b2ManifoldPoint();
+	manifold.points[0].localPoint.x = circleB.m_p.x;
+	manifold.points[0].localPoint.y = circleB.m_p.y;
 	manifold.points[0].id.Reset();
 }
 
@@ -579,25 +584,40 @@ function b2FindMaxSeparation(edgeIndex,
 	var n1s = poly1.m_normals;
 	var v1s = poly1.m_vertices;
 	var v2s = poly2.m_vertices;
-	var xf = b2MulT_t_t(xf2, xf1);
+	//var xf = b2MulT_t_t(xf2, xf1);
+
+	var xfqs = xf2.q.c * xf1.q.s - xf2.q.s * xf1.q.c;//b2MulT_r_r(xf2.q, xf1.q);
+	var xfqc = xf2.q.c * xf1.q.c + xf2.q.s * xf1.q.s;
+	//var xfp = b2MulT_r_v2(xf2.q, new b2Vec2(xf1.p.x - xf2.p.x, xf1.p.y - xf2.p.y));
+	var tvx = xf1.p.x - xf2.p.x;
+	var tvy = xf1.p.y - xf2.p.y;
+	var xfpx = xf2.q.c * tvx + xf2.q.s * tvy;
+	var xfpy = -xf2.q.s * tvx + xf2.q.c * tvy;
 
 	var bestIndex = 0;
 	var maxSeparation = -b2_maxFloat;
 	for (var i = 0; i < count1; ++i)
 	{
+		var n1v = n1s[i];
+		var v1v = v1s[i];
+
 		// Get poly1 normal in frame2.
-		var n = b2Mul_r_v2(xf.q, n1s[i]);
-		var v1 = b2Mul_t_v2(xf, v1s[i]);
+		var nx = xfqc * n1v.x - xfqs * n1v.y;
+		var ny = xfqs * n1v.x + xfqc * n1v.y;//b2Mul_r_v2(xf.q, n1s[i]);
+		var v1x = (xfqc * v1v.x - xfqs * v1v.y) + xfpx;
+		var v1y = (xfqs * v1v.x + xfqc * v1v.y) + xfpy;//b2Mul_t_v2(xf, v1s[i]);
 
 		// Find deepest point for normal i.
 		var si = b2_maxFloat;
 		for (var j = 0; j < count2; ++j)
 		{
-			var sij = b2Dot_v2_v2(n, b2Vec2.Subtract(v2s[j], v1));
+			var sijo2x = v2s[j].x - v1x;
+			var sijo2y = v2s[j].y - v1y;
+			//var sij = b2Dot_v2_v2(n, new b2Vec2(v2s[j].x - v1.x, v2s[j].y - v1.y));
+			var sij = nx * sijo2x + ny * sijo2y;
+
 			if (sij < si)
-			{
 				si = sij;
-			}
 		}
 
 		if (si > maxSeparation)
@@ -624,14 +644,18 @@ function b2FindIncidentEdge(c,
 	b2Assert(0 <= edge1 && edge1 < poly1.m_count);
 
 	// Get the normal of the reference edge in poly2's frame.
-	var normal1 = b2MulT_r_v2(xf2.q, b2Mul_r_v2(xf1.q, normals1[edge1]));
+	//var normal1 = b2MulT_r_v2(xf2.q, b2Mul_r_v2(xf1.q, normals1[edge1]));
+	var normal1tx = xf1.q.c * normals1[edge1].x - xf1.q.s * normals1[edge1].y;
+	var normal1ty = xf1.q.s * normals1[edge1].x + xf1.q.c * normals1[edge1].y;
+	var normal1x = xf2.q.c * normal1tx + xf2.q.s * normal1ty;
+	var normal1y = -xf2.q.s * normal1tx + xf2.q.c * normal1ty;
 
 	// Find the incident edge on poly2.
 	var index = 0;
 	var minDot = b2_maxFloat;
 	for (var i = 0; i < count2; ++i)
 	{
-		var dot = b2Dot_v2_v2(normal1, normals2[i]);
+		var dot = normal1x * normals2[i].x + normal1y * normals2[i].y;//b2Dot_v2_v2(normal1, normals2[i]);
 		if (dot < minDot)
 		{
 			minDot = dot;
@@ -643,18 +667,27 @@ function b2FindIncidentEdge(c,
 	var i1 = index;
 	var i2 = i1 + 1 < count2 ? i1 + 1 : 0;
 
-	c[0].v.Assign(b2Mul_t_v2(xf2, vertices2[i1]));
+	//c[0].v.Assign(b2Mul_t_v2(xf2, vertices2[i1]));
+	c[0].v.x = (xf2.q.c * vertices2[i1].x - xf2.q.s * vertices2[i1].y) + xf2.p.x;
+	c[0].v.y = (xf2.q.s * vertices2[i1].x + xf2.q.c * vertices2[i1].y) + xf2.p.y;
 	c[0].id.indexA = edge1;
 	c[0].id.indexB = i1;
 	c[0].id.typeA = b2ContactID.e_face;
 	c[0].id.typeB = b2ContactID.e_vertex;
 
-	c[1].v.Assign(b2Mul_t_v2(xf2, vertices2[i2]));
+	//c[1].v.Assign(b2Mul_t_v2(xf2, vertices2[i2]));
+	c[1].v.x = (xf2.q.c * vertices2[i2].x - xf2.q.s * vertices2[i2].y) + xf2.p.x;
+	c[1].v.y = (xf2.q.s * vertices2[i2].x + xf2.q.c * vertices2[i2].y) + xf2.p.y;
 	c[1].id.indexA = edge1;
 	c[1].id.indexB = i2;
 	c[1].id.typeA = b2ContactID.e_face;
 	c[1].id.typeB = b2ContactID.e_vertex;
 }
+
+var _localTangent = new b2Vec2();
+var _clipPoints1 = new Array(2);
+var _clipPoints2 = new Array(2);
+var _edgeA = [0], _edgeB = [0];
 
 /// Compute the collision manifold between two polygons.
 function b2CollidePolygons(manifold,
@@ -664,13 +697,11 @@ function b2CollidePolygons(manifold,
 	manifold.pointCount = 0;
 	var totalRadius = polyA.m_radius + polyB.m_radius;
 
-	var edgeA = [0];
-	var separationA = b2FindMaxSeparation(edgeA, polyA, xfA, polyB, xfB);
+	var separationA = b2FindMaxSeparation(_edgeA, polyA, xfA, polyB, xfB);
 	if (separationA > totalRadius)
 		return;
 
-	var edgeB = [0];
-	var separationB = b2FindMaxSeparation(edgeB, polyB, xfB, polyA, xfA);
+	var separationB = b2FindMaxSeparation(_edgeB, polyB, xfB, polyA, xfA);
 	if (separationB > totalRadius)
 		return;
 
@@ -687,7 +718,7 @@ function b2CollidePolygons(manifold,
 		poly2 = polyA;
 		xf1 = xfB;
 		xf2 = xfA;
-		edge1 = edgeB[0];
+		edge1 = _edgeB[0];
 		manifold.type = b2Manifold.e_faceB;
 		flip = 1;
 	}
@@ -697,7 +728,7 @@ function b2CollidePolygons(manifold,
 		poly2 = polyB;
 		xf1 = xfA;
 		xf2 = xfB;
-		edge1 = edgeA[0];
+		edge1 = _edgeA[0];
 		manifold.type = b2Manifold.e_faceA;
 		flip = 0;
 	}
@@ -713,38 +744,41 @@ function b2CollidePolygons(manifold,
 	var v11 = vertices1[iv1];
 	var v12 = vertices1[iv2];
 
-	var localTangent = b2Vec2.Subtract(v12, v11);
-	localTangent.Normalize();
+	_localTangent.x = v12.x - v11.x;//b2Vec2.Subtract(v12, v11));
+	_localTangent.y = v12.y - v11.y;
+	_localTangent.Normalize();
 
-	var localNormal = b2Cross_v2_f(localTangent, 1.0);
-	var planePoint = b2Vec2.Multiply(0.5, b2Vec2.Add(v11, v12));
+	var localNormalx = 1.0 * _localTangent.y;//b2Cross_v2_f(_localTangent, 1.0);
+	var localNormaly = -1.0 * _localTangent.x;
+	var planePointx = 0.5 * (v11.x + v12.x); //b2Vec2.Multiply(0.5, b2Vec2.Add(v11, v12));
+	var planePointy = 0.5 * (v11.y + v12.y);
 
-	var tangent = b2Mul_r_v2(xf1.q, localTangent);
-	var normal = b2Cross_v2_f(tangent, 1.0);
+	var tangentx = xf1.q.c * _localTangent.x - xf1.q.s * _localTangent.y; //b2Mul_r_v2(xf1.q, _localTangent);
+	var tangenty = xf1.q.s * _localTangent.x + xf1.q.c * _localTangent.y;
+	var normalx = 1.0 * tangenty; //b2Cross_v2_f(tangent, 1.0);
+	var normaly = -1.0 * tangentx;
 
 	v11 = b2Mul_t_v2(xf1, v11);
 	v12 = b2Mul_t_v2(xf1, v12);
 
 	// Face offset.
-	var frontOffset = b2Dot_v2_v2(normal, v11);
+	var frontOffset = normalx * v11.x + normaly * v11.y; //b2Dot_v2_v2(normal, v11);
 
 	// Side offsets, extended by polytope skin thickness.
-	var sideOffset1 = -b2Dot_v2_v2(tangent, v11) + totalRadius;
-	var sideOffset2 = b2Dot_v2_v2(tangent, v12) + totalRadius;
+	var sideOffset1 = -(tangentx * v11.x + tangenty * v11.y)/*b2Dot_v2_v2(tangent, v11)*/ + totalRadius;
+	var sideOffset2 = (tangentx * v12.x + tangenty * v12.y)/*b2Dot_v2_v2(tangent, v12)*/ + totalRadius;
 
 	// Clip incident edge against extruded edge1 side edges.
-	var clipPoints1 = new Array(2);
-	var clipPoints2 = new Array(2);
 	var np;
 
 	// Clip to box side 1
-	np = b2ClipSegmentToLine(clipPoints1, b2CollidePolygons._local_incidentEdges, tangent.Negate(), sideOffset1, iv1);
+	np = b2ClipSegmentToLine(_clipPoints1, b2CollidePolygons._local_incidentEdges, -tangentx, -tangenty, sideOffset1, iv1);
 
 	if (np < 2)
 		return;
 
 	// Clip to negative box side 1
-	np = b2ClipSegmentToLine(clipPoints2, clipPoints1, tangent, sideOffset2, iv2);
+	np = b2ClipSegmentToLine(_clipPoints2, _clipPoints1, tangentx, tangenty, sideOffset2, iv2);
 
 	if (np < 2)
 	{
@@ -752,19 +786,21 @@ function b2CollidePolygons(manifold,
 	}
 
 	// Now clipPoints2 contains the clipped points.
-	manifold.localNormal.Assign(localNormal);
-	manifold.localPoint.Assign(planePoint);
+	manifold.localNormal.x = localNormalx;
+	manifold.localNormal.y = localNormaly;
+	manifold.localPoint.x = planePointx;
+	manifold.localPoint.y = planePointy;
 
 	var pointCount = 0;
 	for (var i = 0; i < b2_maxManifoldPoints; ++i)
 	{
-		var separation = b2Dot_v2_v2(normal, clipPoints2[i].v) - frontOffset;
+		var separation = (normalx * _clipPoints2[i].v.x + normaly * _clipPoints2[i].v.y) /*b2Dot_v2_v2(normal, _clipPoints2[i].v)*/ - frontOffset;
 
 		if (separation <= totalRadius)
 		{
 			var cp = manifold.points[pointCount] = new b2ManifoldPoint();
-			cp.localPoint.Assign(b2MulT_t_v2(xf2, clipPoints2[i].v));
-			cp.id.Assign(clipPoints2[i].id);
+			cp.localPoint.Assign(b2MulT_t_v2(xf2, _clipPoints2[i].v));
+			cp.id.Assign(_clipPoints2[i].id);
 			if (flip)
 			{
 				// Swap features
@@ -1311,7 +1347,7 @@ b2EPCollider.prototype =
 		var np;
 
 		// Clip to box side 1
-		np = b2ClipSegmentToLine(clipPoints1, ie, rf.sideNormal1, rf.sideOffset1, rf.i1);
+		np = b2ClipSegmentToLine(clipPoints1, ie, rf.sideNormal1.x, rf.sideNormal1.y, rf.sideOffset1, rf.i1);
 
 		if (np < b2_maxManifoldPoints)
 		{
@@ -1319,7 +1355,7 @@ b2EPCollider.prototype =
 		}
 
 		// Clip to negative box side 1
-		np = b2ClipSegmentToLine(clipPoints2, clipPoints1, rf.sideNormal2, rf.sideOffset2, rf.i2);
+		np = b2ClipSegmentToLine(clipPoints2, clipPoints1, rf.sideNormal2.x, rf.sideNormal2.y, rf.sideOffset2, rf.i2);
 
 		if (np < b2_maxManifoldPoints)
 		{
@@ -1446,25 +1482,26 @@ b2EPCollider.e_isolated = 0;
 b2EPCollider.e_concave = 1;
 b2EPCollider.e_convex = 2;
 
+var _local_collider = new b2EPCollider();
+
 /// Compute the collision manifold between an edge and a circle.
 function b2CollideEdgeAndPolygon(manifold,
 							   edgeA, xfA,
 							   polygonB, xfB)
 {
-	var collider = new b2EPCollider();
-	collider.Collide(manifold, edgeA, xfA, polygonB, xfB);
+	_local_collider.Collide(manifold, edgeA, xfA, polygonB, xfB);
 }
 
 /// Clipping for contact manifolds.
 function b2ClipSegmentToLine(vOut, vIn,
-							normal, offset, vertexIndexA)
+							normalx, normaly, offset, vertexIndexA)
 {
 	// Start with no output points
 	var numOut = 0;
 
 	// Calculate the distance of end points to the line
-	var distance0 = b2Dot_v2_v2(normal, vIn[0].v) - offset;
-	var distance1 = b2Dot_v2_v2(normal, vIn[1].v) - offset;
+	var distance0 = (normalx * vIn[0].v.x + normaly * vIn[0].v.y)/*b2Dot_v2_v2(normal, vIn[0].v)*/ - offset;
+	var distance1 = (normalx * vIn[1].v.x + normaly * vIn[1].v.y)/*b2Dot_v2_v2(normal, vIn[1].v)*/ - offset;
 
 	// If the points are behind the plane
 	if (distance0 <= 0.0) vOut[numOut++] = vIn[0];

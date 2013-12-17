@@ -18,25 +18,24 @@
 "use strict";
 
 /// This is an internal class.
-function b2Island(bodyCapacity, contactCapacity, jointCapacity,
-			listener)
+function b2Island()
 {
-	this.m_bodyCapacity = bodyCapacity;
-	this.m_contactCapacity = contactCapacity;
-	this.m_jointCapacity	 = jointCapacity;
-	this.m_bodyCount = 0;
-	this.m_contactCount = 0;
-	this.m_jointCount = 0;
+	this.m_bodies = [];
+	this.m_contacts = [];
+	this.m_joints = [];
 
-	this.m_listener = listener;
-
-	this.m_bodies = new Array(bodyCapacity);
-	this.m_contacts = new Array(contactCapacity);
-	this.m_joints = new Array(jointCapacity);
-
-	this.m_velocities = new Array(bodyCapacity);
-	this.m_positions = new Array(bodyCapacity);
+	this.m_velocities = [];
+	this.m_positions = [];
 }
+
+var profile_solve_init = b2Profiler.create("solve initialization", "solve");
+var profile_solve_init_warmStarting = b2Profiler.create("warm starting", "solve initialization");
+var profile_solve_velocity = b2Profiler.create("solve velocities", "solve");
+var profile_solve_position = b2Profiler.create("solve positions", "solve");
+
+b2Island._solverData = new b2SolverData();
+b2Island._solverDef = new b2ContactSolverDef();
+b2Island._solver = new b2ContactSolver();
 
 b2Island.prototype =
 {
@@ -47,9 +46,28 @@ b2Island.prototype =
 		this.m_jointCount = 0;
 	},
 
-	Solve: function(profile, step, gravity, allowSleep)
+	Initialize: function(bodyCapacity, contactCapacity, jointCapacity, listener)
 	{
-		var timer = new b2Timer();
+		this.m_listener = listener;
+
+		this.m_bodyCapacity = bodyCapacity;
+		this.m_contactCapacity = contactCapacity;
+		this.m_jointCapacity = jointCapacity;
+		this.m_bodyCount = 0;
+		this.m_contactCount = 0;
+		this.m_jointCount = 0;
+
+		this.m_bodies.length = bodyCapacity;
+		this.m_contacts.length = contactCapacity;
+		this.m_joints.length = jointCapacity;
+
+		this.m_velocities.length = bodyCapacity;
+		this.m_positions.length = bodyCapacity;
+	},
+
+	Solve: function(step, gravity, allowSleep)
+	{
+		profile_solve_init.start();
 
 		var h = step.dt;
 
@@ -70,7 +88,9 @@ b2Island.prototype =
 			if (b.m_type == b2Body.b2_dynamicBody)
 			{
 				// Integrate velocities.
-				this.m_velocities[i].v.Add(b2Vec2.Multiply(h, b2Vec2.Add(b2Vec2.Multiply(b.m_gravityScale, gravity), b2Vec2.Multiply(b.m_invMass, b.m_force))));
+				//this.m_velocities[i].v.Add(b2Vec2.Multiply(h, b2Vec2.Add(b2Vec2.Multiply(b.m_gravityScale, gravity), b2Vec2.Multiply(b.m_invMass, b.m_force))));
+				this.m_velocities[i].v.x += h * (b.m_gravityScale * gravity.x) + (b.m_invMass * b.m_force.x);
+				this.m_velocities[i].v.y += h * (b.m_gravityScale * gravity.y) + (b.m_invMass * b.m_force.y);
 				w += h * b.m_invI * b.m_torque;
 
 				// Apply damping.
@@ -80,7 +100,9 @@ b2Island.prototype =
 				// v2 = exp(-c * dt) * v1
 				// Pade approximation:
 				// v2 = v1 * 1 / (1 + c * dt)
-				this.m_velocities[i].v.Multiply(1.0 / (1.0 + h * b.m_linearDamping));
+				//this.m_velocities[i].v.Multiply(1.0 / (1.0 + h * b.m_linearDamping));
+				this.m_velocities[i].v.x *= 1.0 / (1.0 + h * b.m_linearDamping);
+				this.m_velocities[i].v.y *= 1.0 / (1.0 + h * b.m_linearDamping);
 				w *= 1.0 / (1.0 + h * b.m_angularDamping);
 			}
 
@@ -88,53 +110,53 @@ b2Island.prototype =
 			this.m_velocities[i].w = w;
 		}
 
-		timer.Reset();
-
 		// Solver data
-		var solverData = new b2SolverData();
-		solverData.step = step;
-		solverData.positions = this.m_positions;
-		solverData.velocities = this.m_velocities;
+		b2Island._solverData.step = step;
+		b2Island._solverData.positions = this.m_positions;
+		b2Island._solverData.velocities = this.m_velocities;
 
 		// Initialize velocity constraints.
-		var contactSolverDef = new b2ContactSolverDef();
-		contactSolverDef.step = step;
-		contactSolverDef.contacts = this.m_contacts;
-		contactSolverDef.count = this.m_contactCount;
-		contactSolverDef.positions = this.m_positions;
-		contactSolverDef.velocities = this.m_velocities;
-		contactSolverDef.allocator = this.m_allocator;
+		b2Island._solverDef.step = step;
+		b2Island._solverDef.contacts = this.m_contacts;
+		b2Island._solverDef.count = this.m_contactCount;
+		b2Island._solverDef.positions = this.m_positions;
+		b2Island._solverDef.velocities = this.m_velocities;
+		b2Island._solverDef.allocator = this.m_allocator;
 
-		var contactSolver = new b2ContactSolver(contactSolverDef);
-		contactSolver.InitializeVelocityConstraints();
+		b2Island._solver.Init(b2Island._solverDef);
+		b2Island._solver.InitializeVelocityConstraints();
 
 		if (step.warmStarting)
 		{
-			contactSolver.WarmStart();
+			profile_solve_init_warmStarting.start();
+			b2Island._solver.WarmStart();
+			profile_solve_init_warmStarting.stop();
 		}
 
 		for (var i = 0; i < this.m_jointCount; ++i)
 		{
-			this.m_joints[i].InitVelocityConstraints(solverData);
+			this.m_joints[i].InitVelocityConstraints(b2Island._solverData);
 		}
 
-		profile.solveInit = timer.GetMilliseconds();
+		profile_solve_init.stop();
 
 		// Solve velocity constraints
-		timer.Reset();
+		profile_solve_velocity.start();
 		for (var i = 0; i < step.velocityIterations; ++i)
 		{
 			for (var j = 0; j < this.m_jointCount; ++j)
 			{
-				this.m_joints[j].SolveVelocityConstraints(solverData);
+				this.m_joints[j].SolveVelocityConstraints(b2Island._solverData);
 			}
 
-			contactSolver.SolveVelocityConstraints();
+			b2Island._solver.SolveVelocityConstraints();
 		}
 
 		// Store impulses for warm starting
-		contactSolver.StoreImpulses();
-		profile.solveVelocity = timer.GetMilliseconds();
+		b2Island._solver.StoreImpulses();
+
+		profile_solve_velocity.stop();
+		profile_solve_position.start();
 
 		// Integrate positions
 		for (var i = 0; i < this.m_bodyCount; ++i)
@@ -145,11 +167,15 @@ b2Island.prototype =
 			var w = this.m_velocities[i].w;
 
 			// Check for large velocities
-			var translation = b2Vec2.Multiply(h, v);
-			if (b2Dot_v2_v2(translation, translation) > b2_maxTranslationSquared)
+			var translationx = h * v.x;
+			var translationy = h * v.y;
+			var translationl = translationx * translationx + translationy * translationy;
+
+			if (translationl/*b2Dot_v2_v2(translation, translation)*/ > b2_maxTranslationSquared)
 			{
-				var ratio = b2_maxTranslation / translation.Length();
-				v.Multiply(ratio);
+				var ratio = b2_maxTranslation / b2Sqrt(translationl);
+				v.x *= ratio;
+				v.y *= ratio;
 			}
 
 			var rotation = h * w;
@@ -160,7 +186,9 @@ b2Island.prototype =
 			}
 
 			// Integrate
-			c.Add(b2Vec2.Multiply(h, v));
+			//c.Add(b2Vec2.Multiply(h, v));
+			c.x += h * v.x;
+			c.y += h * v.y;
 			a += h * w;
 
 			this.m_positions[i].a = a;
@@ -168,16 +196,15 @@ b2Island.prototype =
 		}
 
 		// Solve position constraints
-		timer.Reset();
 		var positionSolved = false;
 		for (var i = 0; i < step.positionIterations; ++i)
 		{
-			var contactsOkay = contactSolver.SolvePositionConstraints();
+			var contactsOkay = b2Island._solver.SolvePositionConstraints();
 
 			var jointsOkay = true;
 			for (var j = 0; j < this.m_jointCount; ++j)
 			{
-				var jointOkay = this.m_joints[j].SolvePositionConstraints(solverData);
+				var jointOkay = this.m_joints[j].SolvePositionConstraints(b2Island._solverData);
 				jointsOkay = jointsOkay && jointOkay;
 			}
 
@@ -200,9 +227,9 @@ b2Island.prototype =
 			body.SynchronizeTransform();
 		}
 
-		profile.solvePosition = timer.GetMilliseconds();
+		profile_solve_position.stop();
 
-		this.Report(contactSolver.m_velocityConstraints);
+		this.Report(b2Island._solver.m_velocityConstraints);
 
 		if (allowSleep)
 		{
@@ -259,18 +286,17 @@ b2Island.prototype =
 			this.m_velocities[i].w = b.m_angularVelocity;
 		}
 
-		var contactSolverDef = new b2ContactSolverDef();
-		contactSolverDef.contacts = this.m_contacts;
-		contactSolverDef.count = this.m_contactCount;
-		contactSolverDef.step = subStep;
-		contactSolverDef.positions = this.m_positions;
-		contactSolverDef.velocities = this.m_velocities;
-		var contactSolver = new b2ContactSolver(contactSolverDef);
+		b2Island._solverDef.contacts = this.m_contacts;
+		b2Island._solverDef.count = this.m_contactCount;
+		b2Island._solverDef.step = subStep;
+		b2Island._solverDef.positions = this.m_positions;
+		b2Island._solverDef.velocities = this.m_velocities;
+		b2Island._solver.Init(b2Island._solverDef);
 
 		// Solve position constraints.
 		for (var i = 0; i < subStep.positionIterations; ++i)
 		{
-			var contactsOkay = contactSolver.SolveTOIPositionConstraints(toiIndexA, toiIndexB);
+			var contactsOkay = b2Island._solver.SolveTOIPositionConstraints(toiIndexA, toiIndexB);
 			if (contactsOkay)
 			{
 				break;
@@ -285,12 +311,12 @@ b2Island.prototype =
 
 		// No warm starting is needed for TOI events because warm
 		// starting impulses were applied in the discrete solver.
-		contactSolver.InitializeVelocityConstraints();
+		b2Island._solver.InitializeVelocityConstraints();
 
 		// Solve velocity constraints.
 		for (var i = 0; i < subStep.velocityIterations; ++i)
 		{
-			contactSolver.SolveVelocityConstraints();
+			b2Island._solver.SolveVelocityConstraints();
 		}
 
 		// Don't store the TOI contact forces for warm starting
@@ -337,7 +363,7 @@ b2Island.prototype =
 			body.SynchronizeTransform();
 		}
 
-		this.Report(contactSolver.m_velocityConstraints);
+		this.Report(b2Island._solver.m_velocityConstraints);
 	},
 
 	AddBody: function(body)

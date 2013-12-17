@@ -35,6 +35,9 @@ function b2SeparationFunction()
 	this.m_axis = new b2Vec2();
 }
 
+var _local_xfA = new b2Transform();
+var _local_xfB = new b2Transform();
+
 b2SeparationFunction.prototype =
 {
 	// TODO_ERIN might not need to return the separation
@@ -51,17 +54,16 @@ b2SeparationFunction.prototype =
 		this.m_sweepA = sweepA;
 		this.m_sweepB = sweepB;
 
-		var xfA = new b2Transform(), xfB = new b2Transform();
-		this.m_sweepA.GetTransform(xfA, t1);
-		this.m_sweepB.GetTransform(xfB, t1);
+		this.m_sweepA.GetTransform(_local_xfA, t1);
+		this.m_sweepB.GetTransform(_local_xfB, t1);
 
 		if (count == 1)
 		{
 			this.m_type = b2SeparationFunction.e_points;
 			var localPointA = this.m_proxyA.GetVertex(cache.indexA[0]);
 			var localPointB = this.m_proxyB.GetVertex(cache.indexB[0]);
-			var pointA = b2Mul_t_v2(xfA, localPointA);
-			var pointB = b2Mul_t_v2(xfB, localPointB);
+			var pointA = b2Mul_t_v2(_local_xfA, localPointA);
+			var pointB = b2Mul_t_v2(_local_xfB, localPointB);
 			this.m_axis = b2Vec2.Subtract(pointB, pointA);
 			var s = this.m_axis.Normalize();
 			return s;
@@ -75,13 +77,13 @@ b2SeparationFunction.prototype =
 
 			this.m_axis = b2Cross_v2_f(b2Vec2.Subtract(localPointB2, localPointB1), 1.0);
 			this.m_axis.Normalize();
-			var normal = b2Mul_r_v2(xfB.q, this.m_axis);
+			var normal = b2Mul_r_v2(_local_xfB.q, this.m_axis);
 
 			this.m_localPoint = b2Vec2.Multiply(0.5, b2Vec2.Add(localPointB1, localPointB2));
-			var pointB = b2Mul_t_v2(xfB, this.m_localPoint);
+			var pointB = b2Mul_t_v2(_local_xfB, this.m_localPoint);
 
 			var localPointA = proxyA.GetVertex(cache.indexA[0]);
-			var pointA = b2Mul_t_v2(xfA, localPointA);
+			var pointA = b2Mul_t_v2(_local_xfA, localPointA);
 
 			var s = b2Dot_v2_v2(b2Vec2.Subtract(pointA, pointB), normal);
 			if (s < 0.0)
@@ -100,13 +102,13 @@ b2SeparationFunction.prototype =
 
 			this.m_axis = b2Cross_v2_f(b2Vec2.Subtract(localPointA2, localPointA1), 1.0);
 			this.m_axis.Normalize();
-			var normal = b2Mul_r_v2(xfA.q, this.m_axis);
+			var normal = b2Mul_r_v2(_local_xfA.q, this.m_axis);
 
 			this.m_localPoint = b2Vec2.Multiply(0.5, b2Vec2.Add(localPointA1, localPointA2));
-			var pointA = b2Mul_t_v2(xfA, this.m_localPoint);
+			var pointA = b2Mul_t_v2(_local_xfA, this.m_localPoint);
 
 			var localPointB = this.m_proxyB.GetVertex(cache.indexB[0]);
-			var pointB = b2Mul_t_v2(xfB, localPointB);
+			var pointB = b2Mul_t_v2(_local_xfB, localPointB);
 
 			var s = b2Dot_v2_v2(b2Vec2.Subtract(pointB, pointA), normal);
 			if (s < 0.0)
@@ -121,16 +123,15 @@ b2SeparationFunction.prototype =
 	//
 	FindMinSeparation: function(indices, t)
 	{
-		var xfA = new b2Transform(), xfB = new b2Transform();
-		this.m_sweepA.GetTransform(xfA, t);
-		this.m_sweepB.GetTransform(xfB, t);
+		this.m_sweepA.GetTransform(_local_xfA, t);
+		this.m_sweepB.GetTransform(_local_xfB, t);
 
 		switch (this.m_type)
 		{
 		case b2SeparationFunction.e_points:
 			{
-				var axisA = b2MulT_r_v2(xfA.q,  this.m_axis);
-				var axisB = b2MulT_r_v2(xfB.q, this.m_axis.Negate());
+				var axisA = b2MulT_r_v2(_local_xfA.q,  this.m_axis);
+				var axisB = b2MulT_r_v2(_local_xfB.q, this.m_axis.Negate());
 
 				indices[0] = this.m_proxyA.GetSupport(axisA);
 				indices[1] = this.m_proxyB.GetSupport(axisB);
@@ -138,8 +139,8 @@ b2SeparationFunction.prototype =
 				var localPointA = this.m_proxyA.GetVertex(indices[0]);
 				var localPointB = this.m_proxyB.GetVertex(indices[1]);
 
-				var pointA = b2Mul_t_v2(xfA, localPointA);
-				var pointB = b2Mul_t_v2(xfB, localPointB);
+				var pointA = b2Mul_t_v2(_local_xfA, localPointA);
+				var pointB = b2Mul_t_v2(_local_xfB, localPointB);
 
 				var separation = b2Dot_v2_v2(b2Vec2.Subtract(pointB, pointA), this.m_axis);
 				return separation;
@@ -147,16 +148,16 @@ b2SeparationFunction.prototype =
 
 		case b2SeparationFunction.e_faceA:
 			{
-				var normal = b2Mul_r_v2(xfA.q, this.m_axis);
-				var pointA = b2Mul_t_v2(xfA, this.m_localPoint);
+				var normal = b2Mul_r_v2(_local_xfA.q, this.m_axis);
+				var pointA = b2Mul_t_v2(_local_xfA, this.m_localPoint);
 
-				var axisB = b2MulT_r_v2(xfB.q, normal.Negate());
+				var axisB = b2MulT_r_v2(_local_xfB.q, normal.Negate());
 
 				indices[0] = -1;
 				indices[1] = this.m_proxyB.GetSupport(axisB);
 
 				var localPointB = this.m_proxyB.GetVertex(indices[1]);
-				var pointB = b2Mul_t_v2(xfB, localPointB);
+				var pointB = b2Mul_t_v2(_local_xfB, localPointB);
 
 				var separation = b2Dot_v2_v2(b2Vec2.Subtract(pointB, pointA), normal);
 				return separation;
@@ -164,16 +165,16 @@ b2SeparationFunction.prototype =
 
 		case b2SeparationFunction.e_faceB:
 			{
-				var normal = b2Mul_r_v2(xfB.q, this.m_axis);
-				var pointB = b2Mul_t_v2(xfB, this.m_localPoint);
+				var normal = b2Mul_r_v2(_local_xfB.q, this.m_axis);
+				var pointB = b2Mul_t_v2(_local_xfB, this.m_localPoint);
 
-				var axisA = b2MulT_r_v2(xfA.q, normal.Negate());
+				var axisA = b2MulT_r_v2(_local_xfA.q, normal.Negate());
 
 				indices[1] = -1;
 				indices[0] = this.m_proxyA.GetSupport(axisA);
 
 				var localPointA = this.m_proxyA.GetVertex(indices[0]);
-				var pointA = b2Mul_t_v2(xfA, localPointA);
+				var pointA = b2Mul_t_v2(_local_xfA, localPointA);
 
 				var separation = b2Dot_v2_v2(b2Vec2.Subtract(pointA, pointB), normal);
 				return separation;
@@ -190,9 +191,8 @@ b2SeparationFunction.prototype =
 	//
 	Evaluate: function(indexA, indexB, t)
 	{
-		var xfA = new b2Transform(), xfB = new b2Transform();
-		this.m_sweepA.GetTransform(xfA, t);
-		this.m_sweepB.GetTransform(xfB, t);
+		this.m_sweepA.GetTransform(_local_xfA, t);
+		this.m_sweepB.GetTransform(_local_xfB, t);
 
 		switch (this.m_type)
 		{
@@ -201,8 +201,8 @@ b2SeparationFunction.prototype =
 				var localPointA = this.m_proxyA.GetVertex(indexA);
 				var localPointB = this.m_proxyB.GetVertex(indexB);
 
-				var pointA = b2Mul_t_v2(xfA, localPointA);
-				var pointB = b2Mul_t_v2(xfB, localPointB);
+				var pointA = b2Mul_t_v2(_local_xfA, localPointA);
+				var pointB = b2Mul_t_v2(_local_xfB, localPointB);
 				var separation = b2Dot_v2_v2(b2Vec2.Subtract(pointB, pointA), this.m_axis);
 
 				return separation;
@@ -210,11 +210,11 @@ b2SeparationFunction.prototype =
 
 		case b2SeparationFunction.e_faceA:
 			{
-				var normal = b2Mul_r_v2(xfA.q, this.m_axis);
-				var pointA = b2Mul_t_v2(xfA, this.m_localPoint);
+				var normal = b2Mul_r_v2(_local_xfA.q, this.m_axis);
+				var pointA = b2Mul_t_v2(_local_xfA, this.m_localPoint);
 
 				var localPointB = this.m_proxyB.GetVertex(indexB);
-				var pointB = b2Mul_t_v2(xfB, localPointB);
+				var pointB = b2Mul_t_v2(_local_xfB, localPointB);
 
 				var separation = b2Dot_v2_v2(b2Vec2.Subtract(pointB, pointA), normal);
 				return separation;
@@ -222,11 +222,11 @@ b2SeparationFunction.prototype =
 
 		case b2SeparationFunction.e_faceB:
 			{
-				var normal = b2Mul_r_v2(xfB.q, this.m_axis);
-				var pointB = b2Mul_t_v2(xfB, this.m_localPoint);
+				var normal = b2Mul_r_v2(_local_xfB.q, this.m_axis);
+				var pointB = b2Mul_t_v2(_local_xfB, this.m_localPoint);
 
 				var localPointA = this.m_proxyA.GetVertex(indexA);
-				var pointA = b2Mul_t_v2(xfA, localPointA);
+				var pointA = b2Mul_t_v2(_local_xfA, localPointA);
 
 				var separation = b2Dot_v2_v2(b2Vec2.Subtract(pointA, pointB), normal);
 				return separation;
@@ -248,9 +248,10 @@ b2SeparationFunction.e_faceB = 2;
 /// non-tunneling collision. If you change the time interval, you should call this function
 /// again.
 /// Note: use b2Distance to compute the contact point and normal at the time of impact.
+var profile_toi = b2Profiler.create("toi", "solveTOI");
 function b2TimeOfImpact(output, input)
 {
-	var timer = new b2Timer();
+	profile_toi.start();
 
 	++b2TimeOfImpact.b2_toiCalls;
 
@@ -449,9 +450,9 @@ function b2TimeOfImpact(output, input)
 
 	b2TimeOfImpact.b2_toiMaxIters = b2Max(b2TimeOfImpact.b2_toiMaxIters, iter);
 
-	var time = timer.GetMilliseconds();
-	b2TimeOfImpact.b2_toiMaxTime = b2Max(b2TimeOfImpact.b2_toiMaxTime, time);
-	b2TimeOfImpact.b2_toiTime += time;
+	profile_toi.stop();
+	b2TimeOfImpact.b2_toiMaxTime = b2Max(b2TimeOfImpact.b2_toiMaxTime, profile_toi.elapsedTime);
+	b2TimeOfImpact.b2_toiTime += profile_toi.elapsedTime;
 }
 
 b2TimeOfImpact._temp_sweepA = new b2Sweep();

@@ -9,7 +9,6 @@ TestTiles.prototype =
 	{
 		var e_count = 20;
 		this.m_fixtureCount = 0;
-		var timer = new b2Timer();
 
 		{
 			var a = 0.5;
@@ -96,8 +95,6 @@ TestTiles.prototype =
 				x.Add(deltaX);
 			}
 		}
-
-		this.m_createTime = timer.GetMilliseconds();
 	}
 };
 

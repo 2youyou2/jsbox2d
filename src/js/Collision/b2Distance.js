@@ -22,7 +22,6 @@
 /// It encapsulates any shape.
 function b2DistanceProxy()
 {
-	this.m_buffer = [new b2Vec2(), new b2Vec2()];
 	this.m_vertices = null;
 	this.m_count = 0;
 	this.m_radius = 0;
@@ -32,9 +31,6 @@ b2DistanceProxy.prototype =
 {
 	Assign: function(l)
 	{
-		for (var i = 0; i < 2; ++i)
-			this.m_buffer[i].Assign(l.m_buffer[i]);
-
 		this.m_vertices = l.m_vertices;
 		this.m_count = l.m_count;
 		this.m_radius = l.m_radius;
@@ -70,17 +66,16 @@ b2DistanceProxy.prototype =
 				var chain = shape;
 				b2Assert(0 <= index && index < chain.m_count);
 
-				this.m_buffer[0] = chain.m_vertices[index];
+				this.m_vertices = [ chain.m_vertices[index] ];
 				if (index + 1 < chain.m_count)
 				{
-					this.m_buffer[1] = chain.m_vertices[index + 1];
+					this.m_vertices[1] = chain.m_vertices[index + 1];
 				}
 				else
 				{
-					this.m_buffer[1] = chain.m_vertices[0];
+					this.m_vertices[1] = chain.m_vertices[0];
 				}
 
-				this.m_vertices = this.m_buffer;
 				this.m_count = 2;
 				this.m_radius = chain.m_radius;
 			}

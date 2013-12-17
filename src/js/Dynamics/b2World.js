@@ -1,12 +1,17 @@
 "use strict";
 
+var profile_world_step = b2Profiler.create("step");
+var profile_world_collide = b2Profiler.create("collide", "step");
+var profile_world_solve = b2Profiler.create("solve", "step");
+var profile_world_solveTOI = b2Profiler.create("solveTOI", "step");
+var profile_world_broadphase = b2Profiler.create("broadphase", "step");
+
 /// The world class manages all physics entities, dynamic simulation,
 /// and asynchronous queries. The world also contains efficient memory
 /// management facilities.
 function b2World(gravity)
 {
 	this.m_contactManager = new b2ContactManager();
-	this.m_profile = new b2Profile();
 
 	this.m_destructionListener = null;
 	this.g_debugDraw = null;
@@ -29,6 +34,8 @@ function b2World(gravity)
 	this.m_flags = b2World.e_clearForces;
 
 	this.m_inv_dt0 = 0.0;
+	this.p_step = new b2TimeStep();
+	this.p_island = new b2Island();
 }
 
 function b2WorldQueryWrapper()
@@ -409,7 +416,7 @@ b2World.prototype =
 				velocityIterations,
 				positionIterations)
 	{
-		var stepTimer = new b2Timer();
+		profile_world_step.start();
 
 		// If new fixtures were added, we need to find the new contacts.
 		if (this.m_flags & b2World.e_newFixture)
@@ -420,49 +427,48 @@ b2World.prototype =
 
 		this.m_flags |= b2World.e_locked;
 
-		var step = new b2TimeStep();
-		step.dt = dt;
-		step.velocityIterations	= velocityIterations;
-		step.positionIterations = positionIterations;
+		this.p_step.dt = dt;
+		this.p_step.velocityIterations= velocityIterations;
+		this.p_step.positionIterations = positionIterations;
 		if (dt > 0.0)
 		{
-			step.inv_dt = 1.0 / dt;
+			this.p_step.inv_dt = 1.0 / dt;
 		}
 		else
 		{
-			step.inv_dt = 0.0;
+			this.p_step.inv_dt = 0.0;
 		}
 
-		step.dtRatio = this.m_inv_dt0 * dt;
+		this.p_step.dtRatio = this.m_inv_dt0 * dt;
 
-		step.warmStarting = this.m_warmStarting;
+		this.p_step.warmStarting = this.m_warmStarting;
 
 		// Update contacts. This is where some contacts are destroyed.
 		{
-			var timer = new b2Timer();
+			profile_world_collide.start();
 			this.m_contactManager.Collide();
-			this.m_profile.collide = timer.GetMilliseconds();
+			profile_world_collide.stop();
 		}
 
 		// Integrate velocities, solve velocity constraints, and integrate positions.
-		if (this.m_stepComplete && step.dt > 0.0)
+		if (this.m_stepComplete && this.p_step.dt > 0.0)
 		{
-			timer = new b2Timer();
-			this.Solve(step);
-			this.m_profile.solve = timer.GetMilliseconds();
+			profile_world_solve.start();
+			this.Solve(this.p_step);
+			profile_world_solve.stop();
 		}
 
 		// Handle TOI events.
-		if (this.m_continuousPhysics && step.dt > 0.0)
+		if (this.m_continuousPhysics && this.p_step.dt > 0.0)
 		{
-			timer = new b2Timer();
-			this.SolveTOI(step);
-			this.m_profile.solveTOI = timer.GetMilliseconds();
+			profile_world_solveTOI.start();
+			this.SolveTOI(this.p_step);
+			profile_world_solveTOI.stop();
 		}
 
-		if (step.dt > 0.0)
+		if (this.p_step.dt > 0.0)
 		{
-			this.m_inv_dt0 = step.inv_dt;
+			this.m_inv_dt0 = this.p_step.inv_dt;
 		}
 
 		if (this.m_flags & b2World.e_clearForces)
@@ -472,7 +478,7 @@ b2World.prototype =
 
 		this.m_flags &= ~b2World.e_locked;
 
-		this.m_profile.step = stepTimer.GetMilliseconds();
+		profile_world_step.stop();
 	},
 
 	/// Manually clear the force buffer on all bodies. By default, forces are cleared automatically
@@ -796,20 +802,10 @@ b2World.prototype =
 		return this.m_contactManager;
 	},
 
-	/// Get the current profile.
-	GetProfile: function()
-	{
-		return this.m_profile;
-	},
-
 	Solve: function(step)
 	{
-		this.m_profile.solveInit = 0.0;
-		this.m_profile.solveVelocity = 0.0;
-		this.m_profile.solvePosition = 0.0;
-
 		// Size the island for the worst case.
-		var island = new b2Island(this.m_bodyCount,
+		this.p_island.Initialize(this.m_bodyCount,
 						this.m_contactManager.m_contactCount,
 						this.m_jointCount,
 						this.m_contactManager.m_contactListener);
@@ -850,7 +846,7 @@ b2World.prototype =
 			}
 
 			// Reset island and stack.
-			island.Clear();
+			this.p_island.Clear();
 			var stackCount = 0;
 			stack[stackCount++] = seed;
 			seed.m_flags |= b2Body.e_islandFlag;
@@ -861,7 +857,7 @@ b2World.prototype =
 				// Grab the next body off the stack and add it to the island.
 				var b = stack[--stackCount];
 				b2Assert(b.IsActive() == true);
-				island.AddBody(b);
+				this.p_island.AddBody(b);
 
 				// Make sure the body is awake.
 				b.SetAwake(true);
@@ -899,7 +895,7 @@ b2World.prototype =
 						continue;
 					}
 
-					island.AddContact(contact);
+					this.p_island.AddContact(contact);
 					contact.m_flags |= b2Contact.e_islandFlag;
 
 					var other = ce.other;
@@ -931,7 +927,7 @@ b2World.prototype =
 						continue;
 					}
 
-					island.AddJoint(je.joint);
+					this.p_island.AddJoint(je.joint);
 					je.joint.m_islandFlag = true;
 
 					if (other.m_flags & b2Body.e_islandFlag)
@@ -945,17 +941,13 @@ b2World.prototype =
 				}
 			}
 
-			var profile = new b2Profile();
-			island.Solve(profile, step, this.m_gravity, this.m_allowSleep);
-			this.m_profile.solveInit += profile.solveInit;
-			this.m_profile.solveVelocity += profile.solveVelocity;
-			this.m_profile.solvePosition += profile.solvePosition;
+			this.p_island.Solve(step, this.m_gravity, this.m_allowSleep);
 
 			// Post solve cleanup.
-			for (var i = 0; i < island.m_bodyCount; ++i)
+			for (var i = 0; i < this.p_island.m_bodyCount; ++i)
 			{
 				// Allow static bodies to participate in other islands.
-				var b = island.m_bodies[i];
+				var b = this.p_island.m_bodies[i];
 				if (b.GetType() == b2Body.b2_staticBody)
 				{
 					b.m_flags &= ~b2Body.e_islandFlag;
@@ -964,7 +956,7 @@ b2World.prototype =
 		}
 
 		{
-			var timer = new b2Timer();
+			profile_world_broadphase.start();
 			// Synchronize fixtures, check for out of range bodies.
 			for (var b = this.m_bodyList; b; b = b.GetNext())
 			{
@@ -985,12 +977,12 @@ b2World.prototype =
 
 			// Look for new contacts.
 			this.m_contactManager.FindNewContacts();
-			this.m_profile.broadphase = timer.GetMilliseconds();
+			profile_world_broadphase.stop();
 		}
 	},
 	SolveTOI: function(step)
 	{
-		var island = new b2Island(2 * b2_maxTOIContacts, b2_maxTOIContacts, 0, this.m_contactManager.m_contactListener);
+		this.p_island.Initialize(2 * b2_maxTOIContacts, b2_maxTOIContacts, 0, this.m_contactManager.m_contactListener);
 
 		if (this.m_stepComplete)
 		{
@@ -1166,10 +1158,10 @@ b2World.prototype =
 			bB.SetAwake(true);
 
 			// Build the island
-			island.Clear();
-			island.AddBody(bA);
-			island.AddBody(bB);
-			island.AddContact(minContact);
+			this.p_island.Clear();
+			this.p_island.AddBody(bA);
+			this.p_island.AddBody(bB);
+			this.p_island.AddContact(minContact);
 
 			bA.m_flags |= b2Body.e_islandFlag;
 			bB.m_flags |= b2Body.e_islandFlag;
@@ -1184,12 +1176,12 @@ b2World.prototype =
 				{
 					for (var ce = body.m_contactList; ce; ce = ce.next)
 					{
-						if (island.m_bodyCount == island.m_bodyCapacity)
+						if (this.p_island.m_bodyCount == this.p_island.m_bodyCapacity)
 						{
 							break;
 						}
 
-						if (island.m_contactCount == island.m_contactCapacity)
+						if (this.p_island.m_contactCount == this.p_island.m_contactCapacity)
 						{
 							break;
 						}
@@ -1246,7 +1238,7 @@ b2World.prototype =
 
 						// Add the contact to the island
 						contact.m_flags |= b2Contact.e_islandFlag;
-						island.AddContact(contact);
+						this.p_island.AddContact(contact);
 
 						// Has the other body already been added to the island?
 						if (other.m_flags & b2Body.e_islandFlag)
@@ -1262,7 +1254,7 @@ b2World.prototype =
 							other.SetAwake(true);
 						}
 
-						island.AddBody(other);
+						this.p_island.AddBody(other);
 					}
 				}
 			}
@@ -1274,12 +1266,12 @@ b2World.prototype =
 			subStep.positionIterations = 20;
 			subStep.velocityIterations = step.velocityIterations;
 			subStep.warmStarting = false;
-			island.SolveTOI(subStep, bA.m_islandIndex, bB.m_islandIndex);
+			this.p_island.SolveTOI(subStep, bA.m_islandIndex, bB.m_islandIndex);
 
 			// Reset island flags and synchronize broad-phase proxies.
-			for (var i = 0; i < island.m_bodyCount; ++i)
+			for (var i = 0; i < this.p_island.m_bodyCount; ++i)
 			{
-				var body = island.m_bodies[i];
+				var body = this.p_island.m_bodies[i];
 				body.m_flags &= ~b2Body.e_islandFlag;
 
 				if (body.m_type != b2Body.b2_dynamicBody)

@@ -1,18 +1,5 @@
 "use strict";
 
-/// Profiling data. Times are in milliseconds.
-function b2Profile()
-{
-	this.step = 0;
-	this.collide = 0;
-	this.solve = 0;
-	this.solveInit = 0;
-	this.solveVelocity = 0;
-	this.solvePosition = 0;
-	this.broadphase = 0;
-	this.solveTOI = 0;
-}
-
 /// This is an internal structure.
 function b2TimeStep()
 {

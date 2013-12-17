@@ -48,6 +48,8 @@ function b2Vec2(x, y)
 		this.x = x;
 		this.y = y;
 	}
+	else
+		this.x = this.y = 0;
 }
 
 b2Vec2.prototype =
@@ -58,15 +60,16 @@ b2Vec2.prototype =
 	},
 
 	/// Set this vector to all zeros.
-	SetZero: function() { this.x = 0.0; this.y = 0.0; },
+	SetZero: function() { this.x = 0.0; this.y = 0.0; return this; },
 
 	/// Set this vector to some specified coordinates.
-	Set: function(x_, y_) { this.x = x_; this.y = y_; },
+	Set: function(x_, y_) { this.x = x_; this.y = y_; return this; },
 
 	Assign: function(l)
 	{
 		this.x = l.x;
 		this.y = l.y;
+		return this;
 	},
 
 	/// Negate this vector.
@@ -100,18 +103,21 @@ b2Vec2.prototype =
 	Add: function(v)
 	{
 		this.x += v.x; this.y += v.y;
+		return this;
 	},
 
 	/// Subtract a vector from this vector.
 	Subtract: function(v)
 	{
 		this.x -= v.x; this.y -= v.y;
+		return this;
 	},
 
 	/// Multiply this vector by a scalar.
 	Multiply: function(a)
 	{
 		this.x *= a; this.y *= a;
+		return this;
 	},
 
 	/// Get the length of this vector (the norm).
@@ -168,10 +174,7 @@ b2Vec2.prototype =
 	{
 		this.x = data[0];
 		this.y = data[1];
-	},
-
-	x: 0,
-	y: 0
+	}
 };
 
 /// Add two vectors component-wise.
@@ -461,11 +464,11 @@ b2Rot.prototype =
 	},
 
 	/// Set using an angle in radians.
-	Set: function(angle)
+	Set: function(x)
 	{
 		/// TODO_ERIN optimize
-		this.s = sinf(angle);
-		this.c = cosf(angle);
+		this.s = sinf(x);
+		this.c = cosf(x);
 	},
 
 	/// Set to the identity rotation
@@ -746,10 +749,7 @@ function b2MulT_r_v2(q, v)
 
 function b2Mul_t_v2(T, v)
 {
-	var x = (T.q.c * v.x - T.q.s * v.y) + T.p.x;
-	var y = (T.q.s * v.x + T.q.c * v.y) + T.p.y;
-
-	return new b2Vec2(x, y);
+	return new b2Vec2((T.q.c * v.x - T.q.s * v.y) + T.p.x, (T.q.s * v.x + T.q.c * v.y) + T.p.y);
 }
 
 function b2MulT_t_v2(T, v)

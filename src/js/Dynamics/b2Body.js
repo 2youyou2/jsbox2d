@@ -184,6 +184,7 @@ b2Body.e_activeFlag = 0x0020;
 b2Body.e_toiFlag = 0x0040;
 
 b2Body.m_local_oldCenter = new b2Vec2();
+b2Body.m_local_xf1 = new b2Transform();
 
 /// A rigid body. These are created via b2World.CreateBody.
 b2Body.prototype =
@@ -1042,14 +1043,13 @@ b2Body.prototype =
 
 	SynchronizeFixtures: function()
 	{
-		var xf1 = new b2Transform();
-		xf1.q.Set(this.m_sweep.a0);
-		xf1.p.Assign(b2Vec2.Subtract(this.m_sweep.c0, b2Mul_r_v2(xf1.q, this.m_sweep.localCenter)));
+		b2Body.m_local_xf1.q.Set(this.m_sweep.a0);
+		b2Body.m_local_xf1.p.Assign(b2Vec2.Subtract(this.m_sweep.c0, b2Mul_r_v2(b2Body.m_local_xf1.q, this.m_sweep.localCenter)));
 
 		var broadPhase = this.m_world.m_contactManager.m_broadPhase;
 		for (var f = this.m_fixtureList; f; f = f.m_next)
 		{
-			f.Synchronize(broadPhase, xf1, this.m_xf);
+			f.Synchronize(broadPhase, b2Body.m_local_xf1, this.m_xf);
 		}
 	},
 	SynchronizeTransform: function()

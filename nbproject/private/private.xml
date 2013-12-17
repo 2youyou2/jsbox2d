@@ -15,13 +15,7 @@
             <file>file:/G:/box2d_latest/Box2D/Box2D/TestDominos.js</file>
         </group>
         <group name="Box2D">
-            <file>file:/G:/box2d_latest/Box2D/Box2D/TestContinuous.js</file>
-            <file>file:/G:/box2d_latest/Box2D/Box2D/Dynamics/b2World.js</file>
-            <file>file:/G:/box2d_latest/Box2D/Box2D/Test.js</file>
-            <file>file:/G:/box2d_latest/Box2D/Box2D/Collision/b2TimeOfImpact.js</file>
-            <file>file:/G:/box2d_latest/Box2D/Box2D/Common/b2Math.js</file>
-            <file>file:/G:/box2d_latest/Box2D/Box2D/Dynamics/b2Body.js</file>
-            <file>file:/G:/box2d_latest/Box2D/Box2D/index.html</file>
+            <file>file:/G:/box2d_latest/src/js/Dynamics/Contacts/b2ContactSolver.js</file>
         </group>
     </open-files>
 </project-private>

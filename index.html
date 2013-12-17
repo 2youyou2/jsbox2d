@@ -183,7 +183,7 @@
 		<div class="flex container" style="width: 100%; height: 100%;">
 			<div class="flex container fillRestGrow">
 				<canvas style="background: #333333;" class="flex fillRestGrow" id="canvas"></canvas>
-				<div id='debugText' style="color: white; position: absolute; left: 0; top: 0;">DEBUG</div>
+				<pre id='debugText' style="color: white; position: absolute; left: 0; top: 0;">DEBUG</pre>
 			</div>
 			<div class="flex anchor container column" style="width: 240px;">
 				<label for="test">Test</label>
@@ -267,18 +267,18 @@
 		<script>
 			"use strict";
 
-		// Fix Function#name on browsers that do not support it (IE):
-		if (typeof((function f() {}).name) === 'undefined') {
-			Object.defineProperty(Function.prototype, 'name', {
-				get: function() {
-					var name = this.toString().match(/^\s*function\s*(\w*)\s*\(/)[1];
-					// For better performance only parse once, and then cache the
-					// result through a new accessor for repeated access.
-					Object.defineProperty(this, 'name', { value: name });
-					return name;
-				}
-			});
-		}
+			// Fix Function#name on browsers that do not support it (IE):
+			if (typeof((function f() {}).name) === 'undefined') {
+				Object.defineProperty(Function.prototype, 'name', {
+					get: function() {
+						var name = this.toString().match(/^\s*function\s*(\w*)\s*\(/)[1];
+						// For better performance only parse once, and then cache the
+						// result through a new accessor for repeated access.
+						Object.defineProperty(this, 'name', { value: name });
+						return name;
+					}
+				});
+			}
 
 			var canvas = document.getElementById('canvas');
 			var cQ = $(canvas);
@@ -362,7 +362,7 @@
 
 			var drawLine = function(string)
 			{
-				dbg.html(dbg.html() + string + '<br/>');
+				dbg.text(dbg.text() + string + '\n');
 			};
 
 			testSelect.change(function()
@@ -451,7 +451,7 @@
 			{
 				debugDraw.ToggleFlags(b2Draw.e_centerOfMassBit);
 			});
-			
+
 			$('#drawPairs').click(function()
 			{
 				debugDraw.ToggleFlags(b2Draw.e_pairBit);
@@ -626,7 +626,8 @@
 			window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
                               window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
 
-			// This is our little game loop.
+			b2Profiler.init();
+
 			function step()
 			{
 				dbg.text("");

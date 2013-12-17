@@ -1,3 +1,5 @@
+var profile_draw = b2Profiler.create("draw");
+
 function ContactPoint()
 {
 	this.fixtureA = null;
@@ -28,9 +30,6 @@ function Test()
 
 	var bodyDef = new b2BodyDef();
 	this.m_groundBody = this.m_world.CreateBody(bodyDef);
-
-	this.m_maxProfile = new b2Profile();
-	this.m_totalProfile = new b2Profile();
 
 	this.m_stepCount = 0;
 	this.m_pause = false;
@@ -85,6 +84,50 @@ Test.prototype =
 	{
 	},
 
+	recursiveDrawTimers: function(node, tab)
+	{
+		var totalChildrenValue = 0;
+
+		for (var c in node.children)
+		{
+			var s = '';
+
+			for (var i = 0; i < tab; ++i)
+				s += ' ';
+
+			var p = node.children[c];
+			s += p.name + " : " + p.elapsedTime.toFixed(2) + "ms";
+
+			if (node.parent)
+			{
+				var pcnt = Math.round((p.elapsedTime / node.elapsedTime) * 100);
+				s += " (" + pcnt + ")%";
+			}
+
+			this.m_drawStringFunc(s);
+
+			this.recursiveDrawTimers(p, tab + 1);
+
+			totalChildrenValue += p.elapsedTime;
+		}
+
+		if (node.childrenCount && node.parent)
+		{
+			totalChildrenValue = node.elapsedTime - totalChildrenValue;
+			var s = '';
+
+			for (var i = 0; i < tab; ++i)
+				s += ' ';
+
+			s += "[untracked] : ~" + totalChildrenValue.toFixed(2) + "ms";
+
+			pcnt = Math.round((totalChildrenValue / node.elapsedTime) * 100);
+			s += " (~" + pcnt + "%)";
+
+			this.m_drawStringFunc(s);
+		}
+	},
+
 	Step: function()
 	{
 		var timeStep = this.m_hz > 0.0 ? this.m_hz : 0.0;
@@ -110,6 +153,7 @@ Test.prototype =
 		this.m_debugDraw.context.translate(-this.m_center.x, -this.m_center.y);
 		this.m_debugDraw.context.lineWidth = 1 / this.m_scale;
 
+		profile_draw.start();
 		this.m_world.DrawDebugData();
 
 		if (timeStep > 0.0)
@@ -173,6 +217,7 @@ Test.prototype =
 			c.Set(0.8, 0.8, 0.8);
 			this.m_debugDraw.DrawSegment(p1, p2, c);
 		}
+		profile_draw.stop();
 
 		if (this.m_debugDraw.m_drawFlags & b2Draw.e_statistics)
 		{
@@ -188,41 +233,9 @@ Test.prototype =
 			this.m_drawStringFunc("proxies/height/balance/quality = " + proxyCount + "/" + height + "/" + balance + "/" + quality);
 		}
 
-		// Track maximum profile times
-		{
-			var p = this.m_world.GetProfile();
-			this.m_maxProfile.step = Math.max(this.m_maxProfile.step, p.step);
-			this.m_maxProfile.collide = Math.max(this.m_maxProfile.collide, p.collide);
-			this.m_maxProfile.solve = Math.max(this.m_maxProfile.solve, p.solve);
-			this.m_maxProfile.solveInit = Math.max(this.m_maxProfile.solveInit, p.solveInit);
-			this.m_maxProfile.solveVelocity = Math.max(this.m_maxProfile.solveVelocity, p.solveVelocity);
-			this.m_maxProfile.solvePosition = Math.max(this.m_maxProfile.solvePosition, p.solvePosition);
-			this.m_maxProfile.solveTOI = Math.max(this.m_maxProfile.solveTOI, p.solveTOI);
-			this.m_maxProfile.broadphase = Math.max(this.m_maxProfile.broadphase, p.broadphase);
-
-			this.m_totalProfile.step += p.step;
-			this.m_totalProfile.collide += p.collide;
-			this.m_totalProfile.solve += p.solve;
-			this.m_totalProfile.solveInit += p.solveInit;
-			this.m_totalProfile.solveVelocity += p.solveVelocity;
-			this.m_totalProfile.solvePosition += p.solvePosition;
-			this.m_totalProfile.solveTOI += p.solveTOI;
-			this.m_totalProfile.broadphase += p.broadphase;
-		}
-
-		/*if (this->m_bombSpawning)
-		{
-			b2Color c;
-			c.Set(0.0, 0.0, 1.0);
-			g_debugDraw.DrawPoint(this->m_bombSpawnPoint, 4.0, c);
-
-			c.Set(0.8, 0.8, 0.8);
-			g_debugDraw.DrawSegment(this->m_mouseWorld, this->m_bombSpawnPoint, c);
-		}*/
-
 		if (this.m_debugDraw.m_drawFlags & b2Draw.e_profile)
 		{
-			var aveProfile = new b2Profile();
+			/*var aveProfile = new b2Profile();
 
 			if (this.m_stepCount > 0)
 			{
@@ -246,8 +259,12 @@ Test.prototype =
 					this.m_drawStringFunc(x + " [ave] (max) = " + p[x].toFixed(2) + " [" + aveProfile[x].toFixed(2) + "] (" + this.m_maxProfile[x].toFixed(2) + ")");
 					y += 12;
 				}
-			}
+			}*/
+
+			this.recursiveDrawTimers(b2Profiler.profileRoot, 0);
 		}
+
+		b2Profiler.reset();
 	},
 
 	m_lastBackup: null,
