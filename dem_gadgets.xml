@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Module>
+  <ModulePrefs title="hello world example" />
+  <Content type="html">
+     <![CDATA[
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/build/jsbox2d.min.js"></script>
+
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/CanvasDebug.js"></script>
+
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/Test.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestPyramid.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestEdge.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestSphereStack.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestConveyorBelt.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestContinuous.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestVaryingRestitution.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestVaryingFriction.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestAddPair.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestTiles.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestTumbler.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestBridge.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestChain.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestRevolute.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestTheoJansenWalker.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestSliderCrank.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestConfined.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestPinball.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestBullet.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestCharacterCollision.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestCollisionFiltering.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestCollisionProcessing.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestCompoundShapes.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestSensor.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestDominos.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestApplyForce.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestWeb.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestBodyTypes.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestBreakable.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestConvexHull.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestCantilever.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestCar.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestDistance.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestEdgeShapes.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestGears.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestMobile.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestMobileBalanced.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestMotorJoint.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestOneSidedPlatform.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestPolyCollision.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestPolyShapes.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestPrismatic.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestPulleys.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestRayCast.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestRope.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestRopeJoint.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestShapeEditing.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestVerticalStack.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestRUBE.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestRUBEJointTypes.js"></script>
+
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/testbed.js"></script>
+		<link type="text/css" rel="stylesheet" href="https://jsbox2d.googlecode.com/svn/trunk/style.css"></link>
+
+		<div class="flex container" style="width: 99%; height: 100%;">
+			<div class="flex container fillRestGrow">
+				<canvas style="background: #333333;" class="flex fillRestGrow" id="canvas"></canvas>
+				<div id='debugText' style="color: white; position: absolute; left: 0; top: 0;">Loading...</div>
+			</div>
+			<div class="flex anchor container column" style="width: 240px;">
+				<label for="test">Test</label>
+				<select id="test"></select>
+				<hr style="width: 100%;"/>
+				<label id="label_velIters" for="velIters">Velocity Iterations (<span class="val">8</span>)</label>
+				<input id="velIters" type="range" min="0" max="50" value="8"></input>
+				<label id="label_posIters" for="posIters">Position Iterations (<span class="val">3</span>)</label>
+				<input id="posIters" type="range" min="0" max="50" value="3"></input>
+				<label id="label_hertz" for="hertz">Hertz (<span class="val">60</span>)</label>
+				<input id="hertz" type="range" min="2" max="120" value="60"></input>
+				<hr style="width: 100%;"/>
+				<div>
+					<input id="allowSleep" type="checkbox" checked="checked"></input>
+					<label for="allowSleep">Allow Sleep</label>
+				</div>
+				<div>
+					<input id="warmStarting" type="checkbox" checked="checked"></input>
+					<label for="warmStarting">Warm Starting</label>
+				</div>
+				<div>
+					<input id="toi" type="checkbox" checked="checked"></input>
+					<label for="toi">Time of Impact</label>
+				</div>
+				<div>
+					<input id="substep" type="checkbox"></input>
+					<label for="substep">Substepping</label>
+				</div>
+				<hr style="width: 100%;"/>
+				<div>
+					<input id="drawShapes" type="checkbox" checked="checked"></input>
+					<label for="drawShapes">Shapes</label>
+				</div>
+				<div>
+					<input id="drawJoints" type="checkbox" checked="checked"></input>
+					<label for="drawJoints">Joints</label>
+				</div>
+				<div>
+					<input id="drawAABBs" type="checkbox"></input>
+					<label for="drawAABBs">AABBs</label>
+				</div>
+				<div>
+					<input id="drawContactPoints" type="checkbox"></input>
+					<label for="drawContactPoints">Contact Points</label>
+				</div>
+				<div>
+					<input id="drawContactNormals" type="checkbox"></input>
+					<label for="drawContactNormals">Contact Normals</label>
+				</div>
+				<div>
+					<input id="drawContactImpulses" type="checkbox"></input>
+					<label for="drawContactImpulses">Contact Impulses</label>
+				</div>
+				<div>
+					<input id="drawFrictionImpulses" type="checkbox"></input>
+					<label for="drawFrictionImpulses">Friction Impulses</label>
+				</div>
+				<div>
+					<input id="drawCenters" type="checkbox"></input>
+					<label for="drawCenters">Center of Masses</label>
+				</div>
+				<div>
+					<input id="drawStatistics" type="checkbox"></input>
+					<label for="drawStatistics">Statistics</label>
+				</div>
+				<div>
+					<input id="drawProfile" type="checkbox"></input>
+					<label for="drawProfile">Profile</label>
+				</div>
+				<hr style="width: 100%;"/>
+				<button id="pause">Pause (P)</button>
+				<button id="step">Step (L)</button>
+				<button id="restart">Restart (R)</button>
+			</div>
+		</div>
+
+		<script>
+			loadTestBed();
+		</script>
+     ]]>
+  </Content>
+</Module>
