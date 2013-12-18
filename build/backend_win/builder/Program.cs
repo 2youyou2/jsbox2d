@@ -43,12 +43,36 @@ namespace builder
 		/// The main entry point for the application.
 		/// </summary>
 		[STAThread]
-		static void Main()
+		static void Main(string[] args)
 		{
 			AddClass<FileIO>("fileio");
 
 			foreach (var f in Directory.EnumerateFiles(".", "*.js"))
 				ctx.Run(File.ReadAllText(f));
+
+			Dictionary<string, string> arguments = new Dictionary<string, string>();
+
+			for (var i = 0; i < args.Length; ++i)
+			{
+				var vals = args[i].Split('=');
+
+				arguments.Add(vals[0], vals[1]);
+			}
+
+			if (arguments.ContainsKey("pArgs"))
+			{
+				var a = arguments["pArgs"].Split(';');
+
+				for (var i = 0; i < a.Length; ++i)
+				{
+					var ns = a[i].Split(':');
+
+					if (ns.Length == 1)
+						ctx.Run("definitions[\"" + ns[0] + "\"] = true;");
+					else
+						ctx.Run("definitions[\"" + ns[0] + "\"] = " + ns[1] + ";");
+				}
+			}
 
 			ctx.Run("build()");
 		}

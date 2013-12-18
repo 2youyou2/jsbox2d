@@ -56,7 +56,9 @@ b2PulleyJointDef.prototype =
 		var dB = b2Vec2.Subtract(anchorB, groundB);
 		this.lengthB = dB.Length();
 		this.ratio = r;
+'#if @DEBUG';
 		b2Assert(this.ratio > b2_epsilon);
+'#endif';
 	},
 
 	_deserialize: function(data, bodies, joints)
@@ -110,7 +112,9 @@ function b2PulleyJoint(def)
 	this.m_lengthA = def.lengthA;
 	this.m_lengthB = def.lengthB;
 
+'#if @DEBUG';
 	b2Assert(def.ratio != 0.0);
+'#endif';
 	this.m_ratio = def.ratio;
 
 	this.m_constant = def.lengthA + this.m_ratio * def.lengthB;

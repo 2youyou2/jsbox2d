@@ -64,8 +64,9 @@ b2DistanceProxy.prototype =
 		case b2Shape.e_chain:
 			{
 				var chain = shape;
+'#if @DEBUG';
 				b2Assert(0 <= index && index < chain.m_count);
-
+'#endif';
 				this.m_vertices = [ chain.m_vertices[index] ];
 				if (index + 1 < chain.m_count)
 				{
@@ -90,8 +91,10 @@ b2DistanceProxy.prototype =
 			}
 			break;
 
+'#if @DEBUG';
 		default:
 			b2Assert(false);
+'#endif';
 		}
 	},
 
@@ -140,7 +143,9 @@ b2DistanceProxy.prototype =
 	/// Get a vertex by index. Used by b2Distance.
 	GetVertex: function(index)
 	{
+'#if @DEBUG';
 		b2Assert(0 <= index && index < this.m_count);
+'#endif';
 		return this.m_vertices[index];
 	}
 };
@@ -211,7 +216,9 @@ b2Simplex.prototype =
 					proxyA, transformA,
 					proxyB, transformB)
 	{
+'#if @DEBUG';
 		b2Assert(cache.count <= 3);
+'#endif';
 
 		// Copy data from cache.
 		this.m_count = cache.count;
@@ -293,9 +300,11 @@ b2Simplex.prototype =
 				}
 			}
 
+'#if @DEBUG';
 		default:
 			b2Assert(false);
 			return new b2Vec2(0, 0);
+'#endif';
 		}
 	},
 
@@ -303,10 +312,6 @@ b2Simplex.prototype =
 	{
 		switch (this.m_count)
 		{
-		case 0:
-			b2Assert(false);
-			return new b2Vec2(0, 0);
-
 		case 1:
 			return this.m_v[0].w;
 
@@ -316,9 +321,11 @@ b2Simplex.prototype =
 		case 3:
 			return new b2Vec2(0, 0);
 
+'#if @DEBUG';
 		default:
 			b2Assert(false);
 			return new b2Vec2(0, 0);
+'#endif';
 		}
 	},
 
@@ -326,10 +333,6 @@ b2Simplex.prototype =
 	{
 		switch (this.m_count)
 		{
-		case 0:
-			b2Assert(false);
-			break;
-
 		case 1:
 			pA.Assign(this.m_v[0].wA);
 			pB.Assign(this.m_v[0].wB);
@@ -345,9 +348,11 @@ b2Simplex.prototype =
 			pB.Assign(pA);
 			break;
 
+'#if @DEBUG';
 		default:
 			b2Assert(false);
 			break;
+'#endif';
 		}
 	},
 
@@ -355,10 +360,6 @@ b2Simplex.prototype =
 	{
 		switch (this.m_count)
 		{
-		case 0:
-			b2Assert(false);
-			return 0.0;
-
 		case 1:
 			return 0.0;
 
@@ -368,9 +369,11 @@ b2Simplex.prototype =
 		case 3:
 			return b2Cross_v2_v2(b2Vec2.Subtract(this.m_v[1].w, this.m_v[0].w), b2Vec2.Subtract(this.m_v[2].w, this.m_v[0].w));
 
+'#if @DEBUG';
 		default:
 			b2Assert(false);
 			return 0.0;
+'#endif';
 		}
 	},
 
@@ -602,8 +605,10 @@ function b2DistanceFunc(output,
 			simplex.Solve3();
 			break;
 
+'#if @DEBUG';
 		default:
 			b2Assert(false);
+'#endif';
 		}
 
 		// If we have 3 points, then the origin is in the corresponding triangle.

@@ -266,7 +266,9 @@ b2Fixture.prototype =
 	/// of the body. You must call b2Body::ResetMassData to update the body's mass.
 	SetDensity: function(density)
 	{
+'#if @DEBUG';
 		b2Assert(b2IsValid(density) && density >= 0.0);
+'#endif';
 		this.m_density = density;
 	},
 
@@ -307,7 +309,9 @@ b2Fixture.prototype =
 	/// the body transform.
 	GetAABB: function(childIndex)
 	{
+'#if @DEBUG';
 		b2Assert(0 <= childIndex && childIndex < this.m_proxyCount);
+'#endif';
 		return this.m_proxies[childIndex].aabb;
 	},
 
@@ -344,7 +348,9 @@ b2Fixture.prototype =
 	Destroy: function()
 	{
 		// The proxies must be destroyed before calling this.
+'#if @DEBUG';
 		b2Assert(this.m_proxyCount == 0);
+'#endif';
 
 		// Free the proxy array.
 		this.m_proxies = null;
@@ -354,7 +360,9 @@ b2Fixture.prototype =
 	// These support body activation/deactivation.
 	CreateProxies: function(broadPhase, xf)
 	{
+'#if @DEBUG';
 		b2Assert(this.m_proxyCount == 0);
+'#endif';
 
 		// Create proxies in the broad-phase.
 		this.m_proxyCount = this.m_shape.GetChildCount();

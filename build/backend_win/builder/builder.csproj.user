@@ -5,4 +5,8 @@
     <StartArguments>
     </StartArguments>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <StartArguments>pArgs="DEBUG"</StartArguments>
+    <StartWorkingDirectory>E:\wamp\www2\Box2D\build\compiler\</StartWorkingDirectory>
+  </PropertyGroup>
 </Project>

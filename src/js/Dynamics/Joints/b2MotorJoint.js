@@ -147,7 +147,9 @@ b2MotorJoint.prototype =
 	/// Set the maximum friction force in N.
 	SetMaxForce: function(force)
 	{
+'#if @DEBUG';
 		b2Assert(b2IsValid(force) && force >= 0.0);
+'#endif';
 		this.m_maxForce = force;
 	},
 
@@ -160,7 +162,9 @@ b2MotorJoint.prototype =
 	/// Set the maximum friction torque in N*m.
 	SetMaxTorque: function(torque)
 	{
+'#if @DEBUG';
 		b2Assert(b2IsValid(torque) && torque >= 0.0);
+'#endif';
 		this.m_maxTorque = torque;
 	},
 
@@ -173,7 +177,9 @@ b2MotorJoint.prototype =
 	/// Set the position correction factor in the range [0,1].
 	SetCorrectionFactor: function(factor)
 	{
+'#if @DEBUG';
 		b2Assert(b2IsValid(factor) && 0.0 <= factor && factor <= 1.0);
+'#endif';
 		this.m_correctionFactor = factor;
 	},
 

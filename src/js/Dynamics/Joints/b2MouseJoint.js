@@ -26,10 +26,12 @@ function b2MouseJoint(def)
 {
 	this.parent.call(this, def);
 
+'#if @DEBUG';
 	b2Assert(def.target.IsValid());
 	b2Assert(b2IsValid(def.maxForce) && def.maxForce >= 0.0);
 	b2Assert(b2IsValid(def.frequencyHz) && def.frequencyHz >= 0.0);
 	b2Assert(b2IsValid(def.dampingRatio) && def.dampingRatio >= 0.0);
+'#endif';
 
 	this.m_targetA = def.target.Clone();
 	this.m_localAnchorB = b2MulT_t_v2(this.m_bodyB.GetTransform(), this.m_targetA);
@@ -158,7 +160,9 @@ b2MouseJoint.prototype =
 		// gamma has units of inverse mass.
 		// beta has units of inverse time.
 		var h = data.step.dt;
+'#if @DEBUG';
 		b2Assert(d + h * k > b2_epsilon);
+'#endif';
 		this.m_gamma = h * (d + h * k);
 		if (this.m_gamma != 0.0)
 		{

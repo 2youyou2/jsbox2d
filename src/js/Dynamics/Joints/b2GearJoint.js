@@ -64,8 +64,10 @@ function b2GearJoint(def)
 	this.m_typeA = this.m_joint1.GetType();
 	this.m_typeB = this.m_joint2.GetType();
 
+'#if @DEBUG';
 	b2Assert(this.m_typeA == b2Joint.e_revoluteJoint || this.m_typeA == b2Joint.e_prismaticJoint);
 	b2Assert(this.m_typeB == b2Joint.e_revoluteJoint || this.m_typeB == b2Joint.e_prismaticJoint);
+'#endif';
 
 	var coordinateA, coordinateB;
 
@@ -184,7 +186,9 @@ b2GearJoint.prototype =
 	/// Set/Get the gear ratio.
 	SetRatio: function(ratio)
 	{
+'#if @DEBUG';
 		b2Assert(b2IsValid(ratio));
+'#endif';
 		this.m_ratio = ratio;
 	},
 	GetRatio: function()

@@ -94,8 +94,10 @@ b2DynamicTree.prototype =
 	/// Destroy a proxy. This asserts if the id is invalid.
 	DestroyProxy: function(proxyId)
 	{
+'#if @DEBUG';
 		b2Assert(0 <= proxyId && proxyId < this.m_nodeCapacity);
 		b2Assert(this.m_nodes[proxyId].IsLeaf());
+'#endif';
 
 		this.RemoveLeaf(proxyId);
 		this.FreeNode(proxyId);
@@ -107,9 +109,10 @@ b2DynamicTree.prototype =
 	/// @return true if the proxy was re-inserted.
 	MoveProxy: function(proxyId, aabb, displacement)
 	{
+'#if @DEBUG';
 		b2Assert(0 <= proxyId && proxyId < this.m_nodeCapacity);
-
 		b2Assert(this.m_nodes[proxyId].IsLeaf());
+'#endif';
 
 		if (this.m_nodes[proxyId].aabb.Contains(aabb))
 		{
@@ -152,14 +155,18 @@ b2DynamicTree.prototype =
 	/// @return the proxy user data or 0 if the id is invalid.
 	GetUserData: function(proxyId)
 	{
+'#if @DEBUG';
 		b2Assert(0 <= proxyId && proxyId < this.m_nodeCapacity);
+'#endif';
 		return this.m_nodes[proxyId].userData;
 	},
 
 	/// Get the fat AABB for a proxy.
 	GetFatAABB: function(proxyId)
 	{
+'#if @DEBUG';
 		b2Assert(0 <= proxyId && proxyId < this.m_nodeCapacity);
+'#endif';
 		return this.m_nodes[proxyId].aabb;
 	},
 
@@ -211,7 +218,9 @@ b2DynamicTree.prototype =
 		var p1 = input.p1;
 		var p2 = input.p2;
 		var r = b2Vec2.Subtract(p2, p1);
+'#if @DEBUG';
 		b2Assert(r.LengthSquared() > 0.0);
+'#endif';
 		r.Normalize();
 
 		// v is perpendicular to the segment.
@@ -301,14 +310,17 @@ b2DynamicTree.prototype =
 		var freeIndex = this.m_freeList;
 		while (freeIndex != b2_nullNode)
 		{
+'#if @DEBUG';
 			b2Assert(0 <= freeIndex && freeIndex < this.m_nodeCapacity);
+'#endif';
 			freeIndex = this.m_nodes[freeIndex].parent;
 			++freeCount;
 		}
 
+'#if @DEBUG';
 		b2Assert(this.GetHeight() == this.ComputeHeight());
-
 		b2Assert(this.m_nodeCount + freeCount == this.m_nodeCapacity);
+'#endif';
 	},
 
 	/// Compute the height of the binary tree in O(N) time. Should not be
@@ -336,7 +348,9 @@ b2DynamicTree.prototype =
 				continue;
 			}
 
+'#if @DEBUG';
 			b2Assert(node.IsLeaf() == false);
+'#endif';
 
 			var child1 = node.child1;
 			var child2 = node.child2;
@@ -468,7 +482,9 @@ b2DynamicTree.prototype =
 		// Expand the node pool as needed.
 		if (this.m_freeList == b2_nullNode)
 		{
+'#if @DEBUG';
 			b2Assert(this.m_nodeCount == this.m_nodeCapacity);
+'#endif';
 
 			// The free list is empty. Rebuild a bigger pool.
 			var oldNodes = this.m_nodes;
@@ -503,8 +519,10 @@ b2DynamicTree.prototype =
 
 	FreeNode: function(nodeId)
 	{
+'#if @DEBUG';
 		b2Assert(0 <= nodeId && nodeId < this.m_nodeCapacity);
 		b2Assert(0 < this.m_nodeCount);
+'#endif';
 		this.m_nodes[nodeId].parent = this.m_freeList;
 		this.m_nodes[nodeId].height = -1;
 		this.m_freeList = nodeId;
@@ -642,8 +660,10 @@ b2DynamicTree.prototype =
 			var child1 = this.m_nodes[index].child1;
 			var child2 = this.m_nodes[index].child2;
 
+'#if @DEBUG';
 			b2Assert(child1 != b2_nullNode);
 			b2Assert(child2 != b2_nullNode);
+'#endif';
 
 			this.m_nodes[index].height = 1 + b2Max(this.m_nodes[child1].height, this.m_nodes[child2].height);
 			this.m_nodes[index].aabb.Combine(this.m_nodes[child1].aabb, this.m_nodes[child2].aabb);
@@ -714,7 +734,9 @@ b2DynamicTree.prototype =
 
 	Balance: function(iA)
 	{
+'#if @DEBUG';
 		b2Assert(iA != b2_nullNode);
+'#endif';
 
 		var A = this.m_nodes[iA];
 		if (A.IsLeaf() || A.height < 2)
@@ -724,8 +746,10 @@ b2DynamicTree.prototype =
 
 		var iB = A.child1;
 		var iC = A.child2;
+'#if @DEBUG';
 		b2Assert(0 <= iB && iB < this.m_nodeCapacity);
 		b2Assert(0 <= iC && iC < this.m_nodeCapacity);
+'#endif';
 
 		var B = this.m_nodes[iB];
 		var C = this.m_nodes[iC];
@@ -739,8 +763,10 @@ b2DynamicTree.prototype =
 			var iG = C.child2;
 			var F = this.m_nodes[iF];
 			var G = this.m_nodes[iG];
+'#if @DEBUG';
 			b2Assert(0 <= iF && iF < this.m_nodeCapacity);
 			b2Assert(0 <= iG && iG < this.m_nodeCapacity);
+'#endif';
 
 			// Swap A and C
 			C.child1 = iA;
@@ -756,7 +782,9 @@ b2DynamicTree.prototype =
 				}
 				else
 				{
+'#if @DEBUG';
 					b2Assert(this.m_nodes[C.parent].child2 == iA);
+'#endif';
 					this.m_nodes[C.parent].child2 = iC;
 				}
 			}
@@ -799,8 +827,10 @@ b2DynamicTree.prototype =
 			var iE = B.child2;
 			var D = this.m_nodes[iD];
 			var E = this.m_nodes[iE];
+'#if @DEBUG';
 			b2Assert(0 <= iD && iD < this.m_nodeCapacity);
 			b2Assert(0 <= iE && iE < this.m_nodeCapacity);
+'#endif';
 
 			// Swap A and B
 			B.child1 = iA;
@@ -816,7 +846,9 @@ b2DynamicTree.prototype =
 				}
 				else
 				{
+'#if @DEBUG';
 					b2Assert(this.m_nodes[B.parent].child2 == iA);
+'#endif';
 					this.m_nodes[B.parent].child2 = iB;
 				}
 			}
@@ -860,7 +892,9 @@ b2DynamicTree.prototype =
 		if (typeof(nodeId) === 'undefined')
 			nodeId = this.m_root;
 
+'#if @DEBUG';
 		b2Assert(0 <= nodeId && nodeId < this.m_nodeCapacity);
+'#endif';
 		var node = this.m_nodes[nodeId];
 
 		if (node.IsLeaf())
@@ -880,10 +914,12 @@ b2DynamicTree.prototype =
 			return;
 		}
 
+'#if @DEBUG';
 		if (index == this.m_root)
 		{
 			b2Assert(this.m_nodes[index].parent == b2_nullNode);
 		}
+'#endif';
 
 		var node = this.m_nodes[index];
 
@@ -892,17 +928,21 @@ b2DynamicTree.prototype =
 
 		if (node.IsLeaf())
 		{
+'#if @DEBUG';
 			b2Assert(child1 == b2_nullNode);
 			b2Assert(child2 == b2_nullNode);
 			b2Assert(node.height == 0);
+'#endif';
 			return;
 		}
 
+'#if @DEBUG';
 		b2Assert(0 <= child1 && child1 < this.m_nodeCapacity);
 		b2Assert(0 <= child2 && child2 < this.m_nodeCapacity);
 
 		b2Assert(this.m_nodes[child1].parent == index);
 		b2Assert(this.m_nodes[child2].parent == index);
+'#endif';
 
 		this.ValidateStructure(child1);
 		this.ValidateStructure(child2);
@@ -921,26 +961,35 @@ b2DynamicTree.prototype =
 
 		if (node.IsLeaf())
 		{
+'#if @DEBUG';
 			b2Assert(child1 == b2_nullNode);
 			b2Assert(child2 == b2_nullNode);
 			b2Assert(node.height == 0);
+'#endif';
 			return;
 		}
 
+'#if @DEBUG';
 		b2Assert(0 <= child1 && child1 < this.m_nodeCapacity);
 		b2Assert(0 <= child2 && child2 < this.m_nodeCapacity);
+'#endif';
 
 		var height1 = this.m_nodes[child1].height;
 		var height2 = this.m_nodes[child2].height;
 		var height;
 		height = 1 + b2Max(height1, height2);
+
+'#if @DEBUG';
 		b2Assert(node.height == height);
+'#endif';
 
 		var aabb = new b2AABB();
 		aabb.Combine(this.m_nodes[child1].aabb, this.m_nodes[child2].aabb);
 
+'#if @DEBUG';
 		b2Assert(b2Vec2.Equals(aabb.lowerBound, node.aabb.lowerBound));
 		b2Assert(b2Vec2.Equals(aabb.upperBound, node.aabb.upperBound));
+'#endif';
 
 		this.ValidateMetrics(child1);
 		this.ValidateMetrics(child2);

@@ -18,6 +18,7 @@
 
 "use strict";
 
+'#if @DEBUG';
 function b2Assert(A)
 {
 	if (!A)
@@ -26,6 +27,7 @@ function b2Assert(A)
 		debugger;
 	}
 }
+'#endif';
 
 var b2_maxFloat		= Number.MAX_VALUE;
 var b2_epsilon		= 2.2204460492503131e-016;

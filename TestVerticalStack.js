@@ -43,7 +43,6 @@ TestVerticalStack.prototype =
 				bd.type = b2Body.b2_dynamicBody;
 
 				var n = j * e_rowCount + i;
-				b2Assert(n < e_rowCount * e_columnCount);
 				this.m_indices[n] = n;
 				bd.userData = this.m_indices + n;
 

@@ -352,8 +352,10 @@ b2CircleContact.prototype =
 	Create: function(fixtureA, unused1, fixtureB, unused2)
 	{
 		this.parent.prototype.Create.call(this, fixtureA, 0, fixtureB, 0);
+'#if @DEBUG';
 		b2Assert(this.m_fixtureA.GetType() == b2Shape.e_circle);
 		b2Assert(this.m_fixtureB.GetType() == b2Shape.e_circle);
+'#endif';
 	}
 };
 
@@ -379,8 +381,10 @@ b2ChainAndCircleContact.prototype =
 	Create: function(fixtureA, indexA, fixtureB, indexB)
 	{
 		this.parent.prototype.Create.call(this, fixtureA, indexA, fixtureB, indexB);
+'#if @DEBUG';
 		b2Assert(this.m_fixtureA.GetType() == b2Shape.e_chain);
 		b2Assert(this.m_fixtureB.GetType() == b2Shape.e_circle);
+'#endif';
 	}
 };
 
@@ -405,8 +409,10 @@ b2ChainAndPolygonContact.prototype =
 	Create: function(fixtureA, indexA, fixtureB, indexB)
 	{
 		this.parent.prototype.Create.call(this, fixtureA, indexA, fixtureB, indexB);
+'#if @DEBUG';
 		b2Assert(this.m_fixtureA.GetType() == b2Shape.e_chain);
 		b2Assert(this.m_fixtureB.GetType() == b2Shape.e_polygon);
+'#endif';
 	}
 };
 
@@ -435,8 +441,10 @@ b2EdgeAndCircleContact.prototype =
 	Create: function(fixtureA, indexA, fixtureB, indexB)
 	{
 		this.parent.prototype.Create.call(this, fixtureA, 0, fixtureB, 0);
+'#if @DEBUG';
 		b2Assert(this.m_fixtureA.GetType() == b2Shape.e_edge);
 		b2Assert(this.m_fixtureB.GetType() == b2Shape.e_circle);
+'#endif';
 	}
 };
 
@@ -465,8 +473,10 @@ b2EdgeAndPolygonContact.prototype =
 	Create: function(fixtureA, indexA, fixtureB, indexB)
 	{
 		this.parent.prototype.Create.call(this, fixtureA, 0, fixtureB, 0);
+'#if @DEBUG';
 		b2Assert(this.m_fixtureA.GetType() == b2Shape.e_edge);
 		b2Assert(this.m_fixtureB.GetType() == b2Shape.e_polygon);
+'#endif';
 	}
 };
 
@@ -495,8 +505,10 @@ b2PolygonAndCircleContact.prototype =
 	Create: function(fixtureA, indexA, fixtureB, indexB)
 	{
 		this.parent.prototype.Create.call(this, fixtureA, 0, fixtureB, 0);
+'#if @DEBUG';
 		b2Assert(this.m_fixtureA.GetType() == b2Shape.e_polygon);
 		b2Assert(this.m_fixtureB.GetType() == b2Shape.e_circle);
+'#endif';
 	}
 };
 
@@ -526,8 +538,10 @@ b2PolygonContact.prototype =
 	Create: function(fixtureA, indexA, fixtureB, indexB)
 	{
 		this.parent.prototype.Create.call(this, fixtureA, 0, fixtureB, 0);
+'#if @DEBUG';
 		b2Assert(this.m_fixtureA.GetType() == b2Shape.e_polygon);
 		b2Assert(this.m_fixtureB.GetType() == b2Shape.e_polygon);
+'#endif';
 	}
 };
 
@@ -542,8 +556,10 @@ b2PolygonContact._extend(b2Contact);
 b2Contact.AddType = function(fcn,
 						type1, type2)
 {
+'#if @DEBUG';
 	b2Assert(0 <= type1 && type1 < b2Shape.e_typeCount);
 	b2Assert(0 <= type2 && type2 < b2Shape.e_typeCount);
+'#endif';
 
 	if (!b2Contact.s_registers[type1])
 		b2Contact.s_registers[type1] = [];
@@ -608,8 +624,10 @@ b2Contact.Create = function(fixtureA, indexA, fixtureB, indexB)
 	var type1 = fixtureA.GetType();
 	var type2 = fixtureB.GetType();
 
+'#if @DEBUG';
 	b2Assert(0 <= type1 && type1 < b2Shape.e_typeCount);
 	b2Assert(0 <= type2 && type2 < b2Shape.e_typeCount);
+'#endif';
 
 	var fcn = b2Contact.s_registers[type1][type2].fcn;
 
@@ -630,7 +648,9 @@ b2Contact.Create = function(fixtureA, indexA, fixtureB, indexB)
 
 b2Contact.Destroy = function(contact)
 {
+'#if @DEBUG';
 	b2Assert(b2Contact.s_initialized == true);
+'#endif';
 
 	var fixtureA = contact.m_fixtureA;
 	var fixtureB = contact.m_fixtureB;
@@ -646,8 +666,10 @@ b2Contact.Destroy = function(contact)
 	var typeA = fixtureA.GetType();
 	var typeB = fixtureB.GetType();
 
+'#if @DEBUG';
 	b2Assert(0 <= typeA && typeB < b2Shape.e_typeCount);
 	b2Assert(0 <= typeA && typeB < b2Shape.e_typeCount);
+'#endif';
 
 	b2Contact.s_registers[typeA][typeB].fcn.garbage.push(contact);
 };

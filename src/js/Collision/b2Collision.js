@@ -641,7 +641,9 @@ function b2FindIncidentEdge(c,
 	var vertices2 = poly2.m_vertices;
 	var normals2 = poly2.m_normals;
 
+'#if @DEBUG';
 	b2Assert(0 <= edge1 && edge1 < poly1.m_count);
+'#endif';
 
 	// Get the normal of the reference edge in poly2's frame.
 	//var normal1 = b2MulT_r_v2(xf2.q, b2Mul_r_v2(xf1.q, normals1[edge1]));
@@ -921,7 +923,9 @@ function b2CollideEdgeAndCircle(manifold,
 
 	// Region AB
 	var den = b2Dot_v2_v2(e, e);
+'#if @DEBUG';
 	b2Assert(den > 0.0);
+'#endif';
 	var P = b2Vec2.Multiply((1.0 / den), b2Vec2.Add(b2Vec2.Multiply(u, A), b2Vec2.Multiply(v, B)));
 	var d = b2Vec2.Subtract(Q, P);
 	var dd = b2Dot_v2_v2(d, d);
@@ -1526,39 +1530,29 @@ function b2ClipSegmentToLine(vOut, vIn,
 	return numOut;
 }
 
+var _tso_i = new b2DistanceInput();
+var _tso_c = new b2SimplexCache();
+var _tso_o = new b2DistanceOutput();
+
 /// Determine if two generic shapes overlap.
 function b2TestShapeOverlap(shapeA, indexA,
 					shapeB, indexB,
 					xfA, xfB)
 {
-	var input = new b2DistanceInput();
-	input.proxyA.Set(shapeA, indexA);
-	input.proxyB.Set(shapeB, indexB);
-	input.transformA = xfA;
-	input.transformB = xfB;
-	input.useRadii = true;
+	_tso_i.proxyA.Set(shapeA, indexA);
+	_tso_i.proxyB.Set(shapeB, indexB);
+	_tso_i.transformA = xfA;
+	_tso_i.transformB = xfB;
+	_tso_i.useRadii = true;
 
-	var cache = new b2SimplexCache();
-	cache.count = 0;
+	_tso_c.count = 0;
 
-	var output = new b2DistanceOutput();
+	b2DistanceFunc(_tso_o, _tso_c, _tso_i);
 
-	b2DistanceFunc(output, cache, input);
-
-	return output.distance < 10.0 * b2_epsilon;
+	return _tso_o.distance < 10.0 * b2_epsilon;
 }
 
 function b2TestOverlap(a, b)
 {
-	var d1, d2;
-	d1 = b2Vec2.Subtract(b.lowerBound, a.upperBound);
-	d2 = b2Vec2.Subtract(a.lowerBound, b.upperBound);
-
-	if (d1.x > 0.0 || d1.y > 0.0)
-		return false;
-
-	if (d2.x > 0.0 || d2.y > 0.0)
-		return false;
-
-	return true;
+	return !(b.lowerBound.x - a.upperBound.x > 0.0 || b.lowerBound.y - a.upperBound.y > 0.0 || a.lowerBound.x - b.upperBound.x > 0.0 || a.lowerBound.y - b.upperBound.y > 0.0);
 }

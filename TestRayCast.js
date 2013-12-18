@@ -103,8 +103,6 @@ RayCastMultipleCallback.prototype =
 			}
 		}
 
-		b2Assert(this.m_count < RayCastMultipleCallback.e_maxCount);
-
 		this.m_points[this.m_count] = point.Clone();
 		this.m_normals[this.m_count] = normal.Clone();
 		++this.m_count;

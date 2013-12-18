@@ -40,7 +40,6 @@ PolyShapesCallback.prototype =
 			{
 				var poly = fixture.GetShape();
 				var vertexCount = poly.m_count;
-				b2Assert(vertexCount <= b2_maxPolygonVertices);
 				var vertices = [];
 
 				for (var i = 0; i < vertexCount; ++i)

@@ -11,6 +11,39 @@
 		<script>
 			window.onload = function()
 			{
+				var argStr = decodeURI(window.location.search.substr(1));
+
+				if (argStr)
+				{
+					argStr = argStr.split('&');
+					var args = {};
+
+					for (var i = 0; i < argStr.length; ++i)
+					{
+						argStr[i] = argStr[i].split('=');
+
+						if (argStr[i][1][0] === '"')
+							argStr[i][1] = argStr[i][1].substring(1, argStr[i][1].length - 1);
+
+						args[argStr[i][0]] = argStr[i][1];
+					}
+
+					if (args['pArgs'])
+					{
+						var a = args['pArgs'].split(';');
+
+						for (var i = 0; i < a.length; ++i)
+						{
+							var ns = a[i].split(':');
+
+							if (ns.length === 1)
+								definitions[ns[0]] = true;
+							else
+								definitions[ns[0]] = ns[1];
+						}
+					}
+				}
+
 				window['currentDirectory'] = '/Box2D/build/compiler';
 				build();
 			};

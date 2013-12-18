@@ -22,7 +22,7 @@
 function b2CircleShape()
 {
 	this.parent.call(this);
-	
+
 	this.m_type = b2Shape.e_circle;
 	this.m_radius = 0;
 	this.m_p = new b2Vec2();
@@ -118,7 +118,9 @@ b2CircleShape.prototype =
 	/// Get a vertex by index. Used by b2Distance.
 	GetVertex: function(index)
 	{
+'#if @DEBUG';
 		b2Assert(index == 0);
+'#endif';
 		return this.m_p;
 	},
 

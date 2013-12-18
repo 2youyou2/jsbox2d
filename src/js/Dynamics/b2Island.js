@@ -273,8 +273,10 @@ b2Island.prototype =
 
 	SolveTOI: function(subStep, toiIndexA, toiIndexB)
 	{
+'#if @DEBUG';
 		b2Assert(toiIndexA < this.m_bodyCount);
 		b2Assert(toiIndexB < this.m_bodyCount);
+'#endif';
 
 		// Initialize the body state.
 		for (var i = 0; i < this.m_bodyCount; ++i)
@@ -368,7 +370,9 @@ b2Island.prototype =
 
 	AddBody: function(body)
 	{
+'#if @DEBUG';
 		b2Assert(this.m_bodyCount < this.m_bodyCapacity);
+'#endif';
 		body.m_islandIndex = this.m_bodyCount;
 		this.m_bodies[this.m_bodyCount] = body;
 
@@ -383,13 +387,17 @@ b2Island.prototype =
 
 	AddContact: function(contact)
 	{
+'#if @DEBUG';
 		b2Assert(this.m_contactCount < this.m_contactCapacity);
+'#endif';
 		this.m_contacts[this.m_contactCount++] = contact;
 	},
 
 	AddJoint: function(joint)
 	{
+'#if @DEBUG';
 		b2Assert(this.m_jointCount < this.m_jointCapacity);
+'#endif';
 		this.m_joints[this.m_jointCount++] = joint;
 	},
 

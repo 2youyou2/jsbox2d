@@ -185,7 +185,9 @@ b2RevoluteJoint.prototype =
 	/// Set the joint limits in radians.
 	SetLimits: function(lower, upper)
 	{
+'#if @DEBUG';
 		b2Assert(lower <= upper);
+'#endif';
 
 		if (lower != this.m_lowerAngle || upper != this.m_upperAngle)
 		{

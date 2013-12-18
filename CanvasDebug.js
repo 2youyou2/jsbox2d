@@ -1,7 +1,8 @@
-function CanvasDebugDraw()
+function CanvasDebugDraw(ctx)
 {
 	this.parent.call(this);
-	this.context = null;
+	this.context = ctx;
+	this.scale = 1;
 }
 
 CanvasDebugDraw.prototype =

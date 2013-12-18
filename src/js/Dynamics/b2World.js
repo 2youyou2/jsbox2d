@@ -143,7 +143,9 @@ b2World.prototype =
 	/// @warning This function is locked during callbacks.
 	CreateBody: function(def)
 	{
+'#if @DEBUG';
 		b2Assert(this.IsLocked() == false);
+'#endif';
 		if (this.IsLocked())
 		{
 			return null;
@@ -170,8 +172,10 @@ b2World.prototype =
 	/// @warning This function is locked during callbacks.
 	DestroyBody: function(b)
 	{
+'#if @DEBUG';
 		b2Assert(this.m_bodyCount > 0);
 		b2Assert(this.IsLocked() == false);
+'#endif';
 		if (this.IsLocked())
 		{
 			return;
@@ -252,7 +256,9 @@ b2World.prototype =
 	/// @warning This function is locked during callbacks.
 	CreateJoint: function(def)
 	{
+'#if @DEBUG';
 		b2Assert(this.IsLocked() == false);
+'#endif';
 		if (this.IsLocked())
 		{
 			return null;
@@ -314,7 +320,9 @@ b2World.prototype =
 	/// @warning This function is locked during callbacks.
 	DestroyJoint: function(j)
 	{
+'#if @DEBUG';
 		b2Assert(this.IsLocked() == false);
+'#endif';
 		if (this.IsLocked())
 		{
 			return;
@@ -386,7 +394,9 @@ b2World.prototype =
 
 		b2Joint.Destroy(j);
 
+'#if @DEBUG';
 		b2Assert(this.m_jointCount > 0);
+'#endif';
 		--this.m_jointCount;
 
 		// If the joint prevents collisions, then flag any contacts for filtering.
@@ -775,7 +785,9 @@ b2World.prototype =
 	/// @param newOrigin the new origin with respect to the old origin
 	ShiftOrigin: function(newOrigin)
 	{
+'#if @DEBUG';
 		b2Assert((this.m_flags & b2World.e_locked) == 0);
+'#endif';
 		if ((this.m_flags & b2World.e_locked) == b2World.e_locked)
 		{
 			return;
@@ -856,7 +868,9 @@ b2World.prototype =
 			{
 				// Grab the next body off the stack and add it to the island.
 				var b = stack[--stackCount];
+'#if @DEBUG';
 				b2Assert(b.IsActive() == true);
+'#endif';
 				this.p_island.AddBody(b);
 
 				// Make sure the body is awake.
@@ -906,7 +920,9 @@ b2World.prototype =
 						continue;
 					}
 
+'#if @DEBUG';
 					b2Assert(stackCount < stackSize);
+'#endif';
 					stack[stackCount++] = other;
 					other.m_flags |= b2Body.e_islandFlag;
 				}
@@ -935,7 +951,9 @@ b2World.prototype =
 						continue;
 					}
 
+'#if @DEBUG';
 					b2Assert(stackCount < stackSize);
+'#endif';
 					stack[stackCount++] = other;
 					other.m_flags |= b2Body.e_islandFlag;
 				}
@@ -1044,7 +1062,9 @@ b2World.prototype =
 
 					var typeA = bA.m_type;
 					var typeB = bB.m_type;
+'#if @DEBUG';
 					b2Assert(typeA == b2Body.b2_dynamicBody || typeB == b2Body.b2_dynamicBody);
+'#endif';
 
 					var activeA = bA.IsAwake() && typeA != b2Body.b2_staticBody;
 					var activeB = bB.IsAwake() && typeB != b2Body.b2_staticBody;
@@ -1079,7 +1099,9 @@ b2World.prototype =
 						bB.m_sweep.Advance(alpha0);
 					}
 
+'#if @DEBUG';
 					b2Assert(alpha0 < 1.0);
+'#endif';
 
 					var indexA = c.GetChildIndexA();
 					var indexB = c.GetChildIndexB();
@@ -1389,7 +1411,9 @@ b2World.prototype =
 			{
 				var poly = fixture.GetShape();
 				var vertexCount = poly.m_count;
+'#if @DEBUG';
 				b2Assert(vertexCount <= b2_maxPolygonVertices);
+'#endif';
 				var vertices = new Array(b2_maxPolygonVertices);
 
 				for (var i = 0; i < vertexCount; ++i)

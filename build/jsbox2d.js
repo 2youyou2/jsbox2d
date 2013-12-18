@@ -171,6 +171,7 @@ var b2Profiler = (function()
 
 "use strict";
 
+
 function b2Assert(A)
 {
 	if (!A)
@@ -179,6 +180,7 @@ function b2Assert(A)
 		debugger;
 	}
 }
+
 
 var b2_maxFloat		= Number.MAX_VALUE;
 var b2_epsilon		= 2.2204460492503131e-016;
@@ -886,7 +888,9 @@ b2Sweep.prototype =
 	/// @param alpha the new initial time.
 	Advance: function(alpha)
 	{
+
 		b2Assert(this.alpha0 < 1.0);
+
 		var beta = (alpha - this.alpha0) / (1.0 - this.alpha0);
 		this.c0.Add(b2Vec2.Multiply(beta, b2Vec2.Subtract(this.c, this.c0)));
 		this.a0 += beta * (this.a - this.a0);
@@ -1909,7 +1913,9 @@ function b2FindIncidentEdge(c,
 	var vertices2 = poly2.m_vertices;
 	var normals2 = poly2.m_normals;
 
+
 	b2Assert(0 <= edge1 && edge1 < poly1.m_count);
+
 
 	// Get the normal of the reference edge in poly2's frame.
 	//var normal1 = b2MulT_r_v2(xf2.q, b2Mul_r_v2(xf1.q, normals1[edge1]));
@@ -2189,7 +2195,9 @@ function b2CollideEdgeAndCircle(manifold,
 
 	// Region AB
 	var den = b2Dot_v2_v2(e, e);
+
 	b2Assert(den > 0.0);
+
 	var P = b2Vec2.Multiply((1.0 / den), b2Vec2.Add(b2Vec2.Multiply(u, A), b2Vec2.Multiply(v, B)));
 	var d = b2Vec2.Subtract(Q, P);
 	var dd = b2Dot_v2_v2(d, d);
@@ -2794,41 +2802,31 @@ function b2ClipSegmentToLine(vOut, vIn,
 	return numOut;
 }
 
+var _tso_i = new b2DistanceInput();
+var _tso_c = new b2SimplexCache();
+var _tso_o = new b2DistanceOutput();
+
 /// Determine if two generic shapes overlap.
 function b2TestShapeOverlap(shapeA, indexA,
 					shapeB, indexB,
 					xfA, xfB)
 {
-	var input = new b2DistanceInput();
-	input.proxyA.Set(shapeA, indexA);
-	input.proxyB.Set(shapeB, indexB);
-	input.transformA = xfA;
-	input.transformB = xfB;
-	input.useRadii = true;
+	_tso_i.proxyA.Set(shapeA, indexA);
+	_tso_i.proxyB.Set(shapeB, indexB);
+	_tso_i.transformA = xfA;
+	_tso_i.transformB = xfB;
+	_tso_i.useRadii = true;
 
-	var cache = new b2SimplexCache();
-	cache.count = 0;
+	_tso_c.count = 0;
 
-	var output = new b2DistanceOutput();
+	b2DistanceFunc(_tso_o, _tso_c, _tso_i);
 
-	b2DistanceFunc(output, cache, input);
-
-	return output.distance < 10.0 * b2_epsilon;
+	return _tso_o.distance < 10.0 * b2_epsilon;
 }
 
 function b2TestOverlap(a, b)
 {
-	var d1, d2;
-	d1 = b2Vec2.Subtract(b.lowerBound, a.upperBound);
-	d2 = b2Vec2.Subtract(a.lowerBound, b.upperBound);
-
-	if (d1.x > 0.0 || d1.y > 0.0)
-		return false;
-
-	if (d2.x > 0.0 || d2.y > 0.0)
-		return false;
-
-	return true;
+	return !(b.lowerBound.x - a.upperBound.x > 0.0 || b.lowerBound.y - a.upperBound.y > 0.0 || a.lowerBound.x - b.upperBound.x > 0.0 || a.lowerBound.y - b.upperBound.y > 0.0);
 }
 /*
 * Copyright (c) 2006-2009 Erin Catto http://www.box2d.org
@@ -2955,7 +2953,7 @@ b2Shape.e_typeCount = 4;
 function b2CircleShape()
 {
 	this.parent.call(this);
-	
+
 	this.m_type = b2Shape.e_circle;
 	this.m_radius = 0;
 	this.m_p = new b2Vec2();
@@ -3051,7 +3049,9 @@ b2CircleShape.prototype =
 	/// Get a vertex by index. Used by b2Distance.
 	GetVertex: function(index)
 	{
+
 		b2Assert(index == 0);
+
 		return this.m_p;
 	},
 
@@ -3324,16 +3324,20 @@ b2ChainShape.prototype =
 	/// @param count the vertex count
 	CreateLoop: function(vertices, count)
 	{
+
 		b2Assert(this.m_vertices == null && this.m_count == 0);
 		b2Assert(count >= 3);
+
 
 		for (var i = 1; i < count; ++i)
 		{
 			var v1 = vertices[i-1];
 			var v2 = vertices[i];
 
+
 			// If the code crashes here, it means your vertices are too close together.
 			b2Assert(b2DistanceSquared(v1, v2) > b2_linearSlop * b2_linearSlop);
+
 		}
 
 		this.m_count = count + 1;
@@ -3355,16 +3359,20 @@ b2ChainShape.prototype =
 	/// @param count the vertex count
 	CreateChain: function(vertices, count)
 	{
+
 		b2Assert(this.m_vertices == null && this.m_count == 0);
 		b2Assert(count >= 2);
+
 
 		for (var i = 1; i < count; ++i)
 		{
 			var v1 = vertices[i-1];
 			var v2 = vertices[i];
 
+
 			// If the code crashes here, it means your vertices are too close together.
 			b2Assert(b2DistanceSquared(v1, v2) > b2_linearSlop * b2_linearSlop);
+
 		}
 
 		this.m_count = count;
@@ -3424,7 +3432,9 @@ b2ChainShape.prototype =
 	/// Get a child edge.
 	GetChildEdge: function(edge, index)
 	{
+
 		b2Assert(0 <= index && index < this.m_count - 1);
+
 		edge.m_type = b2Shape.e_edge;
 		edge.m_radius = this.m_radius;
 
@@ -3465,7 +3475,9 @@ b2ChainShape.prototype =
 	RayCast: function(output, input,
 					xf, childIndex)
 	{
+
 		b2Assert(childIndex < this.m_count);
+
 
 		var edgeShape = new b2EdgeShape();
 
@@ -3485,7 +3497,9 @@ b2ChainShape.prototype =
 	/// @see b2Shape::ComputeAABB
 	ComputeAABB: function(aabb, xf, childIndex)
 	{
+
 		b2Assert(childIndex < this.m_count);
+
 
 		var i1 = childIndex;
 		var i2 = childIndex + 1;
@@ -3589,7 +3603,7 @@ b2ChainShape._extend(b2Shape);
 function b2PolygonShape()
 {
 	this.parent.call(this);
-	
+
 	this.m_type = b2Shape.e_polygon;
 	this.m_radius = b2_polygonRadius;
 	this.m_count = 0;
@@ -3632,7 +3646,9 @@ b2PolygonShape.prototype =
 	/// may lead to poor stacking behavior.
 	Set: function(vertices, count)
 	{
+
 		b2Assert(3 <= count && count <= b2_maxPolygonVertices);
+
 
 		if (count < 3)
 		{
@@ -3669,8 +3685,10 @@ b2PolygonShape.prototype =
 		n = tempCount;
 		if (n < 3)
 		{
+
 			// Polygon is degenerate.
 			b2Assert(false);
+
 			this.SetAsBox(1.0, 1.0);
 			return;
 		}
@@ -3746,7 +3764,9 @@ b2PolygonShape.prototype =
 			var i1 = i;
 			var i2 = i + 1 < m ? i + 1 : 0;
 			var edge = b2Vec2.Subtract(this.m_vertices[i2], this.m_vertices[i1]);
+
 			b2Assert(edge.LengthSquared() > b2_epsilon * b2_epsilon);
+
 			this.m_normals[i] = b2Cross_v2_f(edge, 1.0).Clone();
 			this.m_normals[i].Normalize();
 		}
@@ -3863,7 +3883,9 @@ b2PolygonShape.prototype =
 			}
 		}
 
+
 		b2Assert(0.0 <= lower && lower <= input.maxFraction);
+
 
 		if (index >= 0)
 		{
@@ -3922,6 +3944,7 @@ b2PolygonShape.prototype =
 
 		b2Assert(this.m_count >= 3);
 
+
 		var center = new b2Vec2(0.0, 0.0);
 		var area = 0.0;
 		var I = 0.0;
@@ -3966,7 +3989,9 @@ b2PolygonShape.prototype =
 		massData.mass = density * area;
 
 		// Center of mass
+
 		b2Assert(area > b2_epsilon);
+
 		center.Multiply(1.0 / area);
 		massData.center = b2Vec2.Add(center, s);
 
@@ -3983,7 +4008,9 @@ b2PolygonShape.prototype =
 	/// Get a vertex by index.
 	GetVertex: function(index)
 	{
+
 		b2Assert(0 <= index && index < this.m_count);
+
 		return this.m_vertices[index];
 	},
 
@@ -4060,7 +4087,9 @@ b2PolygonShape.prototype =
 
 b2PolygonShape.ComputeCentroid = function(vs, count)
 {
+
 	b2Assert(count >= 3);
+
 
 	var c = new b2Vec2();
 	var area = 0.0;
@@ -4099,7 +4128,9 @@ b2PolygonShape.ComputeCentroid = function(vs, count)
 	}
 
 	// Centroid
+
 	b2Assert(area > b2_epsilon);
+
 	c.Multiply(1.0 / area);
 	return c;
 };
@@ -4410,6 +4441,7 @@ b2DistanceProxy.prototype =
 		case b2Shape.e_chain:
 			{
 				var chain = shape;
+
 				b2Assert(0 <= index && index < chain.m_count);
 
 				this.m_vertices = [ chain.m_vertices[index] ];
@@ -4436,8 +4468,10 @@ b2DistanceProxy.prototype =
 			}
 			break;
 
+
 		default:
 			b2Assert(false);
+
 		}
 	},
 
@@ -4486,7 +4520,9 @@ b2DistanceProxy.prototype =
 	/// Get a vertex by index. Used by b2Distance.
 	GetVertex: function(index)
 	{
+
 		b2Assert(0 <= index && index < this.m_count);
+
 		return this.m_vertices[index];
 	}
 };
@@ -4557,7 +4593,9 @@ b2Simplex.prototype =
 					proxyA, transformA,
 					proxyB, transformB)
 	{
+
 		b2Assert(cache.count <= 3);
+
 
 		// Copy data from cache.
 		this.m_count = cache.count;
@@ -4639,9 +4677,11 @@ b2Simplex.prototype =
 				}
 			}
 
+
 		default:
 			b2Assert(false);
 			return new b2Vec2(0, 0);
+
 		}
 	},
 
@@ -4649,10 +4689,6 @@ b2Simplex.prototype =
 	{
 		switch (this.m_count)
 		{
-		case 0:
-			b2Assert(false);
-			return new b2Vec2(0, 0);
-
 		case 1:
 			return this.m_v[0].w;
 
@@ -4662,9 +4698,11 @@ b2Simplex.prototype =
 		case 3:
 			return new b2Vec2(0, 0);
 
+
 		default:
 			b2Assert(false);
 			return new b2Vec2(0, 0);
+
 		}
 	},
 
@@ -4672,10 +4710,6 @@ b2Simplex.prototype =
 	{
 		switch (this.m_count)
 		{
-		case 0:
-			b2Assert(false);
-			break;
-
 		case 1:
 			pA.Assign(this.m_v[0].wA);
 			pB.Assign(this.m_v[0].wB);
@@ -4691,9 +4725,11 @@ b2Simplex.prototype =
 			pB.Assign(pA);
 			break;
 
+
 		default:
 			b2Assert(false);
 			break;
+
 		}
 	},
 
@@ -4701,10 +4737,6 @@ b2Simplex.prototype =
 	{
 		switch (this.m_count)
 		{
-		case 0:
-			b2Assert(false);
-			return 0.0;
-
 		case 1:
 			return 0.0;
 
@@ -4714,9 +4746,11 @@ b2Simplex.prototype =
 		case 3:
 			return b2Cross_v2_v2(b2Vec2.Subtract(this.m_v[1].w, this.m_v[0].w), b2Vec2.Subtract(this.m_v[2].w, this.m_v[0].w));
 
+
 		default:
 			b2Assert(false);
 			return 0.0;
+
 		}
 	},
 
@@ -4948,8 +4982,10 @@ function b2DistanceFunc(output,
 			simplex.Solve3();
 			break;
 
+
 		default:
 			b2Assert(false);
+
 		}
 
 		// If we have 3 points, then the origin is in the corresponding triangle.
@@ -5155,8 +5191,10 @@ b2DynamicTree.prototype =
 	/// Destroy a proxy. This asserts if the id is invalid.
 	DestroyProxy: function(proxyId)
 	{
+
 		b2Assert(0 <= proxyId && proxyId < this.m_nodeCapacity);
 		b2Assert(this.m_nodes[proxyId].IsLeaf());
+
 
 		this.RemoveLeaf(proxyId);
 		this.FreeNode(proxyId);
@@ -5168,9 +5206,10 @@ b2DynamicTree.prototype =
 	/// @return true if the proxy was re-inserted.
 	MoveProxy: function(proxyId, aabb, displacement)
 	{
-		b2Assert(0 <= proxyId && proxyId < this.m_nodeCapacity);
 
+		b2Assert(0 <= proxyId && proxyId < this.m_nodeCapacity);
 		b2Assert(this.m_nodes[proxyId].IsLeaf());
+
 
 		if (this.m_nodes[proxyId].aabb.Contains(aabb))
 		{
@@ -5213,14 +5252,18 @@ b2DynamicTree.prototype =
 	/// @return the proxy user data or 0 if the id is invalid.
 	GetUserData: function(proxyId)
 	{
+
 		b2Assert(0 <= proxyId && proxyId < this.m_nodeCapacity);
+
 		return this.m_nodes[proxyId].userData;
 	},
 
 	/// Get the fat AABB for a proxy.
 	GetFatAABB: function(proxyId)
 	{
+
 		b2Assert(0 <= proxyId && proxyId < this.m_nodeCapacity);
+
 		return this.m_nodes[proxyId].aabb;
 	},
 
@@ -5272,7 +5315,9 @@ b2DynamicTree.prototype =
 		var p1 = input.p1;
 		var p2 = input.p2;
 		var r = b2Vec2.Subtract(p2, p1);
+
 		b2Assert(r.LengthSquared() > 0.0);
+
 		r.Normalize();
 
 		// v is perpendicular to the segment.
@@ -5362,14 +5407,17 @@ b2DynamicTree.prototype =
 		var freeIndex = this.m_freeList;
 		while (freeIndex != b2_nullNode)
 		{
+
 			b2Assert(0 <= freeIndex && freeIndex < this.m_nodeCapacity);
+
 			freeIndex = this.m_nodes[freeIndex].parent;
 			++freeCount;
 		}
 
-		b2Assert(this.GetHeight() == this.ComputeHeight());
 
+		b2Assert(this.GetHeight() == this.ComputeHeight());
 		b2Assert(this.m_nodeCount + freeCount == this.m_nodeCapacity);
+
 	},
 
 	/// Compute the height of the binary tree in O(N) time. Should not be
@@ -5397,7 +5445,9 @@ b2DynamicTree.prototype =
 				continue;
 			}
 
+
 			b2Assert(node.IsLeaf() == false);
+
 
 			var child1 = node.child1;
 			var child2 = node.child2;
@@ -5529,7 +5579,9 @@ b2DynamicTree.prototype =
 		// Expand the node pool as needed.
 		if (this.m_freeList == b2_nullNode)
 		{
+
 			b2Assert(this.m_nodeCount == this.m_nodeCapacity);
+
 
 			// The free list is empty. Rebuild a bigger pool.
 			var oldNodes = this.m_nodes;
@@ -5564,8 +5616,10 @@ b2DynamicTree.prototype =
 
 	FreeNode: function(nodeId)
 	{
+
 		b2Assert(0 <= nodeId && nodeId < this.m_nodeCapacity);
 		b2Assert(0 < this.m_nodeCount);
+
 		this.m_nodes[nodeId].parent = this.m_freeList;
 		this.m_nodes[nodeId].height = -1;
 		this.m_freeList = nodeId;
@@ -5703,8 +5757,10 @@ b2DynamicTree.prototype =
 			var child1 = this.m_nodes[index].child1;
 			var child2 = this.m_nodes[index].child2;
 
+
 			b2Assert(child1 != b2_nullNode);
 			b2Assert(child2 != b2_nullNode);
+
 
 			this.m_nodes[index].height = 1 + b2Max(this.m_nodes[child1].height, this.m_nodes[child2].height);
 			this.m_nodes[index].aabb.Combine(this.m_nodes[child1].aabb, this.m_nodes[child2].aabb);
@@ -5775,7 +5831,9 @@ b2DynamicTree.prototype =
 
 	Balance: function(iA)
 	{
+
 		b2Assert(iA != b2_nullNode);
+
 
 		var A = this.m_nodes[iA];
 		if (A.IsLeaf() || A.height < 2)
@@ -5785,8 +5843,10 @@ b2DynamicTree.prototype =
 
 		var iB = A.child1;
 		var iC = A.child2;
+
 		b2Assert(0 <= iB && iB < this.m_nodeCapacity);
 		b2Assert(0 <= iC && iC < this.m_nodeCapacity);
+
 
 		var B = this.m_nodes[iB];
 		var C = this.m_nodes[iC];
@@ -5800,8 +5860,10 @@ b2DynamicTree.prototype =
 			var iG = C.child2;
 			var F = this.m_nodes[iF];
 			var G = this.m_nodes[iG];
+
 			b2Assert(0 <= iF && iF < this.m_nodeCapacity);
 			b2Assert(0 <= iG && iG < this.m_nodeCapacity);
+
 
 			// Swap A and C
 			C.child1 = iA;
@@ -5817,7 +5879,9 @@ b2DynamicTree.prototype =
 				}
 				else
 				{
+
 					b2Assert(this.m_nodes[C.parent].child2 == iA);
+
 					this.m_nodes[C.parent].child2 = iC;
 				}
 			}
@@ -5860,8 +5924,10 @@ b2DynamicTree.prototype =
 			var iE = B.child2;
 			var D = this.m_nodes[iD];
 			var E = this.m_nodes[iE];
+
 			b2Assert(0 <= iD && iD < this.m_nodeCapacity);
 			b2Assert(0 <= iE && iE < this.m_nodeCapacity);
+
 
 			// Swap A and B
 			B.child1 = iA;
@@ -5877,7 +5943,9 @@ b2DynamicTree.prototype =
 				}
 				else
 				{
+
 					b2Assert(this.m_nodes[B.parent].child2 == iA);
+
 					this.m_nodes[B.parent].child2 = iB;
 				}
 			}
@@ -5921,7 +5989,9 @@ b2DynamicTree.prototype =
 		if (typeof(nodeId) === 'undefined')
 			nodeId = this.m_root;
 
+
 		b2Assert(0 <= nodeId && nodeId < this.m_nodeCapacity);
+
 		var node = this.m_nodes[nodeId];
 
 		if (node.IsLeaf())
@@ -5941,10 +6011,12 @@ b2DynamicTree.prototype =
 			return;
 		}
 
+
 		if (index == this.m_root)
 		{
 			b2Assert(this.m_nodes[index].parent == b2_nullNode);
 		}
+
 
 		var node = this.m_nodes[index];
 
@@ -5953,17 +6025,21 @@ b2DynamicTree.prototype =
 
 		if (node.IsLeaf())
 		{
+
 			b2Assert(child1 == b2_nullNode);
 			b2Assert(child2 == b2_nullNode);
 			b2Assert(node.height == 0);
+
 			return;
 		}
+
 
 		b2Assert(0 <= child1 && child1 < this.m_nodeCapacity);
 		b2Assert(0 <= child2 && child2 < this.m_nodeCapacity);
 
 		b2Assert(this.m_nodes[child1].parent == index);
 		b2Assert(this.m_nodes[child2].parent == index);
+
 
 		this.ValidateStructure(child1);
 		this.ValidateStructure(child2);
@@ -5982,26 +6058,35 @@ b2DynamicTree.prototype =
 
 		if (node.IsLeaf())
 		{
+
 			b2Assert(child1 == b2_nullNode);
 			b2Assert(child2 == b2_nullNode);
 			b2Assert(node.height == 0);
+
 			return;
 		}
 
+
 		b2Assert(0 <= child1 && child1 < this.m_nodeCapacity);
 		b2Assert(0 <= child2 && child2 < this.m_nodeCapacity);
+
 
 		var height1 = this.m_nodes[child1].height;
 		var height2 = this.m_nodes[child2].height;
 		var height;
 		height = 1 + b2Max(height1, height2);
+
+
 		b2Assert(node.height == height);
+
 
 		var aabb = new b2AABB();
 		aabb.Combine(this.m_nodes[child1].aabb, this.m_nodes[child2].aabb);
 
+
 		b2Assert(b2Vec2.Equals(aabb.lowerBound, node.aabb.lowerBound));
 		b2Assert(b2Vec2.Equals(aabb.upperBound, node.aabb.upperBound));
+
 
 		this.ValidateMetrics(child1);
 		this.ValidateMetrics(child2);
@@ -6058,7 +6143,9 @@ b2SeparationFunction.prototype =
 		this.m_proxyA = proxyA;
 		this.m_proxyB = proxyB;
 		var count = cache.count;
+
 		b2Assert(0 < count && count < 3);
+
 
 		this.m_sweepA = sweepA;
 		this.m_sweepB = sweepB;
@@ -6189,11 +6276,13 @@ b2SeparationFunction.prototype =
 				return separation;
 			}
 
+
 		default:
 			b2Assert(false);
 			indices[0] = -1;
 			indices[1] = -1;
 			return 0.0;
+
 		}
 	},
 
@@ -6241,9 +6330,11 @@ b2SeparationFunction.prototype =
 				return separation;
 			}
 
+
 		default:
 			b2Assert(false);
 			return 0.0;
+
 		}
 	}
 };
@@ -6283,7 +6374,9 @@ function b2TimeOfImpact(output, input)
 	var totalRadius = proxyA.m_radius + proxyB.m_radius;
 	var target = b2Max(b2_linearSlop, totalRadius - 3.0 * b2_linearSlop);
 	var tolerance = 0.25 * b2_linearSlop;
+
 	b2Assert(target > tolerance);
+
 
 	var t1 = 0.0;
 	var k_maxIterations = 20;	// TODO_ERIN b2Settings
@@ -6558,12 +6651,14 @@ b2BodyDef.prototype =
 
 function b2Body(bd, world)
 {
+
 	b2Assert(bd.position.IsValid());
 	b2Assert(bd.linearVelocity.IsValid());
 	b2Assert(b2IsValid(bd.angle));
 	b2Assert(b2IsValid(bd.angularVelocity));
 	b2Assert(b2IsValid(bd.angularDamping) && bd.angularDamping >= 0.0);
 	b2Assert(b2IsValid(bd.linearDamping) && bd.linearDamping >= 0.0);
+
 
 	this.m_islandIndex = 0;
 	this.m_flags = 0;
@@ -6684,7 +6779,9 @@ b2Body.prototype =
 			return this.CreateFixture(ndef);
 		}
 
+
 		b2Assert(this.m_world.IsLocked() == false);
+
 		if (this.m_world.IsLocked() == true)
 		{
 			return null;
@@ -6727,16 +6824,20 @@ b2Body.prototype =
 	/// @warning This function is locked during callbacks.
 	DestroyFixture: function(fixture)
 	{
+
 		b2Assert(this.m_world.IsLocked() == false);
+
 		if (this.m_world.IsLocked() == true)
 		{
 			return;
 		}
 
+
 		b2Assert(fixture.m_body == this);
 
 		// Remove the fixture from this body's singly linked list.
 		b2Assert(this.m_fixtureCount > 0);
+
 		var node = this.m_fixtureList;
 		var found = false;
 
@@ -6753,7 +6854,9 @@ b2Body.prototype =
 		}
 
 		// You tried to remove a shape that is not attached to this body.
+
 		b2Assert(found);
+
 
 		// Destroy any contacts associated with the fixture.
 		var edge = this.m_contactList;
@@ -6796,7 +6899,9 @@ b2Body.prototype =
 	/// @param angle the world rotation in radians.
 	SetTransform: function(position, angle)
 	{
+
 		b2Assert(this.m_world.IsLocked() == false);
+
 		if (this.m_world.IsLocked() == true)
 		{
 			return;
@@ -7049,7 +7154,9 @@ b2Body.prototype =
 	/// @param massData the mass properties.
 	SetMassData: function(massData)
 	{
+
 		b2Assert(this.m_world.IsLocked() == false);
+
 		if (this.m_world.IsLocked() == true)
 		{
 			return;
@@ -7075,7 +7182,9 @@ b2Body.prototype =
 		if (massData.I > 0.0 && (this.m_flags & b2Body.e_fixedRotationFlag) == 0)
 		{
 			this.m_I = massData.I - this.m_mass * b2Dot_v2_v2(massData.center, massData.center);
+
 			b2Assert(this.m_I > 0.0);
+
 			this.m_invI = 1.0 / this.m_I;
 		}
 
@@ -7110,7 +7219,9 @@ b2Body.prototype =
 			return;
 		}
 
+
 		b2Assert(this.m_type == b2Body.b2_dynamicBody);
+
 
 		// Accumulate mass over all fixtures.
 		var localCenter = new b2Vec2(0, 0);
@@ -7145,7 +7256,9 @@ b2Body.prototype =
 		{
 			// Center the inertia about the center of mass.
 			this.m_I -= this.m_mass * b2Dot_v2_v2(localCenter, localCenter);
+
 			b2Assert(this.m_I > 0.0);
+
 			this.m_invI = 1.0 / this.m_I;
 
 		}
@@ -7252,7 +7365,9 @@ b2Body.prototype =
 	/// Set the type of this body. This may alter the mass and velocity.
 	SetType: function(type)
 	{
+
 		b2Assert(this.m_world.IsLocked() == false);
+
 		if (this.m_world.IsLocked() == true)
 		{
 			return;
@@ -7395,7 +7510,9 @@ b2Body.prototype =
 	/// in the body list.
 	SetActive: function(flag)
 	{
+
 		b2Assert(this.m_world.IsLocked() == false);
+
 
 		if (flag == this.IsActive())
 		{
@@ -7862,7 +7979,9 @@ b2Fixture.prototype =
 	/// of the body. You must call b2Body::ResetMassData to update the body's mass.
 	SetDensity: function(density)
 	{
+
 		b2Assert(b2IsValid(density) && density >= 0.0);
+
 		this.m_density = density;
 	},
 
@@ -7903,7 +8022,9 @@ b2Fixture.prototype =
 	/// the body transform.
 	GetAABB: function(childIndex)
 	{
+
 		b2Assert(0 <= childIndex && childIndex < this.m_proxyCount);
+
 		return this.m_proxies[childIndex].aabb;
 	},
 
@@ -7940,7 +8061,9 @@ b2Fixture.prototype =
 	Destroy: function()
 	{
 		// The proxies must be destroyed before calling this.
+
 		b2Assert(this.m_proxyCount == 0);
+
 
 		// Free the proxy array.
 		this.m_proxies = null;
@@ -7950,7 +8073,9 @@ b2Fixture.prototype =
 	// These support body activation/deactivation.
 	CreateProxies: function(broadPhase, xf)
 	{
+
 		b2Assert(this.m_proxyCount == 0);
+
 
 		// Create proxies in the broad-phase.
 		this.m_proxyCount = this.m_shape.GetChildCount();
@@ -8332,7 +8457,9 @@ b2World.prototype =
 	/// @warning This function is locked during callbacks.
 	CreateBody: function(def)
 	{
+
 		b2Assert(this.IsLocked() == false);
+
 		if (this.IsLocked())
 		{
 			return null;
@@ -8359,8 +8486,10 @@ b2World.prototype =
 	/// @warning This function is locked during callbacks.
 	DestroyBody: function(b)
 	{
+
 		b2Assert(this.m_bodyCount > 0);
 		b2Assert(this.IsLocked() == false);
+
 		if (this.IsLocked())
 		{
 			return;
@@ -8441,7 +8570,9 @@ b2World.prototype =
 	/// @warning This function is locked during callbacks.
 	CreateJoint: function(def)
 	{
+
 		b2Assert(this.IsLocked() == false);
+
 		if (this.IsLocked())
 		{
 			return null;
@@ -8503,7 +8634,9 @@ b2World.prototype =
 	/// @warning This function is locked during callbacks.
 	DestroyJoint: function(j)
 	{
+
 		b2Assert(this.IsLocked() == false);
+
 		if (this.IsLocked())
 		{
 			return;
@@ -8575,7 +8708,9 @@ b2World.prototype =
 
 		b2Joint.Destroy(j);
 
+
 		b2Assert(this.m_jointCount > 0);
+
 		--this.m_jointCount;
 
 		// If the joint prevents collisions, then flag any contacts for filtering.
@@ -8964,7 +9099,9 @@ b2World.prototype =
 	/// @param newOrigin the new origin with respect to the old origin
 	ShiftOrigin: function(newOrigin)
 	{
+
 		b2Assert((this.m_flags & b2World.e_locked) == 0);
+
 		if ((this.m_flags & b2World.e_locked) == b2World.e_locked)
 		{
 			return;
@@ -9045,7 +9182,9 @@ b2World.prototype =
 			{
 				// Grab the next body off the stack and add it to the island.
 				var b = stack[--stackCount];
+
 				b2Assert(b.IsActive() == true);
+
 				this.p_island.AddBody(b);
 
 				// Make sure the body is awake.
@@ -9095,7 +9234,9 @@ b2World.prototype =
 						continue;
 					}
 
+
 					b2Assert(stackCount < stackSize);
+
 					stack[stackCount++] = other;
 					other.m_flags |= b2Body.e_islandFlag;
 				}
@@ -9124,7 +9265,9 @@ b2World.prototype =
 						continue;
 					}
 
+
 					b2Assert(stackCount < stackSize);
+
 					stack[stackCount++] = other;
 					other.m_flags |= b2Body.e_islandFlag;
 				}
@@ -9233,7 +9376,9 @@ b2World.prototype =
 
 					var typeA = bA.m_type;
 					var typeB = bB.m_type;
+
 					b2Assert(typeA == b2Body.b2_dynamicBody || typeB == b2Body.b2_dynamicBody);
+
 
 					var activeA = bA.IsAwake() && typeA != b2Body.b2_staticBody;
 					var activeB = bB.IsAwake() && typeB != b2Body.b2_staticBody;
@@ -9268,7 +9413,9 @@ b2World.prototype =
 						bB.m_sweep.Advance(alpha0);
 					}
 
+
 					b2Assert(alpha0 < 1.0);
+
 
 					var indexA = c.GetChildIndexA();
 					var indexB = c.GetChildIndexB();
@@ -9578,7 +9725,9 @@ b2World.prototype =
 			{
 				var poly = fixture.GetShape();
 				var vertexCount = poly.m_count;
+
 				b2Assert(vertexCount <= b2_maxPolygonVertices);
+
 				var vertices = new Array(b2_maxPolygonVertices);
 
 				for (var i = 0; i < vertexCount; ++i)
@@ -9954,8 +10103,10 @@ b2CircleContact.prototype =
 	Create: function(fixtureA, unused1, fixtureB, unused2)
 	{
 		this.parent.prototype.Create.call(this, fixtureA, 0, fixtureB, 0);
+
 		b2Assert(this.m_fixtureA.GetType() == b2Shape.e_circle);
 		b2Assert(this.m_fixtureB.GetType() == b2Shape.e_circle);
+
 	}
 };
 
@@ -9981,8 +10132,10 @@ b2ChainAndCircleContact.prototype =
 	Create: function(fixtureA, indexA, fixtureB, indexB)
 	{
 		this.parent.prototype.Create.call(this, fixtureA, indexA, fixtureB, indexB);
+
 		b2Assert(this.m_fixtureA.GetType() == b2Shape.e_chain);
 		b2Assert(this.m_fixtureB.GetType() == b2Shape.e_circle);
+
 	}
 };
 
@@ -10007,8 +10160,10 @@ b2ChainAndPolygonContact.prototype =
 	Create: function(fixtureA, indexA, fixtureB, indexB)
 	{
 		this.parent.prototype.Create.call(this, fixtureA, indexA, fixtureB, indexB);
+
 		b2Assert(this.m_fixtureA.GetType() == b2Shape.e_chain);
 		b2Assert(this.m_fixtureB.GetType() == b2Shape.e_polygon);
+
 	}
 };
 
@@ -10037,8 +10192,10 @@ b2EdgeAndCircleContact.prototype =
 	Create: function(fixtureA, indexA, fixtureB, indexB)
 	{
 		this.parent.prototype.Create.call(this, fixtureA, 0, fixtureB, 0);
+
 		b2Assert(this.m_fixtureA.GetType() == b2Shape.e_edge);
 		b2Assert(this.m_fixtureB.GetType() == b2Shape.e_circle);
+
 	}
 };
 
@@ -10067,8 +10224,10 @@ b2EdgeAndPolygonContact.prototype =
 	Create: function(fixtureA, indexA, fixtureB, indexB)
 	{
 		this.parent.prototype.Create.call(this, fixtureA, 0, fixtureB, 0);
+
 		b2Assert(this.m_fixtureA.GetType() == b2Shape.e_edge);
 		b2Assert(this.m_fixtureB.GetType() == b2Shape.e_polygon);
+
 	}
 };
 
@@ -10097,8 +10256,10 @@ b2PolygonAndCircleContact.prototype =
 	Create: function(fixtureA, indexA, fixtureB, indexB)
 	{
 		this.parent.prototype.Create.call(this, fixtureA, 0, fixtureB, 0);
+
 		b2Assert(this.m_fixtureA.GetType() == b2Shape.e_polygon);
 		b2Assert(this.m_fixtureB.GetType() == b2Shape.e_circle);
+
 	}
 };
 
@@ -10128,8 +10289,10 @@ b2PolygonContact.prototype =
 	Create: function(fixtureA, indexA, fixtureB, indexB)
 	{
 		this.parent.prototype.Create.call(this, fixtureA, 0, fixtureB, 0);
+
 		b2Assert(this.m_fixtureA.GetType() == b2Shape.e_polygon);
 		b2Assert(this.m_fixtureB.GetType() == b2Shape.e_polygon);
+
 	}
 };
 
@@ -10144,8 +10307,10 @@ b2PolygonContact._extend(b2Contact);
 b2Contact.AddType = function(fcn,
 						type1, type2)
 {
+
 	b2Assert(0 <= type1 && type1 < b2Shape.e_typeCount);
 	b2Assert(0 <= type2 && type2 < b2Shape.e_typeCount);
+
 
 	if (!b2Contact.s_registers[type1])
 		b2Contact.s_registers[type1] = [];
@@ -10210,8 +10375,10 @@ b2Contact.Create = function(fixtureA, indexA, fixtureB, indexB)
 	var type1 = fixtureA.GetType();
 	var type2 = fixtureB.GetType();
 
+
 	b2Assert(0 <= type1 && type1 < b2Shape.e_typeCount);
 	b2Assert(0 <= type2 && type2 < b2Shape.e_typeCount);
+
 
 	var fcn = b2Contact.s_registers[type1][type2].fcn;
 
@@ -10232,7 +10399,9 @@ b2Contact.Create = function(fixtureA, indexA, fixtureB, indexB)
 
 b2Contact.Destroy = function(contact)
 {
+
 	b2Assert(b2Contact.s_initialized == true);
+
 
 	var fixtureA = contact.m_fixtureA;
 	var fixtureB = contact.m_fixtureB;
@@ -10248,8 +10417,10 @@ b2Contact.Destroy = function(contact)
 	var typeA = fixtureA.GetType();
 	var typeB = fixtureB.GetType();
 
+
 	b2Assert(0 <= typeA && typeB < b2Shape.e_typeCount);
 	b2Assert(0 <= typeA && typeB < b2Shape.e_typeCount);
+
 
 	b2Contact.s_registers[typeA][typeB].fcn.garbage.push(contact);
 };
@@ -10591,7 +10762,9 @@ b2PositionSolverManifold.prototype =
 {
 	Initialize: function(pc, xfA, xfB, index)
 	{
+
 		b2Assert(pc.pointCount > 0);
+
 
 		switch (pc.type)
 		{
@@ -10646,7 +10819,7 @@ b2PositionSolverManifold.prototype =
 				var clipPointx = (xfA.q.c * pc.localPoints[index].x - xfA.q.s * pc.localPoints[index].y) + xfA.p.x;
 				var clipPointy = (xfA.q.s * pc.localPoints[index].x + xfA.q.c * pc.localPoints[index].y) + xfA.p.y;
 				this.separation = ((clipPointx - planePointx) * this.normal.x + (clipPointy - planePointy) * this.normal.y) /*b2Dot_v2_v2(b2Vec2.Subtract(clipPoint, planePoint), this.normal)*/ - pc.radiusA - pc.radiusB;
-				
+
 				this.point.x = clipPointx;
 				this.point.y = clipPointy;
 
@@ -10708,7 +10881,9 @@ b2ContactSolver.prototype =
 			var manifold = contact.GetManifold();
 
 			var pointCount = manifold.pointCount;
+
 			b2Assert(pointCount > 0);
+
 
 			var vc = this.m_velocityConstraints[i] || new b2ContactVelocityConstraint();
 			vc.friction = contact.m_friction;
@@ -10801,7 +10976,9 @@ b2ContactSolver.prototype =
 			var vB = this.m_velocities[indexB].v;
 			var wB = this.m_velocities[indexB].w;
 
+
 			b2Assert(manifold.pointCount > 0);
+
 
 			b2ContactSolver.cs_xfA.q.Set(aA);
 			b2ContactSolver.cs_xfB.q.Set(aB);
@@ -10948,7 +11125,9 @@ b2ContactSolver.prototype =
 			var tangenty = -1.0 * normal.x;
 			var friction = vc.friction;
 
+
 			b2Assert(pointCount == 1 || pointCount == 2);
+
 
 			// Solve tangent constraints first because non-penetration is more important
 			// than friction.
@@ -11062,7 +11241,9 @@ b2ContactSolver.prototype =
 
 				var ax = cp1.normalImpulse;
 				var ay = cp2.normalImpulse;
+
 				b2Assert(ax >= 0.0 && ay >= 0.0);
+
 
 				// Relative velocity at contact
 				var dv1x = vB.x + (-wB * cp1.rB.y) - vA.x - (-wA * cp1.rA.y);
@@ -11747,8 +11928,10 @@ b2Island.prototype =
 
 	SolveTOI: function(subStep, toiIndexA, toiIndexB)
 	{
+
 		b2Assert(toiIndexA < this.m_bodyCount);
 		b2Assert(toiIndexB < this.m_bodyCount);
+
 
 		// Initialize the body state.
 		for (var i = 0; i < this.m_bodyCount; ++i)
@@ -11842,7 +12025,9 @@ b2Island.prototype =
 
 	AddBody: function(body)
 	{
+
 		b2Assert(this.m_bodyCount < this.m_bodyCapacity);
+
 		body.m_islandIndex = this.m_bodyCount;
 		this.m_bodies[this.m_bodyCount] = body;
 
@@ -11857,13 +12042,17 @@ b2Island.prototype =
 
 	AddContact: function(contact)
 	{
+
 		b2Assert(this.m_contactCount < this.m_contactCapacity);
+
 		this.m_contacts[this.m_contactCount++] = contact;
 	},
 
 	AddJoint: function(joint)
 	{
+
 		b2Assert(this.m_jointCount < this.m_jointCapacity);
+
 		this.m_joints[this.m_jointCount++] = joint;
 	},
 
@@ -11955,7 +12144,9 @@ b2JointDef.prototype =
 /// various fashions. Some joints also feature limits and motors.
 function b2Joint(def)
 {
+
 	b2Assert(def.bodyA != def.bodyB);
+
 
 	this.m_type = def.type;
 	this.m_prev = null;
@@ -12134,10 +12325,12 @@ b2Joint.Create = function(def)
 	case b2Joint.e_motorJoint:
 		joint = new b2MotorJoint(def);
 		break;
+		
 
 	default:
 		b2Assert(false);
 		break;
+
 	}
 
 	return joint;
@@ -12333,7 +12526,9 @@ b2RevoluteJoint.prototype =
 	/// Set the joint limits in radians.
 	SetLimits: function(lower, upper)
 	{
+
 		b2Assert(lower <= upper);
+
 
 		if (lower != this.m_lowerAngle || upper != this.m_upperAngle)
 		{
@@ -12765,10 +12960,12 @@ function b2MouseJoint(def)
 {
 	this.parent.call(this, def);
 
+
 	b2Assert(def.target.IsValid());
 	b2Assert(b2IsValid(def.maxForce) && def.maxForce >= 0.0);
 	b2Assert(b2IsValid(def.frequencyHz) && def.frequencyHz >= 0.0);
 	b2Assert(b2IsValid(def.dampingRatio) && def.dampingRatio >= 0.0);
+
 
 	this.m_targetA = def.target.Clone();
 	this.m_localAnchorB = b2MulT_t_v2(this.m_bodyB.GetTransform(), this.m_targetA);
@@ -12897,7 +13094,9 @@ b2MouseJoint.prototype =
 		// gamma has units of inverse mass.
 		// beta has units of inverse time.
 		var h = data.step.dt;
+
 		b2Assert(d + h * k > b2_epsilon);
+
 		this.m_gamma = h * (d + h * k);
 		if (this.m_gamma != 0.0)
 		{
@@ -13526,7 +13725,10 @@ b2PrismaticJoint.prototype =
 	/// Set the joint limits, usually in meters.
 	SetLimits: function(lower, upper)
 	{
+
 		b2Assert(lower <= upper);
+
+
 		if (lower != this.m_lowerTranslation || upper != this.m_upperTranslation)
 		{
 			this.m_bodyA.SetAwake(true);
@@ -14074,7 +14276,9 @@ b2FrictionJoint.prototype =
 	/// Set the maximum friction force in N.
 	SetMaxForce: function(force)
 	{
+
 		b2Assert(b2IsValid(force) && force >= 0.0);
+
 		this.m_maxForce = force;
 	},
 
@@ -14087,7 +14291,9 @@ b2FrictionJoint.prototype =
 	/// Set the maximum friction torque in N*m.
 	SetMaxTorque: function(torque)
 	{
+
 		b2Assert(b2IsValid(torque) && torque >= 0.0);
+
 		this.m_maxTorque = torque;
 	},
 
@@ -15178,8 +15384,10 @@ function b2GearJoint(def)
 	this.m_typeA = this.m_joint1.GetType();
 	this.m_typeB = this.m_joint2.GetType();
 
+
 	b2Assert(this.m_typeA == b2Joint.e_revoluteJoint || this.m_typeA == b2Joint.e_prismaticJoint);
 	b2Assert(this.m_typeB == b2Joint.e_revoluteJoint || this.m_typeB == b2Joint.e_prismaticJoint);
+
 
 	var coordinateA, coordinateB;
 
@@ -15298,7 +15506,9 @@ b2GearJoint.prototype =
 	/// Set/Get the gear ratio.
 	SetRatio: function(ratio)
 	{
+
 		b2Assert(b2IsValid(ratio));
+
 		this.m_ratio = ratio;
 	},
 	GetRatio: function()
@@ -15707,7 +15917,9 @@ b2MotorJoint.prototype =
 	/// Set the maximum friction force in N.
 	SetMaxForce: function(force)
 	{
+
 		b2Assert(b2IsValid(force) && force >= 0.0);
+
 		this.m_maxForce = force;
 	},
 
@@ -15720,7 +15932,9 @@ b2MotorJoint.prototype =
 	/// Set the maximum friction torque in N*m.
 	SetMaxTorque: function(torque)
 	{
+
 		b2Assert(b2IsValid(torque) && torque >= 0.0);
+
 		this.m_maxTorque = torque;
 	},
 
@@ -15733,7 +15947,9 @@ b2MotorJoint.prototype =
 	/// Set the position correction factor in the range [0,1].
 	SetCorrectionFactor: function(factor)
 	{
+
 		b2Assert(b2IsValid(factor) && 0.0 <= factor && factor <= 1.0);
+
 		this.m_correctionFactor = factor;
 	},
 
@@ -15959,7 +16175,9 @@ b2PulleyJointDef.prototype =
 		var dB = b2Vec2.Subtract(anchorB, groundB);
 		this.lengthB = dB.Length();
 		this.ratio = r;
+
 		b2Assert(this.ratio > b2_epsilon);
+
 	},
 
 	_deserialize: function(data, bodies, joints)
@@ -16013,7 +16231,9 @@ function b2PulleyJoint(def)
 	this.m_lengthA = def.lengthA;
 	this.m_lengthB = def.lengthB;
 
+
 	b2Assert(def.ratio != 0.0);
+
 	this.m_ratio = def.ratio;
 
 	this.m_constant = def.lengthA + this.m_ratio * def.lengthB;
@@ -16611,7 +16831,9 @@ b2Rope.prototype =
 	///
 	Initialize: function(def)
 	{
+
 		b2Assert(def.count >= 3);
+
 		this.m_count = def.count;
 		this.m_ps = new Array(this.m_count);
 		this.m_p0s = new Array(this.m_count);
@@ -17409,5 +17631,182 @@ var b2RUBELoader = (function()
 	};
 })();
 
-	window["b2_version"] = b2_version;window["b2Vec2"] = b2Vec2;window["b2Vec3"] = b2Vec3;window["b2Mat22"] = b2Mat22;window["b2Mat33"] = b2Mat33;window["b2Rot"] = b2Rot;window["b2Transform"] = b2Transform;window["b2Sweep"] = b2Sweep;window["b2Dot_v2_v2"] = b2Dot_v2_v2;window["b2Cross_v2_v2"] = b2Cross_v2_v2;window["b2Cross_v2_f"] = b2Cross_v2_f;window["b2Cross_f_v2"] = b2Cross_f_v2;window["b2Mul_m22_v2"] = b2Mul_m22_v2;window["b2MulT_m22_v2"] = b2MulT_m22_v2;window["b2Distance"] = b2Distance;window["b2DistanceSquared"] = b2DistanceSquared;window["b2Dot_v3_v3"] = b2Dot_v3_v3;window["b2Cross_v3_v3"] = b2Cross_v3_v3;window["b2Mul_m22_m22"] = b2Mul_m22_m22;window["b2MulT_m22_m22"] = b2MulT_m22_m22;window["b2Mul_m33_v3"] = b2Mul_m33_v3;window["b2Mul22_m33_v2"] = b2Mul22_m33_v2;window["b2Mul_r_r"] = b2Mul_r_r;window["b2MulT_r_r"] = b2MulT_r_r;window["b2Mul_r_v2"] = b2Mul_r_v2;window["b2MulT_r_v2"] = b2MulT_r_v2;window["b2Mul_t_v2"] = b2Mul_t_v2;window["b2Min_v2"] = b2Min_v2;window["b2Max_v2"] = b2Max_v2;window["b2Clamp"] = b2Clamp;window["b2MulT_t_v2"] = b2MulT_t_v2;window["b2Mul_t_t"] = b2Mul_t_t;window["b2MulT_t_t"] = b2MulT_t_t;window["b2Clamp_v2"] = b2Clamp_v2;window["b2NextPowerOfTwo"] = b2NextPowerOfTwo;window["b2Abs_v2"] = b2Abs_v2;window["b2Abs_m22"] = b2Abs_m22;window["b2IsPowerOfTwo"] = b2IsPowerOfTwo;window["b2RandomFloat"] = b2RandomFloat;window["b2Timer"] = b2Timer;window["b2Color"] = b2Color;window["b2Draw"] = b2Draw;window["b2ContactID"] = b2ContactID;window["b2ManifoldPoint"] = b2ManifoldPoint;window["b2Manifold"] = b2Manifold;window["b2WorldManifold"] = b2WorldManifold;window["b2GetPointStates"] = b2GetPointStates;window["b2ClipVertex"] = b2ClipVertex;window["b2RayCastInput"] = b2RayCastInput;window["b2RayCastOutput"] = b2RayCastOutput;window["b2AABB"] = b2AABB;window["b2CollideCircles"] = b2CollideCircles;window["b2CollidePolygonAndCircle"] = b2CollidePolygonAndCircle;window["b2FindMaxSeparation"] = b2FindMaxSeparation;window["b2FindIncidentEdge"] = b2FindIncidentEdge;window["b2CollidePolygons"] = b2CollidePolygons;window["b2CollideEdgeAndCircle"] = b2CollideEdgeAndCircle;window["b2EPAxis"] = b2EPAxis;window["b2TempPolygon"] = b2TempPolygon;window["b2ReferenceFace"] = b2ReferenceFace;window["b2EPCollider"] = b2EPCollider;window["b2CollideEdgeAndPolygon"] = b2CollideEdgeAndPolygon;window["b2ClipSegmentToLine"] = b2ClipSegmentToLine;window["b2TestShapeOverlap"] = b2TestShapeOverlap;window["b2TestOverlap"] = b2TestOverlap;window["b2Shape"] = b2Shape;window["b2CircleShape"] = b2CircleShape;window["b2EdgeShape"] = b2EdgeShape;window["b2ChainShape"] = b2ChainShape;window["b2PolygonShape"] = b2PolygonShape;window["b2Pair"] = b2Pair;window["b2PairLessThan"] = b2PairLessThan;window["b2BroadPhase"] = b2BroadPhase;window["b2DistanceProxy"] = b2DistanceProxy;window["b2SimplexCache"] = b2SimplexCache;window["b2DistanceInput"] = b2DistanceInput;window["b2DistanceOutput"] = b2DistanceOutput;window["b2SimplexVertex"] = b2SimplexVertex;window["b2Simplex"] = b2Simplex;window["b2DistanceFunc"] = b2DistanceFunc;window["b2TreeNode"] = b2TreeNode;window["b2DynamicTree"] = b2DynamicTree;window["b2TOIInput"] = b2TOIInput;window["b2TOIOutput"] = b2TOIOutput;window["b2SeparationFunction"] = b2SeparationFunction;window["b2TimeOfImpact"] = b2TimeOfImpact;window["b2BodyDef"] = b2BodyDef;window["b2Body"] = b2Body;window["b2Filter"] = b2Filter;window["b2FixtureDef"] = b2FixtureDef;window["b2Fixture"] = b2Fixture;window["b2DestructionListener"] = b2DestructionListener;window["b2ContactFilter"] = b2ContactFilter;window["b2ContactImpulse"] = b2ContactImpulse;window["b2ContactListener"] = b2ContactListener;window["b2QueryCallback"] = b2QueryCallback;window["b2RayCastCallback"] = b2RayCastCallback;window["b2TimeStep"] = b2TimeStep;window["b2Position"] = b2Position;window["b2Velocity"] = b2Velocity;window["b2SolverData"] = b2SolverData;window["b2World"] = b2World;window["b2MixFriction"] = b2MixFriction;window["b2MixRestitution"] = b2MixRestitution;window["b2ContactRegister"] = b2ContactRegister;window["b2ContactEdge"] = b2ContactEdge;window["b2Contact"] = b2Contact;window["b2CircleContact"] = b2CircleContact;window["b2PolygonContact"] = b2PolygonContact;window["b2ChainAndCircleContact"] = b2ChainAndCircleContact;window["b2ChainAndPolygonContact"] = b2ChainAndPolygonContact;window["b2EdgeAndCircleContact"] = b2EdgeAndCircleContact;window["b2EdgeAndPolygonContact"] = b2EdgeAndPolygonContact;window["b2PolygonAndCircleContact"] = b2PolygonAndCircleContact;window["b2_defaultFilter"] = b2_defaultFilter;window["b2_defaultListener"] = b2_defaultListener;window["b2ContactManager"] = b2ContactManager;window["b2VelocityConstraintPoint"] = b2VelocityConstraintPoint;window["b2ContactPositionConstraint"] = b2ContactPositionConstraint;window["b2ContactVelocityConstraint"] = b2ContactVelocityConstraint;window["b2PositionSolverManifold"] = b2PositionSolverManifold;window["b2ContactSolverDef"] = b2ContactSolverDef;window["b2ContactSolver"] = b2ContactSolver;window["b2Island"] = b2Island;window["b2Jacobian"] = b2Jacobian;window["b2JointEdge"] = b2JointEdge;window["b2JointDef"] = b2JointDef;window["b2Joint"] = b2Joint;window["b2RevoluteJointDef"] = b2RevoluteJointDef;window["b2RevoluteJoint"] = b2RevoluteJoint;window["b2MouseJointDef"] = b2MouseJointDef;window["b2MouseJoint"] = b2MouseJoint;window["b2DistanceJointDef"] = b2DistanceJointDef;window["b2DistanceJoint"] = b2DistanceJoint;window["b2PrismaticJointDef"] = b2PrismaticJointDef;window["b2PrismaticJoint"] = b2PrismaticJoint;window["b2FrictionJointDef"] = b2FrictionJointDef;window["b2FrictionJoint"] = b2FrictionJoint;window["b2WeldJointDef"] = b2WeldJointDef;window["b2WeldJoint"] = b2WeldJoint;window["b2WheelJointDef"] = b2WheelJointDef;window["b2WheelJoint"] = b2WheelJoint;window["b2GearJointDef"] = b2GearJointDef;window["b2GearJoint"] = b2GearJoint;window["b2MotorJointDef"] = b2MotorJointDef;window["b2MotorJoint"] = b2MotorJoint;window["b2PulleyJointDef"] = b2PulleyJointDef;window["b2PulleyJoint"] = b2PulleyJoint;window["b2RopeJointDef"] = b2RopeJointDef;window["b2RopeJoint"] = b2RopeJoint;window["b2RopeDef"] = b2RopeDef;window["b2Rope"] = b2Rope;window["b2_maxManifoldPoints"] = b2_maxManifoldPoints;window["b2_maxPolygonVertices"] = b2_maxPolygonVertices;window["b2_aabbExtension"] = b2_aabbExtension;window["b2_aabbMultiplier"] = b2_aabbMultiplier;window["b2_linearSlop"] = b2_linearSlop;window["b2_angularSlop"] = b2_angularSlop;window["b2_polygonRadius"] = b2_polygonRadius;window["b2_maxSubSteps"] = b2_maxSubSteps;window["b2_maxTOIContacts"] = b2_maxTOIContacts;window["b2_velocityThreshold"] = b2_velocityThreshold;window["b2_maxLinearCorrection"] = b2_maxLinearCorrection;window["b2_maxAngularCorrection"] = b2_maxAngularCorrection;window["b2_maxTranslation"] = b2_maxTranslation;window["b2_maxTranslationSquared"] = b2_maxTranslationSquared;window["b2_maxRotation"] = b2_maxRotation;window["b2_maxRotationSquared"] = b2_maxRotationSquared;window["b2_baumgarte"] = b2_baumgarte;window["b2_toiBaugarte"] = b2_toiBaugarte;window["b2_timeToSleep"] = b2_timeToSleep;window["b2_linearSleepTolerance"] = b2_linearSleepTolerance;window["b2_angularSleepTolerance"] = b2_angularSleepTolerance;window["b2Assert"] = b2Assert;window["b2_epsilon"] = b2_epsilon;window["b2JsonSerializer"] = b2JsonSerializer;window["b2RUBELoader"] = b2RUBELoader;window["b2Profiler"] = b2Profiler;
+	window["b2_version"] = b2_version;
+window["b2Vec2"] = b2Vec2;
+window["b2Vec3"] = b2Vec3;
+window["b2Mat22"] = b2Mat22;
+window["b2Mat33"] = b2Mat33;
+window["b2Rot"] = b2Rot;
+window["b2Transform"] = b2Transform;
+window["b2Sweep"] = b2Sweep;
+window["b2Dot_v2_v2"] = b2Dot_v2_v2;
+window["b2Cross_v2_v2"] = b2Cross_v2_v2;
+window["b2Cross_v2_f"] = b2Cross_v2_f;
+window["b2Cross_f_v2"] = b2Cross_f_v2;
+window["b2Mul_m22_v2"] = b2Mul_m22_v2;
+window["b2MulT_m22_v2"] = b2MulT_m22_v2;
+window["b2Distance"] = b2Distance;
+window["b2DistanceSquared"] = b2DistanceSquared;
+window["b2Dot_v3_v3"] = b2Dot_v3_v3;
+window["b2Cross_v3_v3"] = b2Cross_v3_v3;
+window["b2Mul_m22_m22"] = b2Mul_m22_m22;
+window["b2MulT_m22_m22"] = b2MulT_m22_m22;
+window["b2Mul_m33_v3"] = b2Mul_m33_v3;
+window["b2Mul22_m33_v2"] = b2Mul22_m33_v2;
+window["b2Mul_r_r"] = b2Mul_r_r;
+window["b2MulT_r_r"] = b2MulT_r_r;
+window["b2Mul_r_v2"] = b2Mul_r_v2;
+window["b2MulT_r_v2"] = b2MulT_r_v2;
+window["b2Mul_t_v2"] = b2Mul_t_v2;
+window["b2Min_v2"] = b2Min_v2;
+window["b2Max_v2"] = b2Max_v2;
+window["b2Clamp"] = b2Clamp;
+window["b2MulT_t_v2"] = b2MulT_t_v2;
+window["b2Mul_t_t"] = b2Mul_t_t;
+window["b2MulT_t_t"] = b2MulT_t_t;
+window["b2Clamp_v2"] = b2Clamp_v2;
+window["b2NextPowerOfTwo"] = b2NextPowerOfTwo;
+window["b2Abs_v2"] = b2Abs_v2;
+window["b2Abs_m22"] = b2Abs_m22;
+window["b2IsPowerOfTwo"] = b2IsPowerOfTwo;
+window["b2RandomFloat"] = b2RandomFloat;
+window["b2Timer"] = b2Timer;
+window["b2Color"] = b2Color;
+window["b2Draw"] = b2Draw;
+window["b2ContactID"] = b2ContactID;
+window["b2ManifoldPoint"] = b2ManifoldPoint;
+window["b2Manifold"] = b2Manifold;
+window["b2WorldManifold"] = b2WorldManifold;
+window["b2GetPointStates"] = b2GetPointStates;
+window["b2ClipVertex"] = b2ClipVertex;
+window["b2RayCastInput"] = b2RayCastInput;
+window["b2RayCastOutput"] = b2RayCastOutput;
+window["b2AABB"] = b2AABB;
+window["b2CollideCircles"] = b2CollideCircles;
+window["b2CollidePolygonAndCircle"] = b2CollidePolygonAndCircle;
+window["b2FindMaxSeparation"] = b2FindMaxSeparation;
+window["b2FindIncidentEdge"] = b2FindIncidentEdge;
+window["b2CollidePolygons"] = b2CollidePolygons;
+window["b2CollideEdgeAndCircle"] = b2CollideEdgeAndCircle;
+window["b2EPAxis"] = b2EPAxis;
+window["b2TempPolygon"] = b2TempPolygon;
+window["b2ReferenceFace"] = b2ReferenceFace;
+window["b2EPCollider"] = b2EPCollider;
+window["b2CollideEdgeAndPolygon"] = b2CollideEdgeAndPolygon;
+window["b2ClipSegmentToLine"] = b2ClipSegmentToLine;
+window["b2TestShapeOverlap"] = b2TestShapeOverlap;
+window["b2TestOverlap"] = b2TestOverlap;
+window["b2Shape"] = b2Shape;
+window["b2CircleShape"] = b2CircleShape;
+window["b2EdgeShape"] = b2EdgeShape;
+window["b2ChainShape"] = b2ChainShape;
+window["b2PolygonShape"] = b2PolygonShape;
+window["b2Pair"] = b2Pair;
+window["b2PairLessThan"] = b2PairLessThan;
+window["b2BroadPhase"] = b2BroadPhase;
+window["b2DistanceProxy"] = b2DistanceProxy;
+window["b2SimplexCache"] = b2SimplexCache;
+window["b2DistanceInput"] = b2DistanceInput;
+window["b2DistanceOutput"] = b2DistanceOutput;
+window["b2SimplexVertex"] = b2SimplexVertex;
+window["b2Simplex"] = b2Simplex;
+window["b2DistanceFunc"] = b2DistanceFunc;
+window["b2TreeNode"] = b2TreeNode;
+window["b2DynamicTree"] = b2DynamicTree;
+window["b2TOIInput"] = b2TOIInput;
+window["b2TOIOutput"] = b2TOIOutput;
+window["b2SeparationFunction"] = b2SeparationFunction;
+window["b2TimeOfImpact"] = b2TimeOfImpact;
+window["b2BodyDef"] = b2BodyDef;
+window["b2Body"] = b2Body;
+window["b2Filter"] = b2Filter;
+window["b2FixtureDef"] = b2FixtureDef;
+window["b2Fixture"] = b2Fixture;
+window["b2DestructionListener"] = b2DestructionListener;
+window["b2ContactFilter"] = b2ContactFilter;
+window["b2ContactImpulse"] = b2ContactImpulse;
+window["b2ContactListener"] = b2ContactListener;
+window["b2QueryCallback"] = b2QueryCallback;
+window["b2RayCastCallback"] = b2RayCastCallback;
+window["b2TimeStep"] = b2TimeStep;
+window["b2Position"] = b2Position;
+window["b2Velocity"] = b2Velocity;
+window["b2SolverData"] = b2SolverData;
+window["b2World"] = b2World;
+window["b2MixFriction"] = b2MixFriction;
+window["b2MixRestitution"] = b2MixRestitution;
+window["b2ContactRegister"] = b2ContactRegister;
+window["b2ContactEdge"] = b2ContactEdge;
+window["b2Contact"] = b2Contact;
+window["b2CircleContact"] = b2CircleContact;
+window["b2PolygonContact"] = b2PolygonContact;
+window["b2ChainAndCircleContact"] = b2ChainAndCircleContact;
+window["b2ChainAndPolygonContact"] = b2ChainAndPolygonContact;
+window["b2EdgeAndCircleContact"] = b2EdgeAndCircleContact;
+window["b2EdgeAndPolygonContact"] = b2EdgeAndPolygonContact;
+window["b2PolygonAndCircleContact"] = b2PolygonAndCircleContact;
+window["b2_defaultFilter"] = b2_defaultFilter;
+window["b2_defaultListener"] = b2_defaultListener;
+window["b2ContactManager"] = b2ContactManager;
+window["b2VelocityConstraintPoint"] = b2VelocityConstraintPoint;
+window["b2ContactPositionConstraint"] = b2ContactPositionConstraint;
+window["b2ContactVelocityConstraint"] = b2ContactVelocityConstraint;
+window["b2PositionSolverManifold"] = b2PositionSolverManifold;
+window["b2ContactSolverDef"] = b2ContactSolverDef;
+window["b2ContactSolver"] = b2ContactSolver;
+window["b2Island"] = b2Island;
+window["b2Jacobian"] = b2Jacobian;
+window["b2JointEdge"] = b2JointEdge;
+window["b2JointDef"] = b2JointDef;
+window["b2Joint"] = b2Joint;
+window["b2RevoluteJointDef"] = b2RevoluteJointDef;
+window["b2RevoluteJoint"] = b2RevoluteJoint;
+window["b2MouseJointDef"] = b2MouseJointDef;
+window["b2MouseJoint"] = b2MouseJoint;
+window["b2DistanceJointDef"] = b2DistanceJointDef;
+window["b2DistanceJoint"] = b2DistanceJoint;
+window["b2PrismaticJointDef"] = b2PrismaticJointDef;
+window["b2PrismaticJoint"] = b2PrismaticJoint;
+window["b2FrictionJointDef"] = b2FrictionJointDef;
+window["b2FrictionJoint"] = b2FrictionJoint;
+window["b2WeldJointDef"] = b2WeldJointDef;
+window["b2WeldJoint"] = b2WeldJoint;
+window["b2WheelJointDef"] = b2WheelJointDef;
+window["b2WheelJoint"] = b2WheelJoint;
+window["b2GearJointDef"] = b2GearJointDef;
+window["b2GearJoint"] = b2GearJoint;
+window["b2MotorJointDef"] = b2MotorJointDef;
+window["b2MotorJoint"] = b2MotorJoint;
+window["b2PulleyJointDef"] = b2PulleyJointDef;
+window["b2PulleyJoint"] = b2PulleyJoint;
+window["b2RopeJointDef"] = b2RopeJointDef;
+window["b2RopeJoint"] = b2RopeJoint;
+window["b2RopeDef"] = b2RopeDef;
+window["b2Rope"] = b2Rope;
+window["b2_maxManifoldPoints"] = b2_maxManifoldPoints;
+window["b2_maxPolygonVertices"] = b2_maxPolygonVertices;
+window["b2_aabbExtension"] = b2_aabbExtension;
+window["b2_aabbMultiplier"] = b2_aabbMultiplier;
+window["b2_linearSlop"] = b2_linearSlop;
+window["b2_angularSlop"] = b2_angularSlop;
+window["b2_polygonRadius"] = b2_polygonRadius;
+window["b2_maxSubSteps"] = b2_maxSubSteps;
+window["b2_maxTOIContacts"] = b2_maxTOIContacts;
+window["b2_velocityThreshold"] = b2_velocityThreshold;
+window["b2_maxLinearCorrection"] = b2_maxLinearCorrection;
+window["b2_maxAngularCorrection"] = b2_maxAngularCorrection;
+window["b2_maxTranslation"] = b2_maxTranslation;
+window["b2_maxTranslationSquared"] = b2_maxTranslationSquared;
+window["b2_maxRotation"] = b2_maxRotation;
+window["b2_maxRotationSquared"] = b2_maxRotationSquared;
+window["b2_baumgarte"] = b2_baumgarte;
+window["b2_toiBaugarte"] = b2_toiBaugarte;
+window["b2_timeToSleep"] = b2_timeToSleep;
+window["b2_linearSleepTolerance"] = b2_linearSleepTolerance;
+window["b2_angularSleepTolerance"] = b2_angularSleepTolerance;
+window["b2_epsilon"] = b2_epsilon;
+window["b2JsonSerializer"] = b2JsonSerializer;
+window["b2RUBELoader"] = b2RUBELoader;
+window["b2Profiler"] = b2Profiler;
+
 })();

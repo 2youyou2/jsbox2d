@@ -81,12 +81,14 @@ b2BodyDef.prototype =
 
 function b2Body(bd, world)
 {
+'#if @DEBUG';
 	b2Assert(bd.position.IsValid());
 	b2Assert(bd.linearVelocity.IsValid());
 	b2Assert(b2IsValid(bd.angle));
 	b2Assert(b2IsValid(bd.angularVelocity));
 	b2Assert(b2IsValid(bd.angularDamping) && bd.angularDamping >= 0.0);
 	b2Assert(b2IsValid(bd.linearDamping) && bd.linearDamping >= 0.0);
+'#endif';
 
 	this.m_islandIndex = 0;
 	this.m_flags = 0;
@@ -207,7 +209,9 @@ b2Body.prototype =
 			return this.CreateFixture(ndef);
 		}
 
+'#if @DEBUG';
 		b2Assert(this.m_world.IsLocked() == false);
+'#endif';
 		if (this.m_world.IsLocked() == true)
 		{
 			return null;
@@ -250,16 +254,20 @@ b2Body.prototype =
 	/// @warning This function is locked during callbacks.
 	DestroyFixture: function(fixture)
 	{
+'#if @DEBUG';
 		b2Assert(this.m_world.IsLocked() == false);
+'#endif';
 		if (this.m_world.IsLocked() == true)
 		{
 			return;
 		}
 
+'#if @DEBUG';
 		b2Assert(fixture.m_body == this);
 
 		// Remove the fixture from this body's singly linked list.
 		b2Assert(this.m_fixtureCount > 0);
+'#endif';
 		var node = this.m_fixtureList;
 		var found = false;
 
@@ -276,7 +284,9 @@ b2Body.prototype =
 		}
 
 		// You tried to remove a shape that is not attached to this body.
+'#if @DEBUG';
 		b2Assert(found);
+'#endif';
 
 		// Destroy any contacts associated with the fixture.
 		var edge = this.m_contactList;
@@ -319,7 +329,9 @@ b2Body.prototype =
 	/// @param angle the world rotation in radians.
 	SetTransform: function(position, angle)
 	{
+'#if @DEBUG';
 		b2Assert(this.m_world.IsLocked() == false);
+'#endif';
 		if (this.m_world.IsLocked() == true)
 		{
 			return;
@@ -572,7 +584,9 @@ b2Body.prototype =
 	/// @param massData the mass properties.
 	SetMassData: function(massData)
 	{
+'#if @DEBUG';
 		b2Assert(this.m_world.IsLocked() == false);
+'#endif';
 		if (this.m_world.IsLocked() == true)
 		{
 			return;
@@ -598,7 +612,9 @@ b2Body.prototype =
 		if (massData.I > 0.0 && (this.m_flags & b2Body.e_fixedRotationFlag) == 0)
 		{
 			this.m_I = massData.I - this.m_mass * b2Dot_v2_v2(massData.center, massData.center);
+'#if @DEBUG';
 			b2Assert(this.m_I > 0.0);
+'#endif';
 			this.m_invI = 1.0 / this.m_I;
 		}
 
@@ -633,7 +649,9 @@ b2Body.prototype =
 			return;
 		}
 
+'#if @DEBUG';
 		b2Assert(this.m_type == b2Body.b2_dynamicBody);
+'#endif';
 
 		// Accumulate mass over all fixtures.
 		var localCenter = new b2Vec2(0, 0);
@@ -668,7 +686,9 @@ b2Body.prototype =
 		{
 			// Center the inertia about the center of mass.
 			this.m_I -= this.m_mass * b2Dot_v2_v2(localCenter, localCenter);
+'#if @DEBUG';
 			b2Assert(this.m_I > 0.0);
+'#endif';
 			this.m_invI = 1.0 / this.m_I;
 
 		}
@@ -775,7 +795,9 @@ b2Body.prototype =
 	/// Set the type of this body. This may alter the mass and velocity.
 	SetType: function(type)
 	{
+'#if @DEBUG';
 		b2Assert(this.m_world.IsLocked() == false);
+'#endif';
 		if (this.m_world.IsLocked() == true)
 		{
 			return;
@@ -918,7 +940,9 @@ b2Body.prototype =
 	/// in the body list.
 	SetActive: function(flag)
 	{
+'#if @DEBUG';
 		b2Assert(this.m_world.IsLocked() == false);
+'#endif';
 
 		if (flag == this.IsActive())
 		{

@@ -47,16 +47,20 @@ b2ChainShape.prototype =
 	/// @param count the vertex count
 	CreateLoop: function(vertices, count)
 	{
+'#if @DEBUG';
 		b2Assert(this.m_vertices == null && this.m_count == 0);
 		b2Assert(count >= 3);
+'#endif';
 
 		for (var i = 1; i < count; ++i)
 		{
 			var v1 = vertices[i-1];
 			var v2 = vertices[i];
 
+'#if @DEBUG';
 			// If the code crashes here, it means your vertices are too close together.
 			b2Assert(b2DistanceSquared(v1, v2) > b2_linearSlop * b2_linearSlop);
+'#endif';
 		}
 
 		this.m_count = count + 1;
@@ -78,16 +82,20 @@ b2ChainShape.prototype =
 	/// @param count the vertex count
 	CreateChain: function(vertices, count)
 	{
+'#if @DEBUG';
 		b2Assert(this.m_vertices == null && this.m_count == 0);
 		b2Assert(count >= 2);
+'#endif';
 
 		for (var i = 1; i < count; ++i)
 		{
 			var v1 = vertices[i-1];
 			var v2 = vertices[i];
 
+'#if @DEBUG';
 			// If the code crashes here, it means your vertices are too close together.
 			b2Assert(b2DistanceSquared(v1, v2) > b2_linearSlop * b2_linearSlop);
+'#endif';
 		}
 
 		this.m_count = count;
@@ -147,7 +155,9 @@ b2ChainShape.prototype =
 	/// Get a child edge.
 	GetChildEdge: function(edge, index)
 	{
+'#if @DEBUG';
 		b2Assert(0 <= index && index < this.m_count - 1);
+'#endif';
 		edge.m_type = b2Shape.e_edge;
 		edge.m_radius = this.m_radius;
 
@@ -188,7 +198,9 @@ b2ChainShape.prototype =
 	RayCast: function(output, input,
 					xf, childIndex)
 	{
+'#if @DEBUG';
 		b2Assert(childIndex < this.m_count);
+'#endif';
 
 		var edgeShape = new b2EdgeShape();
 
@@ -208,7 +220,9 @@ b2ChainShape.prototype =
 	/// @see b2Shape::ComputeAABB
 	ComputeAABB: function(aabb, xf, childIndex)
 	{
+'#if @DEBUG';
 		b2Assert(childIndex < this.m_count);
+'#endif';
 
 		var i1 = childIndex;
 		var i2 = childIndex + 1;

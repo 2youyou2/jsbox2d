@@ -595,7 +595,9 @@ b2Sweep.prototype =
 	/// @param alpha the new initial time.
 	Advance: function(alpha)
 	{
+'#if @DEBUG';
 		b2Assert(this.alpha0 < 1.0);
+'#endif';
 		var beta = (alpha - this.alpha0) / (1.0 - this.alpha0);
 		this.c0.Add(b2Vec2.Multiply(beta, b2Vec2.Subtract(this.c, this.c0)));
 		this.a0 += beta * (this.a - this.a0);

@@ -25,7 +25,7 @@
 function b2PolygonShape()
 {
 	this.parent.call(this);
-	
+
 	this.m_type = b2Shape.e_polygon;
 	this.m_radius = b2_polygonRadius;
 	this.m_count = 0;
@@ -68,7 +68,9 @@ b2PolygonShape.prototype =
 	/// may lead to poor stacking behavior.
 	Set: function(vertices, count)
 	{
+'#if @DEBUG';
 		b2Assert(3 <= count && count <= b2_maxPolygonVertices);
+'#endif';
 
 		if (count < 3)
 		{
@@ -105,8 +107,10 @@ b2PolygonShape.prototype =
 		n = tempCount;
 		if (n < 3)
 		{
+'#if @DEBUG';
 			// Polygon is degenerate.
 			b2Assert(false);
+'#endif';
 			this.SetAsBox(1.0, 1.0);
 			return;
 		}
@@ -182,7 +186,9 @@ b2PolygonShape.prototype =
 			var i1 = i;
 			var i2 = i + 1 < m ? i + 1 : 0;
 			var edge = b2Vec2.Subtract(this.m_vertices[i2], this.m_vertices[i1]);
+'#if @DEBUG';
 			b2Assert(edge.LengthSquared() > b2_epsilon * b2_epsilon);
+'#endif';
 			this.m_normals[i] = b2Cross_v2_f(edge, 1.0).Clone();
 			this.m_normals[i].Normalize();
 		}
@@ -299,7 +305,9 @@ b2PolygonShape.prototype =
 			}
 		}
 
+'#if @DEBUG';
 		b2Assert(0.0 <= lower && lower <= input.maxFraction);
+'#endif';
 
 		if (index >= 0)
 		{
@@ -355,8 +363,9 @@ b2PolygonShape.prototype =
 		// Simplification: triangle centroid = (1/3) * (p1 + p2 + p3)
 		//
 		// The rest of the derivation is handled by computer algebra.
-
+'#if @DEBUG';
 		b2Assert(this.m_count >= 3);
+'#endif';
 
 		var center = new b2Vec2(0.0, 0.0);
 		var area = 0.0;
@@ -402,7 +411,9 @@ b2PolygonShape.prototype =
 		massData.mass = density * area;
 
 		// Center of mass
+'#if @DEBUG';
 		b2Assert(area > b2_epsilon);
+'#endif';
 		center.Multiply(1.0 / area);
 		massData.center = b2Vec2.Add(center, s);
 
@@ -419,7 +430,9 @@ b2PolygonShape.prototype =
 	/// Get a vertex by index.
 	GetVertex: function(index)
 	{
+'#if @DEBUG';
 		b2Assert(0 <= index && index < this.m_count);
+'#endif';
 		return this.m_vertices[index];
 	},
 
@@ -496,7 +509,9 @@ b2PolygonShape.prototype =
 
 b2PolygonShape.ComputeCentroid = function(vs, count)
 {
+'#if @DEBUG';
 	b2Assert(count >= 3);
+'#endif';
 
 	var c = new b2Vec2();
 	var area = 0.0;
@@ -535,7 +550,9 @@ b2PolygonShape.ComputeCentroid = function(vs, count)
 	}
 
 	// Centroid
+'#if @DEBUG';
 	b2Assert(area > b2_epsilon);
+'#endif';
 	c.Multiply(1.0 / area);
 	return c;
 };

@@ -60,7 +60,9 @@ b2JointDef.prototype =
 /// various fashions. Some joints also feature limits and motors.
 function b2Joint(def)
 {
+'#if @DEBUG';
 	b2Assert(def.bodyA != def.bodyB);
+'#endif';
 
 	this.m_type = def.type;
 	this.m_prev = null;
@@ -239,10 +241,12 @@ b2Joint.Create = function(def)
 	case b2Joint.e_motorJoint:
 		joint = new b2MotorJoint(def);
 		break;
-
+		
+'#if @DEBUG';
 	default:
 		b2Assert(false);
 		break;
+'#endif';
 	}
 
 	return joint;

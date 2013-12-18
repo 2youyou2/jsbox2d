@@ -49,7 +49,9 @@ b2SeparationFunction.prototype =
 		this.m_proxyA = proxyA;
 		this.m_proxyB = proxyB;
 		var count = cache.count;
+'#if @DEBUG';
 		b2Assert(0 < count && count < 3);
+'#endif';
 
 		this.m_sweepA = sweepA;
 		this.m_sweepB = sweepB;
@@ -180,11 +182,13 @@ b2SeparationFunction.prototype =
 				return separation;
 			}
 
+'#if @DEBUG';
 		default:
 			b2Assert(false);
 			indices[0] = -1;
 			indices[1] = -1;
 			return 0.0;
+'#endif';
 		}
 	},
 
@@ -232,9 +236,11 @@ b2SeparationFunction.prototype =
 				return separation;
 			}
 
+'#if @DEBUG';
 		default:
 			b2Assert(false);
 			return 0.0;
+'#endif';
 		}
 	}
 };
@@ -274,7 +280,9 @@ function b2TimeOfImpact(output, input)
 	var totalRadius = proxyA.m_radius + proxyB.m_radius;
 	var target = b2Max(b2_linearSlop, totalRadius - 3.0 * b2_linearSlop);
 	var tolerance = 0.25 * b2_linearSlop;
+'#if @DEBUG';
 	b2Assert(target > tolerance);
+'#endif';
 
 	var t1 = 0.0;
 	var k_maxIterations = 20;	// TODO_ERIN b2Settings

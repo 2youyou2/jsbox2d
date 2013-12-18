@@ -55,7 +55,9 @@ b2Rope.prototype =
 	///
 	Initialize: function(def)
 	{
+'#if @DEBUG';
 		b2Assert(def.count >= 3);
+'#endif';
 		this.m_count = def.count;
 		this.m_ps = new Array(this.m_count);
 		this.m_p0s = new Array(this.m_count);

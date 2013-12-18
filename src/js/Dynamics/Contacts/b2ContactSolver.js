@@ -56,7 +56,9 @@ b2PositionSolverManifold.prototype =
 {
 	Initialize: function(pc, xfA, xfB, index)
 	{
+'#if @DEBUG';
 		b2Assert(pc.pointCount > 0);
+'#endif';
 
 		switch (pc.type)
 		{
@@ -111,7 +113,7 @@ b2PositionSolverManifold.prototype =
 				var clipPointx = (xfA.q.c * pc.localPoints[index].x - xfA.q.s * pc.localPoints[index].y) + xfA.p.x;
 				var clipPointy = (xfA.q.s * pc.localPoints[index].x + xfA.q.c * pc.localPoints[index].y) + xfA.p.y;
 				this.separation = ((clipPointx - planePointx) * this.normal.x + (clipPointy - planePointy) * this.normal.y) /*b2Dot_v2_v2(b2Vec2.Subtract(clipPoint, planePoint), this.normal)*/ - pc.radiusA - pc.radiusB;
-				
+
 				this.point.x = clipPointx;
 				this.point.y = clipPointy;
 
@@ -173,7 +175,9 @@ b2ContactSolver.prototype =
 			var manifold = contact.GetManifold();
 
 			var pointCount = manifold.pointCount;
+'#if @DEBUG';
 			b2Assert(pointCount > 0);
+'#endif';
 
 			var vc = this.m_velocityConstraints[i] || new b2ContactVelocityConstraint();
 			vc.friction = contact.m_friction;
@@ -266,7 +270,9 @@ b2ContactSolver.prototype =
 			var vB = this.m_velocities[indexB].v;
 			var wB = this.m_velocities[indexB].w;
 
+'#if @DEBUG';
 			b2Assert(manifold.pointCount > 0);
+'#endif';
 
 			b2ContactSolver.cs_xfA.q.Set(aA);
 			b2ContactSolver.cs_xfB.q.Set(aB);
@@ -413,7 +419,9 @@ b2ContactSolver.prototype =
 			var tangenty = -1.0 * normal.x;
 			var friction = vc.friction;
 
+'#if @DEBUG';
 			b2Assert(pointCount == 1 || pointCount == 2);
+'#endif';
 
 			// Solve tangent constraints first because non-penetration is more important
 			// than friction.
@@ -527,7 +535,9 @@ b2ContactSolver.prototype =
 
 				var ax = cp1.normalImpulse;
 				var ay = cp2.normalImpulse;
+'#if @DEBUG';
 				b2Assert(ax >= 0.0 && ay >= 0.0);
+'#endif';
 
 				// Relative velocity at contact
 				var dv1x = vB.x + (-wB * cp1.rB.y) - vA.x - (-wA * cp1.rA.y);

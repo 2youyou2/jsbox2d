@@ -218,7 +218,10 @@ b2PrismaticJoint.prototype =
 	/// Set the joint limits, usually in meters.
 	SetLimits: function(lower, upper)
 	{
+'#if @DEBUG';
 		b2Assert(lower <= upper);
+'#endif';
+
 		if (lower != this.m_lowerTranslation || upper != this.m_upperTranslation)
 		{
 			this.m_bodyA.SetAwake(true);

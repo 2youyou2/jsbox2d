@@ -114,7 +114,9 @@ b2FrictionJoint.prototype =
 	/// Set the maximum friction force in N.
 	SetMaxForce: function(force)
 	{
+'#if @DEBUG';
 		b2Assert(b2IsValid(force) && force >= 0.0);
+'#endif';
 		this.m_maxForce = force;
 	},
 
@@ -127,7 +129,9 @@ b2FrictionJoint.prototype =
 	/// Set the maximum friction torque in N*m.
 	SetMaxTorque: function(torque)
 	{
+'#if @DEBUG';
 		b2Assert(b2IsValid(torque) && torque >= 0.0);
+'#endif';
 		this.m_maxTorque = torque;
 	},
 
