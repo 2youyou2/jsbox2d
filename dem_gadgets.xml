@@ -65,7 +65,7 @@
 		<div class="flex container" style="width: 99%; height: 100%;">
 			<div class="flex container fillRestGrow">
 				<canvas style="background: #333333;" class="flex fillRestGrow" id="canvas"></canvas>
-				<div id='debugText' style="color: white; position: absolute; left: 0; top: 0;">Loading...</div>
+				<pre id='debugText' style="color: white; position: absolute; left: 0; top: 0;">Loading...</pre>
 			</div>
 			<div class="flex anchor container column" style="width: 240px;">
 				<label for="test">Test</label>
