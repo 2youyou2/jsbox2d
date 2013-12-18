@@ -8,7 +8,6 @@
 '#include ../../src/js/Common/b2Draw.js';
 '#include ../../src/js/Common/b2Timer.js';
 
-'#include ../../src/js/Collision/b2Collision.js';
 '#include ../../src/js/Collision/Shapes/b2Shape.js';
 '#include ../../src/js/Collision/Shapes/b2CircleShape.js';
 '#include ../../src/js/Collision/Shapes/b2EdgeShape.js';
@@ -17,6 +16,7 @@
 
 '#include ../../src/js/Collision/b2BroadPhase.js';
 '#include ../../src/js/Collision/b2Distance.js';
+'#include ../../src/js/Collision/b2Collision.js';
 '#include ../../src/js/Collision/b2DynamicTree.js';
 '#include ../../src/js/Collision/b2TimeOfImpact.js';
 
