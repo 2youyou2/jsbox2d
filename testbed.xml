@@ -58,6 +58,7 @@
 		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestVerticalStack.js"></script>
 		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestRUBE.js"></script>
 		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestRUBEJointTypes.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestPlinko"></script>
 
 		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/testbed.js"></script>
 		<link type="text/css" rel="stylesheet" href="https://jsbox2d.googlecode.com/svn/trunk/style.css"></link>

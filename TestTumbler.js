@@ -33,18 +33,25 @@ TestTumbler.prototype =
 	{
 		this.parent.prototype.Step.call(this);
 
-		var e_count = 400;
-
-		if (this.m_count < e_count)
+		if (!this.m_paused && this.m_count < 400)
 		{
 			var bd = new b2BodyDef();
 			bd.type = b2Body.b2_dynamicBody;
 			bd.position.Set(0.0, 10.0);
 			var body = this.m_world.CreateBody(bd);
 
-			var shape = new b2PolygonShape();
-			shape.SetAsBox(0.125, 0.125);
-			body.CreateFixture(shape, 1.0);
+			if (this.m_count & 1)
+			{
+				var shape = new b2PolygonShape();
+				shape.SetAsBox(0.125, 0.125);
+			}
+			else
+			{
+				var shape = new b2CircleShape();
+				shape.m_radius = 0.125;
+			}
+
+			body.CreateFixture(shape, Math.random());
 
 			++this.m_count;
 		}

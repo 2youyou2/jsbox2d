@@ -73,7 +73,8 @@ function loadTestBed()
 			TestShapeEditing,
 			TestVerticalStack,
 			TestRUBE,
-			TestRUBEJointTypes
+			TestRUBEJointTypes,
+			TestPlinko
 		];
 
 	tests.sort(function(a, b)

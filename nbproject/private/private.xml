@@ -15,8 +15,12 @@
             <file>file:/G:/box2d_latest/Box2D/Box2D/TestDominos.js</file>
         </group>
         <group name="Box2D">
-            <file>file:/G:/box2d_latest/src/js/Collision/b2Collision.js</file>
-            <file>file:/G:/box2d_latest/CanvasDebug.js</file>
+            <file>file:/G:/box2d_latest/TestGun.js</file>
+            <file>file:/G:/box2d_latest/TestEdgeShapes.js</file>
+            <file>file:/G:/box2d_latest/TestEdge.js</file>
+            <file>file:/G:/box2d_latest/TestCantilever.js</file>
+            <file>file:/G:/box2d_latest/testbed.js</file>
+            <file>file:/G:/box2d_latest/index.html</file>
         </group>
     </open-files>
 </project-private>

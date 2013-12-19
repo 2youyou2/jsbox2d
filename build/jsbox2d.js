@@ -876,12 +876,16 @@ b2Sweep.prototype =
 	/// @param beta is a factor in [0,1], where 0 indicates alpha0.
 	GetTransform: function(/* b2Transform* */ xf, beta)
 	{
-		xf.p = b2Vec2.Add(b2Vec2.Multiply((1.0 - beta), this.c0), b2Vec2.Multiply(beta, this.c));
+		//xf.p = b2Vec2.Add(b2Vec2.Multiply((1.0 - beta), this.c0), b2Vec2.Multiply(beta, this.c));
+		xf.p.x = ((1.0 - beta) * this.c0.x) + (beta * this.c.x);
+		xf.p.y = ((1.0 - beta) * this.c0.y) + (beta * this.c.y);
 		var angle = (1.0 - beta) * this.a0 + beta * this.a;
 		xf.q.Set(angle);
 
 		// Shift to origin
-		xf.p.Subtract(b2Mul_r_v2(xf.q, this.localCenter));
+		//xf.p.Subtract(b2Mul_r_v2(xf.q, this.localCenter));
+		xf.p.x -= xf.q.c * this.localCenter.x - xf.q.s * this.localCenter.y;
+		xf.p.y -= xf.q.s * this.localCenter.x + xf.q.c * this.localCenter.y;
 	},
 
 	/// Advance the sweep forward, yielding a new initial state.
@@ -2918,13 +2922,13 @@ b2DistanceProxy.prototype =
 	},
 
 	/// Get the supporting vertex index in the given direction.
-	GetSupport: function(d)
+	GetSupport: function(dx, dy)
 	{
 		var bestIndex = 0;
-		var bestValue = b2Dot_v2_v2(this.m_vertices[0], d);
+		var bestValue = this.m_vertices[0].x * dx + this.m_vertices[0].y * dy;//b2Dot_v2_v2(this.m_vertices[0], d);
 		for (var i = 1; i < this.m_count; ++i)
 		{
-			var value = b2Dot_v2_v2(this.m_vertices[i], d);
+			var value = this.m_vertices[i].x * dx + this.m_vertices[i].y * dy;//b2Dot_v2_v2(this.m_vertices[i], d);
 			if (value > bestValue)
 			{
 				bestIndex = i;
@@ -2936,21 +2940,9 @@ b2DistanceProxy.prototype =
 	},
 
 	/// Get the supporting vertex in the given direction.
-	GetSupportVertex: function(d)
+	GetSupportVertex: function(dx, dy)
 	{
-		var bestIndex = 0;
-		var bestValue = b2Dot_v2_v2(this.m_vertices[0], d);
-		for (var i = 1; i < this.m_count; ++i)
-		{
-			var value = b2Dot_v2_v2(this.m_vertices[i], d);
-			if (value > bestValue)
-			{
-				bestIndex = i;
-				bestValue = value;
-			}
-		}
-
-		return this.m_vertices[bestIndex];
+		return this.m_vertices[this.GetSupport(dx, dy)];
 	},
 
 	/// Get the vertex count.
@@ -3014,9 +3006,12 @@ b2SimplexVertex.prototype =
 {
 	Assign: function(l)
 	{
-		this.wA.Assign(l.wA);
-		this.wB.Assign(l.wB);
-		this.w.Assign(l.w);
+		this.wA.x = l.wA.x;//.Assign(l.wA);
+		this.wA.y = l.wA.y;
+		this.wB.x = l.wB.x;//.Assign(l.wB);
+		this.wB.y = l.wB.y;
+		this.w.x = l.w.x;//.Assign(l.w);
+		this.w.y = l.w.y;
 		this.a = l.a;
 		this.indexA = l.indexA;
 		this.indexB = l.indexB;
@@ -3049,9 +3044,15 @@ b2Simplex.prototype =
 			v.indexB = cache.indexB[i];
 			var wALocal = proxyA.GetVertex(v.indexA);
 			var wBLocal = proxyB.GetVertex(v.indexB);
-			v.wA.Assign(b2Mul_t_v2(transformA, wALocal));
-			v.wB.Assign(b2Mul_t_v2(transformB, wBLocal));
-			v.w.Assign(b2Vec2.Subtract(v.wB, v.wA));
+			//v.wA.Assign(b2Mul_t_v2(transformA, wALocal));
+			v.wA.x = (transformA.q.c * wALocal.x - transformA.q.s * wALocal.y) + transformA.p.x;
+			v.wA.y = (transformA.q.s * wALocal.x + transformA.q.c * wALocal.y) + transformA.p.y;
+			//v.wB.Assign(b2Mul_t_v2(transformB, wBLocal));
+			v.wB.x = (transformB.q.c * wBLocal.x - transformB.q.s * wBLocal.y) + transformB.p.x;
+			v.wB.y = (transformB.q.s * wBLocal.x + transformB.q.c * wBLocal.y) + transformB.p.y;
+			//v.w.Assign(b2Vec2.Subtract(v.wB, v.wA));
+			v.w.x = v.wB.x - v.wA.x;
+			v.w.y = v.wB.y - v.wA.y;
 			v.a = 0.0;
 		}
 
@@ -3076,9 +3077,15 @@ b2Simplex.prototype =
 			v.indexB = 0;
 			var wALocal = proxyA.GetVertex(0);
 			var wBLocal = proxyB.GetVertex(0);
-			v.wA.Assign(b2Mul_t_v2(transformA, wALocal));
-			v.wB.Assign(b2Mul_t_v2(transformB, wBLocal));
-			v.w.Assign(b2Vec2.Subtract(v.wB, v.wA));
+			//v.wA.Assign(b2Mul_t_v2(transformA, wALocal));
+			v.wA.x = (transformA.q.c * wALocal.x - transformA.q.s * wALocal.y) + transformA.p.x;
+			v.wA.y = (transformA.q.s * wALocal.x + transformA.q.c * wALocal.y) + transformA.p.y;
+			//v.wB.Assign(b2Mul_t_v2(transformB, wBLocal));
+			v.wB.x = (transformB.q.c * wBLocal.x - transformB.q.s * wBLocal.y) + transformB.p.x;
+			v.wB.y = (transformB.q.s * wBLocal.x + transformB.q.c * wBLocal.y) + transformB.p.y;
+			//v.w.Assign(b2Vec2.Subtract(v.wB, v.wA));
+			v.w.x = v.wB.x - v.wA.x;
+			v.w.y = v.wB.y - v.wA.y;
 			v.a = 1.0;
 			this.m_count = 1;
 		}
@@ -3096,54 +3103,68 @@ b2Simplex.prototype =
 		}
 	},
 
-	GetSearchDirection: function()
+	GetSearchDirection: function(p)
 	{
 		switch (this.m_count)
 		{
 		case 1:
-			return this.m_v[0].w.Negate();
+			//return this.m_v[0].w.Negate();
+			p.x = -this.m_v[0].w.x;
+			p.y = -this.m_v[0].w.y;
+			break;
 
 		case 2:
 			{
-				var e12 = b2Vec2.Subtract(this.m_v[1].w, this.m_v[0].w);
-				var sgn = b2Cross_v2_v2(e12, this.m_v[0].w.Negate());
+				var e12x = this.m_v[1].w.x - this.m_v[0].w.x;//b2Vec2.Subtract(this.m_v[1].w, this.m_v[0].w);
+				var e12y = this.m_v[1].w.y - this.m_v[0].w.y;
+				var sgn = e12x * -this.m_v[0].w.y - e12y * -this.m_v[0].w.x;//b2Cross_v2_v2(e12, this.m_v[0].w.Negate());
 				if (sgn > 0.0)
 				{
 					// Origin is left of e12.
-					return b2Cross_f_v2(1.0, e12);
+					p.x = -1.0 * e12y; p.y = 1.0 * e12x;//b2Cross_f_v2(1.0, e12);
 				}
 				else
 				{
 					// Origin is right of e12.
-					return b2Cross_v2_f(e12, 1.0);
+					p.x = 1.0 * e12y; p.y = -1.0 * e12x;//b2Cross_v2_f(e12, 1.0);
 				}
 			}
+			break;
 
 
 		default:
 			b2Assert(false);
-			return new b2Vec2(0, 0);
+			p.x = p.y = 0;
+			break;
 
 		}
 	},
 
-	GetClosestPoint: function()
+	GetClosestPoint: function(p)
 	{
 		switch (this.m_count)
 		{
 		case 1:
-			return this.m_v[0].w;
+			//return this.m_v[0].w;
+			p.x = this.m_v[0].w.x;
+			p.y = this.m_v[0].w.y;
+			break;
 
 		case 2:
-			return b2Vec2.Add(b2Vec2.Multiply(this.m_v[0].a, this.m_v[0].w), b2Vec2.Multiply(this.m_v[1].a, this.m_v[1].w));
+			//return b2Vec2.Add(b2Vec2.Multiply(this.m_v[0].a, this.m_v[0].w), b2Vec2.Multiply(this.m_v[1].a, this.m_v[1].w));
+			p.x = (this.m_v[0].a * this.m_v[0].w.x) + (this.m_v[1].a *this.m_v[1].w.x);
+			p.y = (this.m_v[0].a * this.m_v[0].w.y) + (this.m_v[1].a *this.m_v[1].w.y);
+			break;
 
 		case 3:
-			return new b2Vec2(0, 0);
+			p.x = p.y = 0;
+			break;
 
 
 		default:
 			b2Assert(false);
-			return new b2Vec2(0, 0);
+			p.x = p.y = 0;
+			break;
 
 		}
 	},
@@ -3153,18 +3174,27 @@ b2Simplex.prototype =
 		switch (this.m_count)
 		{
 		case 1:
-			pA.Assign(this.m_v[0].wA);
-			pB.Assign(this.m_v[0].wB);
+			pA.x = this.m_v[0].wA.x;//.Assign(this.m_v[0].wA);
+			pA.y = this.m_v[0].wA.y;
+			pB.x = this.m_v[0].wB.x;//.Assign(this.m_v[0].wB);
+			pB.y = this.m_v[0].wB.y;
 			break;
 
 		case 2:
-			pA.Assign(b2Vec2.Add(b2Vec2.Multiply(this.m_v[0].a, this.m_v[0].wA), b2Vec2.Multiply(this.m_v[1].a, this.m_v[1].wA)));
-			pB.Assign(b2Vec2.Add(b2Vec2.Multiply(this.m_v[0].a, this.m_v[0].wB), b2Vec2.Multiply(this.m_v[1].a, this.m_v[1].wB)));
+			//pA.Assign(b2Vec2.Add(b2Vec2.Multiply(this.m_v[0].a, this.m_v[0].wA), b2Vec2.Multiply(this.m_v[1].a, this.m_v[1].wA)));
+			pA.x = (this.m_v[0].a * this.m_v[0].wA.x) + (this.m_v[1].a * this.m_v[1].wA.x);
+			pA.y = (this.m_v[0].a * this.m_v[0].wA.y) + (this.m_v[1].a * this.m_v[1].wA.y);
+			//pB.Assign(b2Vec2.Add(b2Vec2.Multiply(this.m_v[0].a, this.m_v[0].wB), b2Vec2.Multiply(this.m_v[1].a, this.m_v[1].wB)));
+			pB.x = (this.m_v[0].a * this.m_v[0].wB.x) + (this.m_v[1].a * this.m_v[1].wB.x);
+			pB.y = (this.m_v[0].a * this.m_v[0].wB.y) + (this.m_v[1].a * this.m_v[1].wB.y);
 			break;
 
 		case 3:
-			pA.Assign(b2Vec2.Add(b2Vec2.Add(b2Vec2.Multiply(this.m_v[0].a, this.m_v[0].wA), b2Vec2.Multiply(this.m_v[1].a, this.m_v[1].wA)), b2Vec2.Multiply(this.m_v[2].a, this.m_v[2].wA)));
-			pB.Assign(pA);
+			//pA.Assign(b2Vec2.Add(b2Vec2.Add(b2Vec2.Multiply(this.m_v[0].a, this.m_v[0].wA), b2Vec2.Multiply(this.m_v[1].a, this.m_v[1].wA)), b2Vec2.Multiply(this.m_v[2].a, this.m_v[2].wA)));
+			pA.x = (this.m_v[0].a, this.m_v[0].wA.x) + (this.m_v[1].a, this.m_v[1].wA.x) + (this.m_v[2].a, this.m_v[2].wA.x);
+			pA.y = (this.m_v[0].a, this.m_v[0].wA.y) + (this.m_v[1].a, this.m_v[1].wA.y) + (this.m_v[2].a, this.m_v[2].wA.y);
+			pB.x = pA.x;//.Assign(pA);
+			pB.y = pA.y;
 			break;
 
 
@@ -3186,7 +3216,8 @@ b2Simplex.prototype =
 			return b2Distance(this.m_v[0].w, this.m_v[1].w);
 
 		case 3:
-			return b2Cross_v2_v2(b2Vec2.Subtract(this.m_v[1].w, this.m_v[0].w), b2Vec2.Subtract(this.m_v[2].w, this.m_v[0].w));
+			//return b2Cross_v2_v2(b2Vec2.Subtract(this.m_v[1].w, this.m_v[0].w), b2Vec2.Subtract(this.m_v[2].w, this.m_v[0].w));
+			return (this.m_v[1].w.x - this.m_v[0].w.x) * (this.m_v[2].w.y - this.m_v[0].w.y) - (this.m_v[1].w.y - this.m_v[0].w.y) * (this.m_v[2].w.x - this.m_v[0].w.x);
 
 
 		default:
@@ -3223,10 +3254,12 @@ b2Simplex.prototype =
 	{
 		var w1 = this.m_v[0].w;
 		var w2 = this.m_v[1].w;
-		var e12 = b2Vec2.Subtract(w2, w1);
+		//var e12 = b2Vec2.Subtract(w2, w1);
+		var e12x = w2.x - w1.x;
+		var e12y = w2.y - w1.y;
 
 		// w1 region
-		var d12_2 = -b2Dot_v2_v2(w1, e12);
+		var d12_2 = -(w1.x * e12x + w1.y * e12y);//-b2Dot_v2_v2(w1, e12);
 		if (d12_2 <= 0.0)
 		{
 			// a2 <= 0, so we clamp it to 0
@@ -3236,7 +3269,7 @@ b2Simplex.prototype =
 		}
 
 		// w2 region
-		var d12_1 = b2Dot_v2_v2(w2, e12);
+		var d12_1 = w2.x * e12x + w2.y * e12y;//b2Dot_v2_v2(w2, e12);
 		if (d12_1 <= 0.0)
 		{
 			// a1 <= 0, so we clamp it to 0
@@ -3268,9 +3301,11 @@ b2Simplex.prototype =
 		// [1      1     ][a1] = [1]
 		// [w1.e12 w2.e12][a2] = [0]
 		// a3 = 0
-		var e12 = b2Vec2.Subtract(w2, w1);
-		var w1e12 = b2Dot_v2_v2(w1, e12);
-		var w2e12 = b2Dot_v2_v2(w2, e12);
+		//var e12 = b2Vec2.Subtract(w2, w1);
+		var e12x = w2.x - w1.x;
+		var e12y = w2.y - w1.y;
+		var w1e12 = w1.x * e12x + w1.y * e12y;//b2Dot_v2_v2(w1, e12);
+		var w2e12 = w2.x * e12x + w2.y * e12y;//b2Dot_v2_v2(w2, e12);
 		var d12_1 = w2e12;
 		var d12_2 = -w1e12;
 
@@ -3278,9 +3313,11 @@ b2Simplex.prototype =
 		// [1      1     ][a1] = [1]
 		// [w1.e13 w3.e13][a3] = [0]
 		// a2 = 0
-		var e13 = b2Vec2.Subtract(w3, w1);
-		var w1e13 = b2Dot_v2_v2(w1, e13);
-		var w3e13 = b2Dot_v2_v2(w3, e13);
+		//var e13 = b2Vec2.Subtract(w3, w1);
+		var e13x = w3.x - w1.x;
+		var e13y = w3.y - w1.y;
+		var w1e13 = w1.x * e13x + w1.y * e13y;//b2Dot_v2_v2(w1, e13);
+		var w3e13 = w3.x * e13x + w3.y * e13y;//b2Dot_v2_v2(w3, e13);
 		var d13_1 = w3e13;
 		var d13_2 = -w1e13;
 
@@ -3288,18 +3325,20 @@ b2Simplex.prototype =
 		// [1      1     ][a2] = [1]
 		// [w2.e23 w3.e23][a3] = [0]
 		// a1 = 0
-		var e23 = b2Vec2.Subtract(w3, w2);
-		var w2e23 = b2Dot_v2_v2(w2, e23);
-		var w3e23 = b2Dot_v2_v2(w3, e23);
+		//var e23 = b2Vec2.Subtract(w3, w2);
+		var e23x = w3.x - w2.x;
+		var e23y = w3.y - w2.y;
+		var w2e23 = w2.x * e23x + w2.y * e23y;//b2Dot_v2_v2(w2, e23);
+		var w3e23 = w3.x * e23x + w3.y * e23y;//b2Dot_v2_v2(w3, e23);
 		var d23_1 = w3e23;
 		var d23_2 = -w2e23;
 
 		// Triangle123
-		var n123 = b2Cross_v2_v2(e12, e13);
+		var n123 = e12x * e13y - e12y * e13x;//b2Cross_v2_v2(e12, e13);
 
-		var d123_1 = n123 * b2Cross_v2_v2(w2, w3);
-		var d123_2 = n123 * b2Cross_v2_v2(w3, w1);
-		var d123_3 = n123 * b2Cross_v2_v2(w1, w2);
+		var d123_1 = n123 * (w2.x * w3.y - w2.y * w3.x);//b2Cross_v2_v2(w2, w3);
+		var d123_2 = n123 * (w3.x * w1.y - w3.y * w1.x);//b2Cross_v2_v2(w3, w1);
+		var d123_3 = n123 * (w1.x * w2.y - w1.y * w2.x);//b2Cross_v2_v2(w1, w2);
 
 		// w1 region
 		if (d12_2 <= 0.0 && d13_2 <= 0.0)
@@ -3371,6 +3410,9 @@ b2Simplex.prototype =
 /// Compute the closest points between two shapes. Supports any combination of:
 /// b2CircleShape, b2PolygonShape, b2EdgeShape. The simplex cache is input/output.
 /// On the first call set b2SimplexCache.count to zero.
+var _b2Distance_simplex = new b2Simplex();
+var _b2Distance_normal = new b2Vec2();
+var _b2Distance_p = new b2Vec2();
 function b2DistanceFunc(output,
 				cache,
 				input)
@@ -3384,11 +3426,10 @@ function b2DistanceFunc(output,
 	var transformB = input.transformB;
 
 	// Initialize the simplex.
-	var simplex = new b2Simplex();
-	simplex.ReadCache(cache, proxyA, transformA, proxyB, transformB);
+	_b2Distance_simplex.ReadCache(cache, proxyA, transformA, proxyB, transformB);
 
 	// Get simplex vertices as an array.
-	var vertices = simplex.m_v;
+	var vertices = _b2Distance_simplex.m_v;
 	var k_maxIters = 20;
 
 	// These store the vertices of the last simplex so that we
@@ -3404,24 +3445,24 @@ function b2DistanceFunc(output,
 	while (iter < k_maxIters)
 	{
 		// Copy simplex so we can identify duplicates.
-		saveCount = simplex.m_count;
+		saveCount = _b2Distance_simplex.m_count;
 		for (var i = 0; i < saveCount; ++i)
 		{
 			saveA[i] = vertices[i].indexA;
 			saveB[i] = vertices[i].indexB;
 		}
 
-		switch (simplex.m_count)
+		switch (_b2Distance_simplex.m_count)
 		{
 		case 1:
 			break;
 
 		case 2:
-			simplex.Solve2();
+			_b2Distance_simplex.Solve2();
 			break;
 
 		case 3:
-			simplex.Solve3();
+			_b2Distance_simplex.Solve3();
 			break;
 
 
@@ -3431,14 +3472,14 @@ function b2DistanceFunc(output,
 		}
 
 		// If we have 3 points, then the origin is in the corresponding triangle.
-		if (simplex.m_count == 3)
+		if (_b2Distance_simplex.m_count == 3)
 		{
 			break;
 		}
 
 		// Compute closest point.
-		var p = simplex.GetClosestPoint();
-		distanceSqr2 = p.LengthSquared();
+		_b2Distance_simplex.GetClosestPoint(_b2Distance_p);
+		distanceSqr2 = _b2Distance_p.LengthSquared();
 
 		// Ensure progress
 		if (distanceSqr2 >= distanceSqr1)
@@ -3448,10 +3489,10 @@ function b2DistanceFunc(output,
 		distanceSqr1 = distanceSqr2;
 
 		// Get search direction.
-		var d = simplex.GetSearchDirection();
+		_b2Distance_simplex.GetSearchDirection(_b2Distance_p);
 
 		// Ensure the search direction is numerically fit.
-		if (d.LengthSquared() < b2_epsilon * b2_epsilon)
+		if (_b2Distance_p.LengthSquared() < b2_epsilon * b2_epsilon)
 		{
 			// The origin is probably contained by a line segment
 			// or triangle. Thus the shapes are overlapped.
@@ -3463,13 +3504,20 @@ function b2DistanceFunc(output,
 		}
 
 		// Compute a tentative new simplex vertex using support points.
-		var vertex = vertices[simplex.m_count];
-		vertex.indexA = proxyA.GetSupport(b2MulT_r_v2(transformA.q, d.Negate()));
-		vertex.wA.Assign(b2Mul_t_v2(transformA, proxyA.GetVertex(vertex.indexA)));
-		var wBLocal;
-		vertex.indexB = proxyB.GetSupport(b2MulT_r_v2(transformB.q, d));
-		vertex.wB.Assign(b2Mul_t_v2(transformB, proxyB.GetVertex(vertex.indexB)));
-		vertex.w.Assign(b2Vec2.Subtract(vertex.wB, vertex.wA));
+		var vertex = vertices[_b2Distance_simplex.m_count];
+		vertex.indexA = proxyA.GetSupport(transformA.q.c * -_b2Distance_p.x + transformA.q.s * -_b2Distance_p.y, -transformA.q.s * -_b2Distance_p.x + transformA.q.c * -_b2Distance_p.y);//b2MulT_r_v2(transformA.q, d.Negate()));
+		//vertex.wA.Assign(b2Mul_t_v2(transformA, proxyA.GetVertex(vertex.indexA)));
+		var pva = proxyA.GetVertex(vertex.indexA);
+		vertex.wA.x = (transformA.q.c * pva.x - transformA.q.s * pva.y) + transformA.p.x;
+		vertex.wA.y = (transformA.q.s * pva.x + transformA.q.c * pva.y) + transformA.p.y;
+
+		vertex.indexB = proxyB.GetSupport(transformB.q.c * _b2Distance_p.x + transformB.q.s * _b2Distance_p.y, -transformB.q.s * _b2Distance_p.x + transformB.q.c * _b2Distance_p.y);//b2MulT_r_v2(transformB.q, d));
+		//vertex.wB.Assign(b2Mul_t_v2(transformB, proxyB.GetVertex(vertex.indexB)));
+		var pvb = proxyB.GetVertex(vertex.indexB);
+		vertex.wB.x = (transformB.q.c * pvb.x - transformB.q.s * pvb.y) + transformB.p.x;
+		vertex.wB.y = (transformB.q.s * pvb.x + transformB.q.c * pvb.y) + transformB.p.y;
+		vertex.w.x = vertex.wB.x - vertex.wA.x;//b2Vec2.Subtract(vertex.wB, vertex.wA));
+		vertex.w.y = vertex.wB.y - vertex.wA.y;
 
 		// Iteration count is equated to the number of support point calls.
 		++iter;
@@ -3493,18 +3541,18 @@ function b2DistanceFunc(output,
 		}
 
 		// New vertex is ok and needed.
-		++simplex.m_count;
+		++_b2Distance_simplex.m_count;
 	}
 
 	b2DistanceFunc.b2_gjkMaxIters = b2Max(b2DistanceFunc.b2_gjkMaxIters, iter);
 
 	// Prepare output.
-	simplex.GetWitnessPoints(output.pointA, output.pointB);
+	_b2Distance_simplex.GetWitnessPoints(output.pointA, output.pointB);
 	output.distance = b2Distance(output.pointA, output.pointB);
 	output.iterations = iter;
 
 	// Cache the simplex.
-	simplex.WriteCache(cache);
+	_b2Distance_simplex.WriteCache(cache);
 
 	// Apply radii if requested.
 	if (input.useRadii)
@@ -3517,18 +3565,26 @@ function b2DistanceFunc(output,
 			// Shapes are still no overlapped.
 			// Move the witness points to the outer surface.
 			output.distance -= rA + rB;
-			var normal = b2Vec2.Subtract(output.pointB, output.pointA);
-			normal.Normalize();
-			output.pointA.Add(b2Vec2.Multiply(rA, normal));
-			output.pointB.Subtract(b2Vec2.Multiply(rB, normal));
+			//var normal = b2Vec2.Subtract(output.pointB, output.pointA);
+			_b2Distance_normal.x = output.pointB.x - output.pointA.x;
+			_b2Distance_normal.y = output.pointB.y - output.pointA.y;
+			_b2Distance_normal.Normalize();
+			output.pointA.x += (rA * _b2Distance_normal.x);//.Add(b2Vec2.Multiply(rA, normal));
+			output.pointA.y += (rA * _b2Distance_normal.y);
+			output.pointB.x -= (rB * _b2Distance_normal.x);//.Subtract(b2Vec2.Multiply(rB, normal));
+			output.pointB.y -= (rB * _b2Distance_normal.y);
 		}
 		else
 		{
 			// Shapes are overlapped when radii are considered.
 			// Move the witness points to the middle.
-			var p = b2Vec2.Multiply(0.5, b2Vec2.Add(output.pointA, output.pointB));
-			output.pointA.Assign(p);
-			output.pointB.Assign(p);
+			//var p = b2Vec2.Multiply(0.5, b2Vec2.Add(output.pointA, output.pointB));
+			var px = (0.5 * (output.pointA.x + output.pointB.x));
+			var py = (0.5 * (output.pointA.y + output.pointB.y));
+			output.pointA.x = px;//.Assign(p);
+			output.pointA.y = py;
+			output.pointB.x = px;//.Assign(p);
+			output.pointB.y = py;
 			output.distance = 0.0;
 		}
 	}
@@ -6158,9 +6214,12 @@ b2SeparationFunction.prototype =
 			this.m_type = b2SeparationFunction.e_points;
 			var localPointA = this.m_proxyA.GetVertex(cache.indexA[0]);
 			var localPointB = this.m_proxyB.GetVertex(cache.indexB[0]);
-			var pointA = b2Mul_t_v2(_local_xfA, localPointA);
-			var pointB = b2Mul_t_v2(_local_xfB, localPointB);
-			this.m_axis = b2Vec2.Subtract(pointB, pointA);
+			var pointAx = (_local_xfA.q.c * localPointA.x - _local_xfA.q.s * localPointA.y) + _local_xfA.p.x;//b2Mul_t_v2(_local_xfA, localPointA);
+			var pointAy = (_local_xfA.q.s * localPointA.x + _local_xfA.q.c * localPointA.y) + _local_xfA.p.y;
+			var pointBx = (_local_xfB.q.c * localPointB.x - _local_xfB.q.s * localPointB.y) + _local_xfB.p.x;//b2Mul_t_v2(_local_xfB, localPointB);
+			var pointBy = (_local_xfB.q.s * localPointB.x + _local_xfB.q.c * localPointB.y) + _local_xfB.p.y;
+			this.m_axis.x = pointBx - pointAx;//= b2Vec2.Subtract(pointB, pointA);
+			this.m_axis.y = pointBy - pointAy;
 			var s = this.m_axis.Normalize();
 			return s;
 		}
@@ -6171,20 +6230,26 @@ b2SeparationFunction.prototype =
 			var localPointB1 = proxyB.GetVertex(cache.indexB[0]);
 			var localPointB2 = proxyB.GetVertex(cache.indexB[1]);
 
-			this.m_axis = b2Cross_v2_f(b2Vec2.Subtract(localPointB2, localPointB1), 1.0);
+			this.m_axis.x = 1.0 * (localPointB2.y - localPointB1.y);//b2Cross_v2_f(b2Vec2.Subtract(localPointB2, localPointB1), 1.0);
+			this.m_axis.y = -1.0 * (localPointB2.x - localPointB1.x);
 			this.m_axis.Normalize();
-			var normal = b2Mul_r_v2(_local_xfB.q, this.m_axis);
+			var normalx = _local_xfB.q.c * this.m_axis.x - _local_xfB.q.s * this.m_axis.y;//b2Mul_r_v2(_local_xfB.q, this.m_axis);
+			var normaly = _local_xfB.q.s * this.m_axis.x + _local_xfB.q.c * this.m_axis.y;
 
-			this.m_localPoint = b2Vec2.Multiply(0.5, b2Vec2.Add(localPointB1, localPointB2));
-			var pointB = b2Mul_t_v2(_local_xfB, this.m_localPoint);
+			this.m_localPoint.x = 0.5 * (localPointB1.x + localPointB2.x);//= b2Vec2.Multiply(0.5, b2Vec2.Add(localPointB1, localPointB2));
+			this.m_localPoint.y = 0.5 * (localPointB1.y + localPointB2.y);
+			var pointBx = (_local_xfB.q.c * this.m_localPoint.x - _local_xfB.q.s * this.m_localPoint.y) + _local_xfB.p.x;//b2Mul_t_v2(_local_xfB, this.m_localPoint);
+			var pointBy = (_local_xfB.q.s * this.m_localPoint.x + _local_xfB.q.c * this.m_localPoint.y) + _local_xfB.p.y;
 
 			var localPointA = proxyA.GetVertex(cache.indexA[0]);
-			var pointA = b2Mul_t_v2(_local_xfA, localPointA);
+			var pointAx = (_local_xfA.q.c * localPointA.x - _local_xfA.q.s * localPointA.y) + _local_xfA.p.x;//b2Mul_t_v2(_local_xfA, localPointA);
+			var pointAy = (_local_xfA.q.s * localPointA.x + _local_xfA.q.c * localPointA.y) + _local_xfA.p.y;
 
-			var s = b2Dot_v2_v2(b2Vec2.Subtract(pointA, pointB), normal);
+			var s = (pointAx - pointBx) * normalx + (pointAy - pointBy) * normaly;//b2Dot_v2_v2(b2Vec2.Subtract(pointA, pointB), normal);
 			if (s < 0.0)
 			{
-				this.m_axis = this.m_axis.Negate();
+				this.m_axis.x = -this.m_axis.x;// = this.m_axis.Negate();
+				this.m_axis.y = -this.m_axis.y;
 				s = -s;
 			}
 			return s;
@@ -6196,20 +6261,26 @@ b2SeparationFunction.prototype =
 			var localPointA1 = this.m_proxyA.GetVertex(cache.indexA[0]);
 			var localPointA2 = this.m_proxyA.GetVertex(cache.indexA[1]);
 
-			this.m_axis = b2Cross_v2_f(b2Vec2.Subtract(localPointA2, localPointA1), 1.0);
+			this.m_axis.x = 1.0 * (localPointA2.y - localPointA1.y);//b2Cross_v2_f(b2Vec2.Subtract(localPointA2, localPointA1), 1.0);
+			this.m_axis.y = -1.0 * (localPointA2.x - localPointA1.x);
 			this.m_axis.Normalize();
-			var normal = b2Mul_r_v2(_local_xfA.q, this.m_axis);
+			var normalx = _local_xfA.q.c * this.m_axis.x - _local_xfA.q.s * this.m_axis.y;//b2Mul_r_v2(_local_xfA.q, this.m_axis);
+			var normaly = _local_xfA.q.s * this.m_axis.x + _local_xfA.q.c * this.m_axis.y;
 
-			this.m_localPoint = b2Vec2.Multiply(0.5, b2Vec2.Add(localPointA1, localPointA2));
-			var pointA = b2Mul_t_v2(_local_xfA, this.m_localPoint);
+			this.m_localPoint.x = 0.5 * (localPointA1.x + localPointA2.x);//b2Vec2.Multiply(0.5, b2Vec2.Add(localPointA1, localPointA2));
+			this.m_localPoint.y = 0.5 * (localPointA1.y + localPointA2.y);
+			var pointAx = (_local_xfA.q.c * this.m_localPoint.x - _local_xfA.q.s * this.m_localPoint.y) + _local_xfA.p.x;//b2Mul_t_v2(_local_xfA, this.m_localPoint);
+			var pointAy = (_local_xfA.q.s * this.m_localPoint.x + _local_xfA.q.c * this.m_localPoint.y) + _local_xfA.p.y;
 
 			var localPointB = this.m_proxyB.GetVertex(cache.indexB[0]);
-			var pointB = b2Mul_t_v2(_local_xfB, localPointB);
+			var pointBx = (_local_xfB.q.c * localPointB.x - _local_xfB.q.s * localPointB.y) + _local_xfB.p.x;//b2Mul_t_v2(_local_xfB, localPointB);
+			var pointBy = (_local_xfB.q.s * localPointB.x + _local_xfB.q.c * localPointB.y) + _local_xfB.p.y;
 
-			var s = b2Dot_v2_v2(b2Vec2.Subtract(pointB, pointA), normal);
+			var s = (pointBx - pointAx) * normalx + (pointBy - pointAy) * normaly;//b2Dot_v2_v2(b2Vec2.Subtract(pointB, pointA), normal);
 			if (s < 0.0)
 			{
-				this.m_axis = this.m_axis.Negate();
+				this.m_axis.x = -this.m_axis.x;// = this.m_axis.Negate();
+				this.m_axis.y = -this.m_axis.y;
 				s = -s;
 			}
 			return s;
@@ -6226,54 +6297,69 @@ b2SeparationFunction.prototype =
 		{
 		case b2SeparationFunction.e_points:
 			{
-				var axisA = b2MulT_r_v2(_local_xfA.q,  this.m_axis);
-				var axisB = b2MulT_r_v2(_local_xfB.q, this.m_axis.Negate());
+				var axisAx = _local_xfA.q.c * this.m_axis.x + _local_xfA.q.s * this.m_axis.y;//b2MulT_r_v2(_local_xfA.q, this.m_axis);
+				var axisAy = -_local_xfA.q.s * this.m_axis.x + _local_xfA.q.c * this.m_axis.y;
+				var axisBx = _local_xfB.q.c * -this.m_axis.x + _local_xfB.q.s * -this.m_axis.y;//b2MulT_r_v2(_local_xfB.q, this.m_axis.Negate());
+				var axisBy = -_local_xfB.q.s * -this.m_axis.x + _local_xfB.q.c * -this.m_axis.y;
 
-				indices[0] = this.m_proxyA.GetSupport(axisA);
-				indices[1] = this.m_proxyB.GetSupport(axisB);
+				indices[0] = this.m_proxyA.GetSupport(axisAx, axisAy);
+				indices[1] = this.m_proxyB.GetSupport(axisBx, axisBy);
 
 				var localPointA = this.m_proxyA.GetVertex(indices[0]);
 				var localPointB = this.m_proxyB.GetVertex(indices[1]);
 
-				var pointA = b2Mul_t_v2(_local_xfA, localPointA);
-				var pointB = b2Mul_t_v2(_local_xfB, localPointB);
+				var pointAx = (_local_xfA.q.c * localPointA.x - _local_xfA.q.s * localPointA.y) + _local_xfA.p.x;//b2Mul_t_v2(_local_xfA, localPointA);
+				var pointAy = (_local_xfA.q.s * localPointA.x + _local_xfA.q.c * localPointA.y) + _local_xfA.p.y;
+				var pointBx = (_local_xfB.q.c * localPointB.x - _local_xfB.q.s * localPointB.y) + _local_xfB.p.x;//b2Mul_t_v2(_local_xfB, localPointB);
+				var pointBy = (_local_xfB.q.s * localPointB.x + _local_xfB.q.c * localPointB.y) + _local_xfB.p.y;
 
-				var separation = b2Dot_v2_v2(b2Vec2.Subtract(pointB, pointA), this.m_axis);
-				return separation;
+				//var separation = b2Dot_v2_v2(b2Vec2.Subtract(pointB, pointA), this.m_axis);
+				//return separation;
+				return (pointBx - pointAx) * this.m_axis.x + (pointBy - pointAy) * this.m_axis.y;
 			}
 
 		case b2SeparationFunction.e_faceA:
 			{
-				var normal = b2Mul_r_v2(_local_xfA.q, this.m_axis);
-				var pointA = b2Mul_t_v2(_local_xfA, this.m_localPoint);
+				var normalx = _local_xfA.q.c * this.m_axis.x - _local_xfA.q.s * this.m_axis.y;//b2Mul_r_v2(_local_xfA.q, this.m_axis);
+				var normaly = _local_xfA.q.s * this.m_axis.x + _local_xfA.q.c * this.m_axis.y;
+				var pointAx = (_local_xfA.q.c * this.m_localPoint.x - _local_xfA.q.s * this.m_localPoint.y) + _local_xfA.p.x;//b2Mul_t_v2(_local_xfA, this.m_localPoint);
+				var pointAy = (_local_xfA.q.s * this.m_localPoint.x + _local_xfA.q.c * this.m_localPoint.y) + _local_xfA.p.y;
 
-				var axisB = b2MulT_r_v2(_local_xfB.q, normal.Negate());
+				var axisBx = _local_xfB.q.c * -normalx + _local_xfB.q.s * -normaly;//b2MulT_r_v2(_local_xfB.q, normal.Negate());
+				var axisBy = -_local_xfB.q.s * -normalx + _local_xfB.q.c * -normaly;
 
 				indices[0] = -1;
-				indices[1] = this.m_proxyB.GetSupport(axisB);
+				indices[1] = this.m_proxyB.GetSupport(axisBx, axisBy);
 
 				var localPointB = this.m_proxyB.GetVertex(indices[1]);
-				var pointB = b2Mul_t_v2(_local_xfB, localPointB);
+				var pointBx = (_local_xfB.q.c * localPointB.x - _local_xfB.q.s * localPointB.y) + _local_xfB.p.x;//b2Mul_t_v2(_local_xfB, localPointB);
+				var pointBy = (_local_xfB.q.s * localPointB.x + _local_xfB.q.c * localPointB.y) + _local_xfB.p.y;
 
-				var separation = b2Dot_v2_v2(b2Vec2.Subtract(pointB, pointA), normal);
-				return separation;
+				//var separation = b2Dot_v2_v2(b2Vec2.Subtract(pointB, pointA), normal);
+				//return separation;
+				return (pointBx - pointAx) * normalx + (pointBy - pointAy) * normaly;
 			}
 
 		case b2SeparationFunction.e_faceB:
 			{
-				var normal = b2Mul_r_v2(_local_xfB.q, this.m_axis);
-				var pointB = b2Mul_t_v2(_local_xfB, this.m_localPoint);
+				var normalx = _local_xfB.q.c * this.m_axis.x - _local_xfB.q.s * this.m_axis.y;//b2Mul_r_v2(_local_xfB.q, this.m_axis);
+				var normaly = _local_xfB.q.s * this.m_axis.x + _local_xfB.q.c * this.m_axis.y;
+				var pointBx = (_local_xfB.q.c * this.m_localPoint.x - _local_xfB.q.s * this.m_localPoint.y) + _local_xfB.p.x;//b2Mul_t_v2(_local_xfB, this.m_localPoint);
+				var pointBy = (_local_xfB.q.s * this.m_localPoint.x + _local_xfB.q.c * this.m_localPoint.y) + _local_xfB.p.y;
 
-				var axisA = b2MulT_r_v2(_local_xfA.q, normal.Negate());
+				var axisAx = _local_xfA.q.c * -normalx + _local_xfA.q.s * -normaly;//b2MulT_r_v2(_local_xfA.q, normal.Negate());
+				var axisBy = -_local_xfA.q.s * -normalx + _local_xfA.q.c * -normaly;
 
 				indices[1] = -1;
-				indices[0] = this.m_proxyA.GetSupport(axisA);
+				indices[0] = this.m_proxyA.GetSupport(axisAx, axisBy);
 
 				var localPointA = this.m_proxyA.GetVertex(indices[0]);
-				var pointA = b2Mul_t_v2(_local_xfA, localPointA);
+				var pointAx = (_local_xfA.q.c * localPointA.x - _local_xfA.q.s * localPointA.y) + _local_xfA.p.x;//b2Mul_t_v2(_local_xfA, localPointA);
+				var pointAy = (_local_xfA.q.s * localPointA.x + _local_xfA.q.c * localPointA.y) + _local_xfA.p.y;
 
-				var separation = b2Dot_v2_v2(b2Vec2.Subtract(pointA, pointB), normal);
-				return separation;
+				//var separation = b2Dot_v2_v2(b2Vec2.Subtract(pointA, pointB), normal);
+				//return separation;
+				return (pointAx - pointBx) * normalx + (pointAy - pointBy) * normaly;
 			}
 
 
@@ -6299,34 +6385,42 @@ b2SeparationFunction.prototype =
 				var localPointA = this.m_proxyA.GetVertex(indexA);
 				var localPointB = this.m_proxyB.GetVertex(indexB);
 
-				var pointA = b2Mul_t_v2(_local_xfA, localPointA);
-				var pointB = b2Mul_t_v2(_local_xfB, localPointB);
-				var separation = b2Dot_v2_v2(b2Vec2.Subtract(pointB, pointA), this.m_axis);
+				var pointAx = (_local_xfA.q.c * localPointA.x - _local_xfA.q.s * localPointA.y) + _local_xfA.p.x;//b2Mul_t_v2(_local_xfA, localPointA);
+				var pointAy = (_local_xfA.q.s * localPointA.x + _local_xfA.q.c * localPointA.y) + _local_xfA.p.y;
+				var pointBx = (_local_xfB.q.c * localPointB.x - _local_xfB.q.s * localPointB.y) + _local_xfB.p.x;//b2Mul_t_v2(_local_xfB, localPointB);
+				var pointBy = (_local_xfB.q.s * localPointB.x + _local_xfB.q.c * localPointB.y) + _local_xfB.p.y;
+				var separation = (pointBx - pointAx) * this.m_axis.x + (pointBy - pointAy) * this.m_axis.y;//b2Dot_v2_v2(b2Vec2.Subtract(pointB, pointA), this.m_axis);
 
 				return separation;
 			}
 
 		case b2SeparationFunction.e_faceA:
 			{
-				var normal = b2Mul_r_v2(_local_xfA.q, this.m_axis);
-				var pointA = b2Mul_t_v2(_local_xfA, this.m_localPoint);
+				var normalx = _local_xfA.q.c * this.m_axis.x - _local_xfA.q.s * this.m_axis.y;//b2Mul_r_v2(_local_xfA.q, this.m_axis);
+				var normaly = _local_xfA.q.s * this.m_axis.x + _local_xfA.q.c * this.m_axis.y;
+				var pointAx = (_local_xfA.q.c * this.m_localPoint.x - _local_xfA.q.s * this.m_localPoint.y) + _local_xfA.p.x;//b2Mul_t_v2(_local_xfA, this.m_localPoint);
+				var pointAy = (_local_xfA.q.s * this.m_localPoint.x + _local_xfA.q.c * this.m_localPoint.y) + _local_xfA.p.y;
 
 				var localPointB = this.m_proxyB.GetVertex(indexB);
-				var pointB = b2Mul_t_v2(_local_xfB, localPointB);
+				var pointBx = (_local_xfB.q.c * localPointB.x - _local_xfB.q.s * localPointB.y) + _local_xfB.p.x;//b2Mul_t_v2(_local_xfB, localPointB);
+				var pointBy = (_local_xfB.q.s * localPointB.x + _local_xfB.q.c * localPointB.y) + _local_xfB.p.y;
 
-				var separation = b2Dot_v2_v2(b2Vec2.Subtract(pointB, pointA), normal);
+				var separation = (pointBx - pointAx) * normalx + (pointBy - pointAy) * normaly;//b2Dot_v2_v2(b2Vec2.Subtract(pointB, pointA), normal);
 				return separation;
 			}
 
 		case b2SeparationFunction.e_faceB:
 			{
-				var normal = b2Mul_r_v2(_local_xfB.q, this.m_axis);
-				var pointB = b2Mul_t_v2(_local_xfB, this.m_localPoint);
+				var normalx = _local_xfB.q.c * this.m_axis.x - _local_xfB.q.s * this.m_axis.y;//b2Mul_r_v2(_local_xfB.q, this.m_axis);
+				var normaly = _local_xfB.q.s * this.m_axis.x + _local_xfB.q.c * this.m_axis.y;
+				var pointBx = (_local_xfB.q.c * this.m_localPoint.x - _local_xfB.q.s * this.m_localPoint.y) + _local_xfB.p.x;//b2Mul_t_v2(_local_xfB, this.m_localPoint);
+				var pointBy = (_local_xfB.q.s * this.m_localPoint.x + _local_xfB.q.c * this.m_localPoint.y) + _local_xfB.p.y;
 
 				var localPointA = this.m_proxyA.GetVertex(indexA);
-				var pointA = b2Mul_t_v2(_local_xfA, localPointA);
+				var pointAx = (_local_xfA.q.c * localPointA.x - _local_xfA.q.s * localPointA.y) + _local_xfA.p.x;//b2Mul_t_v2(_local_xfA, localPointA);
+				var pointAy = (_local_xfA.q.s * localPointA.x + _local_xfA.q.c * localPointA.y) + _local_xfA.p.y;
 
-				var separation = b2Dot_v2_v2(b2Vec2.Subtract(pointA, pointB), normal);
+				var separation = (pointAx - pointBx) * normalx + (pointAy - pointBy) * normaly;//b2Dot_v2_v2(b2Vec2.Subtract(pointA, pointB), normal);
 				return separation;
 			}
 
@@ -8816,7 +8910,7 @@ b2World.prototype =
 	{
 		for (var body = this.m_bodyList; body; body = body.GetNext())
 		{
-			body.m_force.SetZero();
+			body.m_force.x = body.m_force.y = 0;
 			body.m_torque = 0.0;
 		}
 	},
