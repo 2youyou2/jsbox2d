@@ -60,7 +60,8 @@ b2ManifoldPoint.prototype =
 	Clone: function()
 	{
 		var point = new b2ManifoldPoint();
-		point.localPoint.Assign(this.localPoint);
+		point.localPoint.x = this.localPoint.x;//.Assign(this.localPoint);
+		point.localPoint.y = this.localPoint.y;
 		point.normalImpulse = this.normalImpulse;
 		point.tangentImpulse = this.tangentImpulse;
 		point.id.Assign(this.id);
@@ -101,8 +102,10 @@ b2Manifold.prototype =
 
 		manifold.pointCount = this.pointCount;
 		manifold.type = this.type;
-		manifold.localPoint.Assign(this.localPoint);
-		manifold.localNormal.Assign(this.localNormal);
+		manifold.localPoint.x = this.localPoint.x;//.Assign(this.localPoint);
+		manifold.localPoint.y = this.localPoint.y;
+		manifold.localNormal.x = this.localNormal.x;//.Assign(this.localNormal);
+		manifold.localNormal.y = this.localNormal.y;
 
 		for (var i = 0; i < this.pointCount; ++i)
 			manifold.points[i] = this.points[i].Clone();
@@ -116,8 +119,10 @@ b2Manifold.prototype =
 	{
 		this.pointCount = manifold.pointCount;
 		this.type = manifold.type;
-		this.localPoint.Assign(manifold.localPoint);
-		this.localNormal.Assign(manifold.localNormal);
+		this.localPoint.x = manifold.localPoint.x;//.Assign(manifold.localPoint);
+		this.localPoint.y = manifold.localPoint.y;
+		this.localNormal.x = manifold.localNormal.x;//.Assign(manifold.localNormal);
+		this.localNormal.y = manifold.localNormal.y;
 
 		for (var i = 0; i < this.pointCount; ++i)
 			this.points[i] = manifold.points[i]; // !! NO CLONE
@@ -161,54 +166,84 @@ b2WorldManifold.prototype =
 		{
 		case b2Manifold.e_circles:
 			{
-				this.normal.Set(1.0, 0.0);
-				var pointA = b2Mul_t_v2(xfA, manifold.localPoint);
-				var pointB = b2Mul_t_v2(xfB, manifold.points[0].localPoint);
-				if (b2DistanceSquared(pointA, pointB) > b2_epsilon * b2_epsilon)
+				this.normal.x = 1; this.normal.y = 0;//.Set(1.0, 0.0);
+				var pointAx = (xfA.q.c * manifold.localPoint.x - xfA.q.s * manifold.localPoint.y) + xfA.p.x;//b2Mul_t_v2(xfA, manifold.localPoint);
+				var pointAy = (xfA.q.s * manifold.localPoint.x + xfA.q.c * manifold.localPoint.y) + xfA.p.y;
+				var pointBx = (xfB.q.c * manifold.points[0].localPoint.x - xfB.q.s * manifold.points[0].localPoint.y) + xfB.p.x;//b2Mul_t_v2(xfB, manifold.points[0].localPoint);
+				var pointBy = (xfB.q.s * manifold.points[0].localPoint.x + xfB.q.c * manifold.points[0].localPoint.y) + xfB.p.y;
+
+				var cx = pointAx - pointBx;
+				var cy = pointAy - pointBy;
+				if ((cx * cx + cy * cy)/*b2DistanceSquared(pointA, pointB)*/ > b2_epsilon * b2_epsilon)
 				{
-					this.normal = b2Vec2.Subtract(pointB, pointA);
+					this.normal.x = pointBx - pointAx;// = b2Vec2.Subtract(pointB, pointA);
+					this.normal.y = pointBy - pointAy;
 					this.normal.Normalize();
 				}
 
-				var cA = b2Vec2.Add(pointA, b2Vec2.Multiply(radiusA, this.normal));
-				var cB = b2Vec2.Subtract(pointB, b2Vec2.Multiply(radiusB, this.normal));
-				this.points[0] = b2Vec2.Multiply(0.5, b2Vec2.Add(cA, cB));
-				this.separations[0] = b2Dot_v2_v2(b2Vec2.Subtract(cB, cA), this.normal);
+				//var cA = b2Vec2.Add(pointA, b2Vec2.Multiply(radiusA, this.normal));
+				var cAx = pointAx + (radiusA * this.normal.x);
+				var cAy = pointAy + (radiusA * this.normal.y);
+				//var cB = b2Vec2.Subtract(pointB, b2Vec2.Multiply(radiusB, this.normal));
+				var cBx = pointBx - (radiusB * this.normal.x);
+				var cBy = pointBy - (radiusB * this.normal.y);
+				//this.points[0] = b2Vec2.Multiply(0.5, b2Vec2.Add(cA, cB));
+				this.points[0] = new b2Vec2(0.5 * (cAx + cBx), 0.5 * (cAy + cBy));
+				this.separations[0] = (cBx - cAx) * this.normal.x + (cBy - cAy) * this.normal.y;//b2Dot_v2_v2(b2Vec2.Subtract(cB, cA), this.normal);
 			}
 			break;
 
 		case b2Manifold.e_faceA:
 			{
-				this.normal = b2Mul_r_v2(xfA.q, manifold.localNormal);
-				var planePoint = b2Mul_t_v2(xfA, manifold.localPoint);
+				this.normal.x = xfA.q.c * manifold.localNormal.x - xfA.q.s * manifold.localNormal.y;//b2Mul_r_v2(xfA.q, manifold.localNormal);
+				this.normal.y = xfA.q.s * manifold.localNormal.x + xfA.q.c * manifold.localNormal.y;
+				var planePointx = (xfA.q.c * manifold.localPoint.x - xfA.q.s * manifold.localPoint.y) + xfA.p.x;//b2Mul_t_v2(xfA, manifold.localPoint);
+				var planePointy = (xfA.q.s * manifold.localPoint.x + xfA.q.c * manifold.localPoint.y) + xfA.p.y;
 
 				for (var i = 0; i < manifold.pointCount; ++i)
 				{
-					var clipPoint = b2Mul_t_v2(xfB, manifold.points[i].localPoint);
-					var cA = b2Vec2.Add(clipPoint, b2Vec2.Multiply((radiusA - b2Dot_v2_v2(b2Vec2.Subtract(clipPoint, planePoint), this.normal)), this.normal));
-					var cB = b2Vec2.Subtract(clipPoint, b2Vec2.Multiply(radiusB, this.normal));
-					this.points[i] = b2Vec2.Multiply(0.5, b2Vec2.Add(cA, cB));
-					this.separations[i] = b2Dot_v2_v2(b2Vec2.Subtract(cB, cA), this.normal);
+					var clipPointx = (xfB.q.c * manifold.points[i].localPoint.x - xfB.q.s * manifold.points[i].localPoint.y) + xfB.p.x;//b2Mul_t_v2(xfB, manifold.points[i].localPoint);
+					var clipPointy = (xfB.q.s * manifold.points[i].localPoint.x + xfB.q.c * manifold.points[i].localPoint.y) + xfB.p.y;
+					//var cA = b2Vec2.Add(clipPoint, b2Vec2.Multiply((radiusA - b2Dot_v2_v2(b2Vec2.Subtract(clipPoint, planePoint), this.normal)), this.normal));
+					var d = (clipPointx - planePointx) * this.normal.x + (clipPointy - planePointy) * this.normal.y;
+					var cAx = clipPointx + ((radiusA - d) * this.normal.x);
+					var cAy = clipPointy + ((radiusA - d) * this.normal.y);
+					//var cB = b2Vec2.Subtract(clipPoint, b2Vec2.Multiply(radiusB, this.normal));
+					var cBx = (clipPointx - (radiusB * this.normal.x));
+					var cBy = (clipPointy - (radiusB * this.normal.y));
+					//this.points[i] = b2Vec2.Multiply(0.5, b2Vec2.Add(cA, cB));
+					this.points[i] = new b2Vec2(0.5 * (cAx + cBx), 0.5 * (cAy + cBy));
+					//this.separations[i] = b2Dot_v2_v2(b2Vec2.Subtract(cB, cA), this.normal);
+					this.separations[i] = (cBx - cAx) * this.normal.x + (cBy - cAy) * this.normal.y;//b2Dot_v2_v2(b2Vec2.Subtract(cB, cA), this.normal);
 				}
 			}
 			break;
 
 		case b2Manifold.e_faceB:
 			{
-				this.normal = b2Mul_r_v2(xfB.q, manifold.localNormal);
-				var planePoint = b2Mul_t_v2(xfB, manifold.localPoint);
+				this.normal.x = xfB.q.c * manifold.localNormal.x - xfB.q.s * manifold.localNormal.y;//b2Mul_r_v2(xfB.q, manifold.localNormal);
+				this.normal.y = xfB.q.s * manifold.localNormal.x + xfB.q.c * manifold.localNormal.y;
+				var planePointx = (xfB.q.c * manifold.localPoint.x - xfB.q.s * manifold.localPoint.y) + xfB.p.x;//b2Mul_t_v2(xfB, manifold.localPoint);
+				var planePointy = (xfB.q.s * manifold.localPoint.x + xfB.q.c * manifold.localPoint.y) + xfB.p.y;
 
 				for (var i = 0; i < manifold.pointCount; ++i)
 				{
-					var clipPoint = b2Mul_t_v2(xfA, manifold.points[i].localPoint);
-					var cB = b2Vec2.Add(clipPoint, b2Vec2.Multiply((radiusB - b2Dot_v2_v2(b2Vec2.Subtract(clipPoint, planePoint), this.normal)), this.normal));
-					var cA = b2Vec2.Subtract(clipPoint, b2Vec2.Multiply(radiusA, this.normal));
-					this.points[i] = b2Vec2.Multiply(0.5, b2Vec2.Add(cA, cB));
-					this.separations[i] = b2Dot_v2_v2(b2Vec2.Subtract(cA, cB), this.normal);
+					var clipPointx = (xfA.q.c * manifold.points[i].localPoint.x - xfA.q.s * manifold.points[i].localPoint.y) + xfA.p.x;//b2Mul_t_v2(xfA, manifold.points[i].localPoint);
+					var clipPointy = (xfA.q.s * manifold.points[i].localPoint.x + xfA.q.c * manifold.points[i].localPoint.y) + xfA.p.y;
+					//var cB = b2Vec2.Add(clipPoint, b2Vec2.Multiply((radiusB - b2Dot_v2_v2(b2Vec2.Subtract(clipPoint, planePoint), this.normal)), this.normal));
+					var d = (clipPointx - planePointx) * this.normal.x + (clipPointy - planePointy) * this.normal.y;
+					var cBx = clipPointx + ((radiusB - d) * this.normal.x);
+					var cBy = clipPointy + ((radiusB - d) * this.normal.y);
+					//var cA = b2Vec2.Subtract(clipPoint, b2Vec2.Multiply(radiusA, this.normal));
+					var cAx = (clipPointx - (radiusA * this.normal.x));
+					var cAy = (clipPointy - (radiusA * this.normal.y));
+					this.points[i] = new b2Vec2(0.5 * (cAx + cBx), 0.5 * (cAy + cBy));
+					this.separations[i] = (cAx - cBx) * this.normal.x + (cAy - cBy) * this.normal.y;//b2Dot_v2_v2(b2Vec2.Subtract(cA, cB), this.normal);
 				}
 
 				// Ensure normal points from A to B.
-				this.normal = this.normal.Negate();
+				this.normal.x = -this.normal.x;// = this.normal.Negate();
+				this.normal.y = -this.normal.y;
 			}
 			break;
 		}
