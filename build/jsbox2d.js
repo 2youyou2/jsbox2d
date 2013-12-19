@@ -4216,7 +4216,9 @@ function b2FindIncidentEdge(c,
 	var vertices2 = poly2.m_vertices;
 	var normals2 = poly2.m_normals;
 
+
 	b2Assert(0 <= edge1 && edge1 < poly1.m_count);
+
 
 	// Get the normal of the reference edge in poly2's frame.
 	var normal1 = b2MulT_r_v2(xf2.q, b2Mul_r_v2(xf1.q, normals1[edge1]));
@@ -4480,7 +4482,9 @@ function b2CollideEdgeAndCircle(manifold,
 
 	// Region AB
 	var den = b2Dot_v2_v2(e, e);
+
 	b2Assert(den > 0.0);
+
 	var P = b2Vec2.Multiply((1.0 / den), b2Vec2.Add(b2Vec2.Multiply(u, A), b2Vec2.Multiply(v, B)));
 	var d = b2Vec2.Subtract(Q, P);
 	var dd = b2Dot_v2_v2(d, d);
