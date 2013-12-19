@@ -502,7 +502,7 @@ b2World.prototype =
 	{
 		for (var body = this.m_bodyList; body; body = body.GetNext())
 		{
-			body.m_force.SetZero();
+			body.m_force.x = body.m_force.y = 0;
 			body.m_torque = 0.0;
 		}
 	},

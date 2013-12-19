@@ -64,9 +64,12 @@ b2SeparationFunction.prototype =
 			this.m_type = b2SeparationFunction.e_points;
 			var localPointA = this.m_proxyA.GetVertex(cache.indexA[0]);
 			var localPointB = this.m_proxyB.GetVertex(cache.indexB[0]);
-			var pointA = b2Mul_t_v2(_local_xfA, localPointA);
-			var pointB = b2Mul_t_v2(_local_xfB, localPointB);
-			this.m_axis = b2Vec2.Subtract(pointB, pointA);
+			var pointAx = (_local_xfA.q.c * localPointA.x - _local_xfA.q.s * localPointA.y) + _local_xfA.p.x;//b2Mul_t_v2(_local_xfA, localPointA);
+			var pointAy = (_local_xfA.q.s * localPointA.x + _local_xfA.q.c * localPointA.y) + _local_xfA.p.y;
+			var pointBx = (_local_xfB.q.c * localPointB.x - _local_xfB.q.s * localPointB.y) + _local_xfB.p.x;//b2Mul_t_v2(_local_xfB, localPointB);
+			var pointBy = (_local_xfB.q.s * localPointB.x + _local_xfB.q.c * localPointB.y) + _local_xfB.p.y;
+			this.m_axis.x = pointBx - pointAx;//= b2Vec2.Subtract(pointB, pointA);
+			this.m_axis.y = pointBy - pointAy;
 			var s = this.m_axis.Normalize();
 			return s;
 		}
@@ -77,20 +80,26 @@ b2SeparationFunction.prototype =
 			var localPointB1 = proxyB.GetVertex(cache.indexB[0]);
 			var localPointB2 = proxyB.GetVertex(cache.indexB[1]);
 
-			this.m_axis = b2Cross_v2_f(b2Vec2.Subtract(localPointB2, localPointB1), 1.0);
+			this.m_axis.x = 1.0 * (localPointB2.y - localPointB1.y);//b2Cross_v2_f(b2Vec2.Subtract(localPointB2, localPointB1), 1.0);
+			this.m_axis.y = -1.0 * (localPointB2.x - localPointB1.x);
 			this.m_axis.Normalize();
-			var normal = b2Mul_r_v2(_local_xfB.q, this.m_axis);
+			var normalx = _local_xfB.q.c * this.m_axis.x - _local_xfB.q.s * this.m_axis.y;//b2Mul_r_v2(_local_xfB.q, this.m_axis);
+			var normaly = _local_xfB.q.s * this.m_axis.x + _local_xfB.q.c * this.m_axis.y;
 
-			this.m_localPoint = b2Vec2.Multiply(0.5, b2Vec2.Add(localPointB1, localPointB2));
-			var pointB = b2Mul_t_v2(_local_xfB, this.m_localPoint);
+			this.m_localPoint.x = 0.5 * (localPointB1.x + localPointB2.x);//= b2Vec2.Multiply(0.5, b2Vec2.Add(localPointB1, localPointB2));
+			this.m_localPoint.y = 0.5 * (localPointB1.y + localPointB2.y);
+			var pointBx = (_local_xfB.q.c * this.m_localPoint.x - _local_xfB.q.s * this.m_localPoint.y) + _local_xfB.p.x;//b2Mul_t_v2(_local_xfB, this.m_localPoint);
+			var pointBy = (_local_xfB.q.s * this.m_localPoint.x + _local_xfB.q.c * this.m_localPoint.y) + _local_xfB.p.y;
 
 			var localPointA = proxyA.GetVertex(cache.indexA[0]);
-			var pointA = b2Mul_t_v2(_local_xfA, localPointA);
+			var pointAx = (_local_xfA.q.c * localPointA.x - _local_xfA.q.s * localPointA.y) + _local_xfA.p.x;//b2Mul_t_v2(_local_xfA, localPointA);
+			var pointAy = (_local_xfA.q.s * localPointA.x + _local_xfA.q.c * localPointA.y) + _local_xfA.p.y;
 
-			var s = b2Dot_v2_v2(b2Vec2.Subtract(pointA, pointB), normal);
+			var s = (pointAx - pointBx) * normalx + (pointAy - pointBy) * normaly;//b2Dot_v2_v2(b2Vec2.Subtract(pointA, pointB), normal);
 			if (s < 0.0)
 			{
-				this.m_axis = this.m_axis.Negate();
+				this.m_axis.x = -this.m_axis.x;// = this.m_axis.Negate();
+				this.m_axis.y = -this.m_axis.y;
 				s = -s;
 			}
 			return s;
@@ -102,20 +111,26 @@ b2SeparationFunction.prototype =
 			var localPointA1 = this.m_proxyA.GetVertex(cache.indexA[0]);
 			var localPointA2 = this.m_proxyA.GetVertex(cache.indexA[1]);
 
-			this.m_axis = b2Cross_v2_f(b2Vec2.Subtract(localPointA2, localPointA1), 1.0);
+			this.m_axis.x = 1.0 * (localPointA2.y - localPointA1.y);//b2Cross_v2_f(b2Vec2.Subtract(localPointA2, localPointA1), 1.0);
+			this.m_axis.y = -1.0 * (localPointA2.x - localPointA1.x);
 			this.m_axis.Normalize();
-			var normal = b2Mul_r_v2(_local_xfA.q, this.m_axis);
+			var normalx = _local_xfA.q.c * this.m_axis.x - _local_xfA.q.s * this.m_axis.y;//b2Mul_r_v2(_local_xfA.q, this.m_axis);
+			var normaly = _local_xfA.q.s * this.m_axis.x + _local_xfA.q.c * this.m_axis.y;
 
-			this.m_localPoint = b2Vec2.Multiply(0.5, b2Vec2.Add(localPointA1, localPointA2));
-			var pointA = b2Mul_t_v2(_local_xfA, this.m_localPoint);
+			this.m_localPoint.x = 0.5 * (localPointA1.x + localPointA2.x);//b2Vec2.Multiply(0.5, b2Vec2.Add(localPointA1, localPointA2));
+			this.m_localPoint.y = 0.5 * (localPointA1.y + localPointA2.y);
+			var pointAx = (_local_xfA.q.c * this.m_localPoint.x - _local_xfA.q.s * this.m_localPoint.y) + _local_xfA.p.x;//b2Mul_t_v2(_local_xfA, this.m_localPoint);
+			var pointAy = (_local_xfA.q.s * this.m_localPoint.x + _local_xfA.q.c * this.m_localPoint.y) + _local_xfA.p.y;
 
 			var localPointB = this.m_proxyB.GetVertex(cache.indexB[0]);
-			var pointB = b2Mul_t_v2(_local_xfB, localPointB);
+			var pointBx = (_local_xfB.q.c * localPointB.x - _local_xfB.q.s * localPointB.y) + _local_xfB.p.x;//b2Mul_t_v2(_local_xfB, localPointB);
+			var pointBy = (_local_xfB.q.s * localPointB.x + _local_xfB.q.c * localPointB.y) + _local_xfB.p.y;
 
-			var s = b2Dot_v2_v2(b2Vec2.Subtract(pointB, pointA), normal);
+			var s = (pointBx - pointAx) * normalx + (pointBy - pointAy) * normaly;//b2Dot_v2_v2(b2Vec2.Subtract(pointB, pointA), normal);
 			if (s < 0.0)
 			{
-				this.m_axis = this.m_axis.Negate();
+				this.m_axis.x = -this.m_axis.x;// = this.m_axis.Negate();
+				this.m_axis.y = -this.m_axis.y;
 				s = -s;
 			}
 			return s;
@@ -132,54 +147,69 @@ b2SeparationFunction.prototype =
 		{
 		case b2SeparationFunction.e_points:
 			{
-				var axisA = b2MulT_r_v2(_local_xfA.q,  this.m_axis);
-				var axisB = b2MulT_r_v2(_local_xfB.q, this.m_axis.Negate());
+				var axisAx = _local_xfA.q.c * this.m_axis.x + _local_xfA.q.s * this.m_axis.y;//b2MulT_r_v2(_local_xfA.q, this.m_axis);
+				var axisAy = -_local_xfA.q.s * this.m_axis.x + _local_xfA.q.c * this.m_axis.y;
+				var axisBx = _local_xfB.q.c * -this.m_axis.x + _local_xfB.q.s * -this.m_axis.y;//b2MulT_r_v2(_local_xfB.q, this.m_axis.Negate());
+				var axisBy = -_local_xfB.q.s * -this.m_axis.x + _local_xfB.q.c * -this.m_axis.y;
 
-				indices[0] = this.m_proxyA.GetSupport(axisA);
-				indices[1] = this.m_proxyB.GetSupport(axisB);
+				indices[0] = this.m_proxyA.GetSupport(axisAx, axisAy);
+				indices[1] = this.m_proxyB.GetSupport(axisBx, axisBy);
 
 				var localPointA = this.m_proxyA.GetVertex(indices[0]);
 				var localPointB = this.m_proxyB.GetVertex(indices[1]);
 
-				var pointA = b2Mul_t_v2(_local_xfA, localPointA);
-				var pointB = b2Mul_t_v2(_local_xfB, localPointB);
+				var pointAx = (_local_xfA.q.c * localPointA.x - _local_xfA.q.s * localPointA.y) + _local_xfA.p.x;//b2Mul_t_v2(_local_xfA, localPointA);
+				var pointAy = (_local_xfA.q.s * localPointA.x + _local_xfA.q.c * localPointA.y) + _local_xfA.p.y;
+				var pointBx = (_local_xfB.q.c * localPointB.x - _local_xfB.q.s * localPointB.y) + _local_xfB.p.x;//b2Mul_t_v2(_local_xfB, localPointB);
+				var pointBy = (_local_xfB.q.s * localPointB.x + _local_xfB.q.c * localPointB.y) + _local_xfB.p.y;
 
-				var separation = b2Dot_v2_v2(b2Vec2.Subtract(pointB, pointA), this.m_axis);
-				return separation;
+				//var separation = b2Dot_v2_v2(b2Vec2.Subtract(pointB, pointA), this.m_axis);
+				//return separation;
+				return (pointBx - pointAx) * this.m_axis.x + (pointBy - pointAy) * this.m_axis.y;
 			}
 
 		case b2SeparationFunction.e_faceA:
 			{
-				var normal = b2Mul_r_v2(_local_xfA.q, this.m_axis);
-				var pointA = b2Mul_t_v2(_local_xfA, this.m_localPoint);
+				var normalx = _local_xfA.q.c * this.m_axis.x - _local_xfA.q.s * this.m_axis.y;//b2Mul_r_v2(_local_xfA.q, this.m_axis);
+				var normaly = _local_xfA.q.s * this.m_axis.x + _local_xfA.q.c * this.m_axis.y;
+				var pointAx = (_local_xfA.q.c * this.m_localPoint.x - _local_xfA.q.s * this.m_localPoint.y) + _local_xfA.p.x;//b2Mul_t_v2(_local_xfA, this.m_localPoint);
+				var pointAy = (_local_xfA.q.s * this.m_localPoint.x + _local_xfA.q.c * this.m_localPoint.y) + _local_xfA.p.y;
 
-				var axisB = b2MulT_r_v2(_local_xfB.q, normal.Negate());
+				var axisBx = _local_xfB.q.c * -normalx + _local_xfB.q.s * -normaly;//b2MulT_r_v2(_local_xfB.q, normal.Negate());
+				var axisBy = -_local_xfB.q.s * -normalx + _local_xfB.q.c * -normaly;
 
 				indices[0] = -1;
-				indices[1] = this.m_proxyB.GetSupport(axisB);
+				indices[1] = this.m_proxyB.GetSupport(axisBx, axisBy);
 
 				var localPointB = this.m_proxyB.GetVertex(indices[1]);
-				var pointB = b2Mul_t_v2(_local_xfB, localPointB);
+				var pointBx = (_local_xfB.q.c * localPointB.x - _local_xfB.q.s * localPointB.y) + _local_xfB.p.x;//b2Mul_t_v2(_local_xfB, localPointB);
+				var pointBy = (_local_xfB.q.s * localPointB.x + _local_xfB.q.c * localPointB.y) + _local_xfB.p.y;
 
-				var separation = b2Dot_v2_v2(b2Vec2.Subtract(pointB, pointA), normal);
-				return separation;
+				//var separation = b2Dot_v2_v2(b2Vec2.Subtract(pointB, pointA), normal);
+				//return separation;
+				return (pointBx - pointAx) * normalx + (pointBy - pointAy) * normaly;
 			}
 
 		case b2SeparationFunction.e_faceB:
 			{
-				var normal = b2Mul_r_v2(_local_xfB.q, this.m_axis);
-				var pointB = b2Mul_t_v2(_local_xfB, this.m_localPoint);
+				var normalx = _local_xfB.q.c * this.m_axis.x - _local_xfB.q.s * this.m_axis.y;//b2Mul_r_v2(_local_xfB.q, this.m_axis);
+				var normaly = _local_xfB.q.s * this.m_axis.x + _local_xfB.q.c * this.m_axis.y;
+				var pointBx = (_local_xfB.q.c * this.m_localPoint.x - _local_xfB.q.s * this.m_localPoint.y) + _local_xfB.p.x;//b2Mul_t_v2(_local_xfB, this.m_localPoint);
+				var pointBy = (_local_xfB.q.s * this.m_localPoint.x + _local_xfB.q.c * this.m_localPoint.y) + _local_xfB.p.y;
 
-				var axisA = b2MulT_r_v2(_local_xfA.q, normal.Negate());
+				var axisAx = _local_xfA.q.c * -normalx + _local_xfA.q.s * -normaly;//b2MulT_r_v2(_local_xfA.q, normal.Negate());
+				var axisBy = -_local_xfA.q.s * -normalx + _local_xfA.q.c * -normaly;
 
 				indices[1] = -1;
-				indices[0] = this.m_proxyA.GetSupport(axisA);
+				indices[0] = this.m_proxyA.GetSupport(axisAx, axisBy);
 
 				var localPointA = this.m_proxyA.GetVertex(indices[0]);
-				var pointA = b2Mul_t_v2(_local_xfA, localPointA);
+				var pointAx = (_local_xfA.q.c * localPointA.x - _local_xfA.q.s * localPointA.y) + _local_xfA.p.x;//b2Mul_t_v2(_local_xfA, localPointA);
+				var pointAy = (_local_xfA.q.s * localPointA.x + _local_xfA.q.c * localPointA.y) + _local_xfA.p.y;
 
-				var separation = b2Dot_v2_v2(b2Vec2.Subtract(pointA, pointB), normal);
-				return separation;
+				//var separation = b2Dot_v2_v2(b2Vec2.Subtract(pointA, pointB), normal);
+				//return separation;
+				return (pointAx - pointBx) * normalx + (pointAy - pointBy) * normaly;
 			}
 
 '#if @DEBUG';
@@ -205,34 +235,42 @@ b2SeparationFunction.prototype =
 				var localPointA = this.m_proxyA.GetVertex(indexA);
 				var localPointB = this.m_proxyB.GetVertex(indexB);
 
-				var pointA = b2Mul_t_v2(_local_xfA, localPointA);
-				var pointB = b2Mul_t_v2(_local_xfB, localPointB);
-				var separation = b2Dot_v2_v2(b2Vec2.Subtract(pointB, pointA), this.m_axis);
+				var pointAx = (_local_xfA.q.c * localPointA.x - _local_xfA.q.s * localPointA.y) + _local_xfA.p.x;//b2Mul_t_v2(_local_xfA, localPointA);
+				var pointAy = (_local_xfA.q.s * localPointA.x + _local_xfA.q.c * localPointA.y) + _local_xfA.p.y;
+				var pointBx = (_local_xfB.q.c * localPointB.x - _local_xfB.q.s * localPointB.y) + _local_xfB.p.x;//b2Mul_t_v2(_local_xfB, localPointB);
+				var pointBy = (_local_xfB.q.s * localPointB.x + _local_xfB.q.c * localPointB.y) + _local_xfB.p.y;
+				var separation = (pointBx - pointAx) * this.m_axis.x + (pointBy - pointAy) * this.m_axis.y;//b2Dot_v2_v2(b2Vec2.Subtract(pointB, pointA), this.m_axis);
 
 				return separation;
 			}
 
 		case b2SeparationFunction.e_faceA:
 			{
-				var normal = b2Mul_r_v2(_local_xfA.q, this.m_axis);
-				var pointA = b2Mul_t_v2(_local_xfA, this.m_localPoint);
+				var normalx = _local_xfA.q.c * this.m_axis.x - _local_xfA.q.s * this.m_axis.y;//b2Mul_r_v2(_local_xfA.q, this.m_axis);
+				var normaly = _local_xfA.q.s * this.m_axis.x + _local_xfA.q.c * this.m_axis.y;
+				var pointAx = (_local_xfA.q.c * this.m_localPoint.x - _local_xfA.q.s * this.m_localPoint.y) + _local_xfA.p.x;//b2Mul_t_v2(_local_xfA, this.m_localPoint);
+				var pointAy = (_local_xfA.q.s * this.m_localPoint.x + _local_xfA.q.c * this.m_localPoint.y) + _local_xfA.p.y;
 
 				var localPointB = this.m_proxyB.GetVertex(indexB);
-				var pointB = b2Mul_t_v2(_local_xfB, localPointB);
+				var pointBx = (_local_xfB.q.c * localPointB.x - _local_xfB.q.s * localPointB.y) + _local_xfB.p.x;//b2Mul_t_v2(_local_xfB, localPointB);
+				var pointBy = (_local_xfB.q.s * localPointB.x + _local_xfB.q.c * localPointB.y) + _local_xfB.p.y;
 
-				var separation = b2Dot_v2_v2(b2Vec2.Subtract(pointB, pointA), normal);
+				var separation = (pointBx - pointAx) * normalx + (pointBy - pointAy) * normaly;//b2Dot_v2_v2(b2Vec2.Subtract(pointB, pointA), normal);
 				return separation;
 			}
 
 		case b2SeparationFunction.e_faceB:
 			{
-				var normal = b2Mul_r_v2(_local_xfB.q, this.m_axis);
-				var pointB = b2Mul_t_v2(_local_xfB, this.m_localPoint);
+				var normalx = _local_xfB.q.c * this.m_axis.x - _local_xfB.q.s * this.m_axis.y;//b2Mul_r_v2(_local_xfB.q, this.m_axis);
+				var normaly = _local_xfB.q.s * this.m_axis.x + _local_xfB.q.c * this.m_axis.y;
+				var pointBx = (_local_xfB.q.c * this.m_localPoint.x - _local_xfB.q.s * this.m_localPoint.y) + _local_xfB.p.x;//b2Mul_t_v2(_local_xfB, this.m_localPoint);
+				var pointBy = (_local_xfB.q.s * this.m_localPoint.x + _local_xfB.q.c * this.m_localPoint.y) + _local_xfB.p.y;
 
 				var localPointA = this.m_proxyA.GetVertex(indexA);
-				var pointA = b2Mul_t_v2(_local_xfA, localPointA);
+				var pointAx = (_local_xfA.q.c * localPointA.x - _local_xfA.q.s * localPointA.y) + _local_xfA.p.x;//b2Mul_t_v2(_local_xfA, localPointA);
+				var pointAy = (_local_xfA.q.s * localPointA.x + _local_xfA.q.c * localPointA.y) + _local_xfA.p.y;
 
-				var separation = b2Dot_v2_v2(b2Vec2.Subtract(pointA, pointB), normal);
+				var separation = (pointAx - pointBx) * normalx + (pointAy - pointBy) * normaly;//b2Dot_v2_v2(b2Vec2.Subtract(pointA, pointB), normal);
 				return separation;
 			}
 

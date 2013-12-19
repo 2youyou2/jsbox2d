@@ -583,12 +583,16 @@ b2Sweep.prototype =
 	/// @param beta is a factor in [0,1], where 0 indicates alpha0.
 	GetTransform: function(/* b2Transform* */ xf, beta)
 	{
-		xf.p = b2Vec2.Add(b2Vec2.Multiply((1.0 - beta), this.c0), b2Vec2.Multiply(beta, this.c));
+		//xf.p = b2Vec2.Add(b2Vec2.Multiply((1.0 - beta), this.c0), b2Vec2.Multiply(beta, this.c));
+		xf.p.x = ((1.0 - beta) * this.c0.x) + (beta * this.c.x);
+		xf.p.y = ((1.0 - beta) * this.c0.y) + (beta * this.c.y);
 		var angle = (1.0 - beta) * this.a0 + beta * this.a;
 		xf.q.Set(angle);
 
 		// Shift to origin
-		xf.p.Subtract(b2Mul_r_v2(xf.q, this.localCenter));
+		//xf.p.Subtract(b2Mul_r_v2(xf.q, this.localCenter));
+		xf.p.x -= xf.q.c * this.localCenter.x - xf.q.s * this.localCenter.y;
+		xf.p.y -= xf.q.s * this.localCenter.x + xf.q.c * this.localCenter.y;
 	},
 
 	/// Advance the sweep forward, yielding a new initial state.
