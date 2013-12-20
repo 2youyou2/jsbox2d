@@ -12039,8 +12039,8 @@ b2Island.prototype =
 			{
 				// Integrate velocities.
 				//this.m_velocities[i].v.Add(b2Vec2.Multiply(h, b2Vec2.Add(b2Vec2.Multiply(b.m_gravityScale, gravity), b2Vec2.Multiply(b.m_invMass, b.m_force))));
-				this.m_velocities[i].v.x += h * (b.m_gravityScale * gravity.x) + (b.m_invMass * b.m_force.x);
-				this.m_velocities[i].v.y += h * (b.m_gravityScale * gravity.y) + (b.m_invMass * b.m_force.y);
+				this.m_velocities[i].v.x += h * ((b.m_gravityScale * gravity.x) + (b.m_invMass * b.m_force.x));
+				this.m_velocities[i].v.y += h * ((b.m_gravityScale * gravity.y) + (b.m_invMass * b.m_force.y));
 				w += h * b.m_invI * b.m_torque;
 
 				// Apply damping.
