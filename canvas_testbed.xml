@@ -4,6 +4,7 @@
   <Content type="html">
      <![CDATA[
 		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+		<script>var b2_compatibility = true;</script>
 		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/build/jsbox2d.min.js"></script>
 
 		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/CanvasDebug.js"></script>
