@@ -26,13 +26,17 @@ function TestEdgeShapes()
 TestEdgeShapes.prototype =
 {
 	e_maxBodies: 256,
+	lastDef: 10,
 
-	Initialize: function()
+	makeChain: function(defs)
 	{
-		// Ground body
 		{
 			var bd = new b2BodyDef();
-			var ground = this.m_world.CreateBody(bd);
+
+			if (this.ground)
+				this.m_world.DestroyBody(this.ground);
+
+			this.ground = this.m_world.CreateBody(bd);
 
 			/*var x1 = -20.0;
 			var y1 = 2.0 * Math.cos(x1 / 10.0 * Math.PI);
@@ -57,7 +61,7 @@ TestEdgeShapes.prototype =
 
 			verts.push(new b2Vec2(-w, Math.cos(0) * yS));
 
-			var splits = 300;
+			var splits = defs;
 			var mps = Math.PI / splits;
 			var v = w / splits;
 
@@ -67,8 +71,16 @@ TestEdgeShapes.prototype =
 			}
 
 			shape.CreateChain(verts, verts.length);
-			ground.CreateFixture(shape, 0);
+			this.ground.CreateFixture(shape, 0);
 		}
+
+		this.lastDef = defs;
+	},
+
+	Initialize: function()
+	{
+		// Ground body
+		this.makeChain(6);
 
 		this.m_polygons = [];
 		this.m_circle = new b2CircleShape();
@@ -198,6 +210,10 @@ TestEdgeShapes.prototype =
 		case 'D'.charCodeAt():
 			this.DestroyBody();
 			break;
+
+		case 'A'.charCodeAt():
+			this.makeChain(this.lastDef + 1);
+			break;
 		}
 	},
 
@@ -207,6 +223,7 @@ TestEdgeShapes.prototype =
 
 		this.parent.prototype.Step.call(this);
 		this.m_drawStringFunc("Press 1-5 to drop stuff");
+		this.m_drawStringFunc("Press A to increase resolution of chain");
 
 		var L = 25.0;
 		var point1 = new b2Vec2(0.0, 10.0);

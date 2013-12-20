@@ -209,12 +209,48 @@ function processString(tabPos, folder, file, s)
 								{
 									if (names[trimmed])
 										alert(trimmed);
-									names[trimmed] = true;
+
+									names[trimmed] = name;
 
 									trimmed = trimmed.substr(0, 1).toUpperCase() + trimmed.substr(1);
-									processed += 'window["' + name + '"] = ' + name + ';\n';
 								}
 							}
+
+							processed += 'var mappings = [';
+							var first = true;
+
+							for (var x in names)
+							{
+								if (!first)
+									processed += ',';
+								else
+									first = false;
+
+								processed += '{"trimmed":"' + x + '","name":"' + names[x] + '","def":' + names[x] + '}';
+							}
+
+							processed += '];\n';
+
+							// offer C++ compatibility mode for web users
+							// TODO: replace sections below with #include
+							processed +=
+'if (typeof(b2_compatibility) !== "undefined" && typeof(window) !== "undefined")\n\
+{\n\
+	for (var i = 0; i < mappings.length; ++i)\n\
+		window[mappings[i].name] = mappings[i].def;\n\
+}\n\
+else\n\
+{\n\
+var b2 = {};\n\
+\n\
+for (var i = 0; i < mappings.length; ++i)\n\
+	b2[mappings[i].trimmed] = mappings[i].def;\n\
+\n\
+if (typeof(module) !== "undefined")\n\
+	module.exports = b2;\n\
+else\n\
+	window["b2"] = b2;\n\
+}';
 						}
 						break;
 					case 'define':
