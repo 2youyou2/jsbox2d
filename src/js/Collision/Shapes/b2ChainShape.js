@@ -231,11 +231,15 @@ b2ChainShape.prototype =
 			i2 = 0;
 		}
 
-		var v1 = b2Mul_t_v2(xf, this.m_vertices[i1]);
-		var v2 = b2Mul_t_v2(xf, this.m_vertices[i2]);
+		var v1x = (xf.q.c * this.m_vertices[i1].x - xf.q.s * this.m_vertices[i1].y) + xf.p.x;//b2Mul_t_v2(xf, this.m_vertices[i1]);
+		var v1y = (xf.q.s * this.m_vertices[i1].x + xf.q.c * this.m_vertices[i1].y) + xf.p.y;
+		var v2x = (xf.q.c * this.m_vertices[i2].x - xf.q.s * this.m_vertices[i2].y) + xf.p.x;//b2Mul_t_v2(xf, this.m_vertices[i2]);
+		var v2y = (xf.q.s * this.m_vertices[i2].x + xf.q.c * this.m_vertices[i2].y) + xf.p.y;
 
-		aabb.lowerBound = b2Min_v2(v1, v2);
-		aabb.upperBound = b2Max_v2(v1, v2);
+		aabb.lowerBound.x = b2Min(v1x, v2x); //b2Min_v2(v1, v2);
+		aabb.lowerBound.y = b2Min(v1y, v2y);
+		aabb.upperBound.x = b2Max(v1x, v2x); //b2Max_v2(v1, v2);
+		aabb.upperBound.y = b2Max(v1y, v2y);
 	},
 
 	/// Chains have zero mass.

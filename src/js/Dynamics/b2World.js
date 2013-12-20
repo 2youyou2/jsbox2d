@@ -1401,7 +1401,7 @@ b2World.prototype =
 				{
 					var v2 = b2Mul_t_v2(xf, vertices[i]);
 					this.g_debugDraw.DrawSegment(v1, v2, color);
-					this.g_debugDraw.DrawCircle(v1, 0.05, color);
+					//this.g_debugDraw.DrawCircle(v1, 0.05, color);
 					v1 = v2;
 				}
 			}

@@ -200,12 +200,16 @@ b2ContactSolver.prototype =
 			pc.indexB = bodyB.m_islandIndex;
 			pc.invMassA = bodyA.m_invMass;
 			pc.invMassB = bodyB.m_invMass;
-			pc.localCenterA.Assign(bodyA.m_sweep.localCenter);
-			pc.localCenterB.Assign(bodyB.m_sweep.localCenter);
+			pc.localCenterA.x = bodyA.m_sweep.localCenter.x;
+			pc.localCenterA.y = bodyA.m_sweep.localCenter.y;
+			pc.localCenterB.x = bodyB.m_sweep.localCenter.x;
+			pc.localCenterB.y = bodyB.m_sweep.localCenter.y;
 			pc.invIA = bodyA.m_invI;
 			pc.invIB = bodyB.m_invI;
-			pc.localNormal.Assign(manifold.localNormal);
-			pc.localPoint.Assign(manifold.localPoint);
+			pc.localNormal.x = manifold.localNormal.x;
+			pc.localNormal.y = manifold.localNormal.y;
+			pc.localPoint.x = manifold.localPoint.x;
+			pc.localPoint.y = manifold.localPoint.y;
 			pc.pointCount = pointCount;
 			pc.radiusA = radiusA;
 			pc.radiusB = radiusB;
@@ -276,33 +280,39 @@ b2ContactSolver.prototype =
 
 			b2ContactSolver.cs_xfA.q.Set(aA);
 			b2ContactSolver.cs_xfB.q.Set(aB);
-			b2ContactSolver.cs_xfA.p.Assign(b2Vec2.Subtract(cA, b2Mul_r_v2(b2ContactSolver.cs_xfA.q, localCenterA)));
-			b2ContactSolver.cs_xfB.p.Assign(b2Vec2.Subtract(cB, b2Mul_r_v2(b2ContactSolver.cs_xfB.q, localCenterB)));
+			b2ContactSolver.cs_xfA.p.x = cA.x - (b2ContactSolver.cs_xfA.q.c * localCenterA.x - b2ContactSolver.cs_xfA.q.s * localCenterA.y);//Assign(b2Vec2.Subtract(cA, b2Mul_r_v2(b2ContactSolver.cs_xfA.q, localCenterA)));
+			b2ContactSolver.cs_xfA.p.y = cA.y - (b2ContactSolver.cs_xfA.q.s * localCenterA.x + b2ContactSolver.cs_xfA.q.c * localCenterA.y);
+			b2ContactSolver.cs_xfB.p.x = cB.x - (b2ContactSolver.cs_xfB.q.c * localCenterB.x - b2ContactSolver.cs_xfB.q.s * localCenterB.y);//.Assign(b2Vec2.Subtract(cB, b2Mul_r_v2(b2ContactSolver.cs_xfB.q, localCenterB)));
+			b2ContactSolver.cs_xfB.p.y = cB.y - (b2ContactSolver.cs_xfB.q.s * localCenterB.x + b2ContactSolver.cs_xfB.q.c * localCenterB.y);
 
 			var worldManifold = new b2WorldManifold();
 			worldManifold.Initialize(manifold, b2ContactSolver.cs_xfA, radiusA, b2ContactSolver.cs_xfB, radiusB);
 
-			vc.normal.Assign(worldManifold.normal);
+			vc.normal.x = worldManifold.normal.x;//.Assign(worldManifold.normal);
+			vc.normal.y = worldManifold.normal.y;
 
 			var pointCount = vc.pointCount;
 			for (var j = 0; j < pointCount; ++j)
 			{
 				var vcp = vc.points[j];
 
-				vcp.rA = b2Vec2.Subtract(worldManifold.points[j], cA);
-				vcp.rB = b2Vec2.Subtract(worldManifold.points[j], cB);
+				vcp.rA.x = worldManifold.points[j].x - cA.x;// = b2Vec2.Subtract(worldManifold.points[j], cA);
+				vcp.rA.y = worldManifold.points[j].y - cA.y;
+				vcp.rB.x = worldManifold.points[j].x - cB.x;//b2Vec2.Subtract(worldManifold.points[j], cB);
+				vcp.rB.y = worldManifold.points[j].y - cB.y;
 
-				var rnA = b2Cross_v2_v2(vcp.rA, vc.normal);
-				var rnB = b2Cross_v2_v2(vcp.rB, vc.normal);
+				var rnA = vcp.rA.x * vc.normal.y - vcp.rA.y * vc.normal.x;//b2Cross_v2_v2(vcp.rA, vc.normal);
+				var rnB = vcp.rB.x * vc.normal.y - vcp.rB.y * vc.normal.x;//b2Cross_v2_v2(vcp.rB, vc.normal);
 
 				var kNormal = mA + mB + iA * rnA * rnA + iB * rnB * rnB;
 
 				vcp.normalMass = kNormal > 0.0 ? 1.0 / kNormal : 0.0;
 
-				var tangent = b2Cross_v2_f(vc.normal, 1.0);
+				var tangentx = 1.0 * vc.normal.y;//b2Cross_v2_f(vc.normal, 1.0);
+				var tangenty = -1.0 * vc.normal.x;
 
-				var rtA = b2Cross_v2_v2(vcp.rA, tangent);
-				var rtB = b2Cross_v2_v2(vcp.rB, tangent);
+				var rtA = vcp.rA.x * tangenty - vcp.rA.y * tangentx;//b2Cross_v2_v2(vcp.rA, tangent);
+				var rtB = vcp.rB.x * tangenty - vcp.rB.y * tangentx;//b2Cross_v2_v2(vcp.rB, tangent);
 
 				var kTangent = mA + mB + iA * rtA * rtA + iB * rtB * rtB;
 
@@ -310,7 +320,13 @@ b2ContactSolver.prototype =
 
 				// Setup a velocity bias for restitution.
 				vcp.velocityBias = 0.0;
-				var vRel = b2Dot_v2_v2(vc.normal, b2Vec2.Subtract(b2Vec2.Subtract(b2Vec2.Add(vB, b2Cross_f_v2(wB, vcp.rB)), vA), b2Cross_f_v2(wA, vcp.rA)));
+				//var tax = -wB * vcp.rB.y;//b2Cross_f_v2(wB, vcp.rB);
+				//var tay = wB * vcp.rB.x;
+				//var tbx = -wA * vcp.rA.y;//b2Cross_f_v2(wA, vcp.rA);
+				//var tby = wA * vcp.rA.x;
+
+				//var vRel = b2Dot_v2_v2(vc.normal, b2Vec2.Subtract(b2Vec2.Subtract(b2Vec2.Add(vB, ta), vA), tb));
+				var vRel = vc.normal.x * (((vB.x + (-wB * vcp.rB.y)) - vA.x) - (-wA * vcp.rA.y)) + vc.normal.y * (((vB.y + (wB * vcp.rB.x)) - vA.y) - (wA * vcp.rA.x));
 				if (vRel < -b2_velocityThreshold)
 				{
 					vcp.velocityBias = -vc.restitution * vRel;
@@ -323,10 +339,10 @@ b2ContactSolver.prototype =
 				var vcp1 = vc.points[0];
 				var vcp2 = vc.points[1];
 
-				var rn1A = b2Cross_v2_v2(vcp1.rA, vc.normal);
-				var rn1B = b2Cross_v2_v2(vcp1.rB, vc.normal);
-				var rn2A = b2Cross_v2_v2(vcp2.rA, vc.normal);
-				var rn2B = b2Cross_v2_v2(vcp2.rB, vc.normal);
+				var rn1A = vcp1.rA.x * vc.normal.y - vcp1.rA.y * vc.normal.x;//b2Cross_v2_v2(vcp1.rA, vc.normal);
+				var rn1B = vcp1.rB.x * vc.normal.y - vcp1.rB.y * vc.normal.x;//b2Cross_v2_v2(vcp1.rB, vc.normal);
+				var rn2A = vcp2.rA.x * vc.normal.y - vcp2.rA.y * vc.normal.x;//b2Cross_v2_v2(vcp2.rA, vc.normal);
+				var rn2B = vcp2.rB.x * vc.normal.y - vcp2.rB.y * vc.normal.x;//b2Cross_v2_v2(vcp2.rB, vc.normal);
 
 				var k11 = mA + mB + iA * rn1A * rn1A + iB * rn1B * rn1B;
 				var k22 = mA + mB + iA * rn2A * rn2A + iB * rn2B * rn2B;
@@ -337,8 +353,10 @@ b2ContactSolver.prototype =
 				if (k11 * k11 < k_maxConditionNumber * (k11 * k22 - k12 * k12))
 				{
 					// K is safe to invert.
-					vc.K.ex.Set(k11, k12);
-					vc.K.ey.Set(k12, k22);
+					vc.K.ex.x = k11;//.Set(k11, k12);
+					vc.K.ex.y = k12;
+					vc.K.ey.x = k12;//.Set(k12, k22);
+					vc.K.ey.y = k22;
 					vc.normalMass.Assign(vc.K.GetInverse());
 				}
 				else

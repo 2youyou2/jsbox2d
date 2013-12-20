@@ -125,7 +125,7 @@ b2Manifold.prototype =
 		this.localNormal.y = manifold.localNormal.y;
 
 		for (var i = 0; i < this.pointCount; ++i)
-			this.points[i] = manifold.points[i]; // !! NO CLONE
+			this.points[i] = manifold.points[i].Clone();
 	}
 };
 
@@ -329,71 +329,76 @@ b2AABB.prototype =
 {
 	Assign: function(other)
 	{
-		this.lowerBound.Assign(other.lowerBound);
-		this.upperBound.Assign(other.upperBound);
+		this.lowerBound.x = other.lowerBound.x;
+		this.lowerBound.y = other.lowerBound.y;//.Assign(other.lowerBound);
+		this.upperBound.x = other.upperBound.x;//.Assign(other.upperBound);
+		this.upperBound.y = other.upperBound.y;
 	},
 
 	Clone: function()
 	{
 		var clone = new b2AABB();
-		clone.lowerBound.Assign(this.lowerBound);
-		clone.upperBound.Assign(this.upperBound);
+		clone.lowerBound.x = this.lowerBound.x; //.Assign(this.lowerBound);
+		clone.lowerBound.y = this.lowerBound.y;
+		clone.lowerBound.x = this.lowerBound.x;//.Assign(this.upperBound);
+		clone.lowerBound.y = this.lowerBound.y;
 		return clone;
 	},
 
 	/// Verify that the bounds are sorted.
 	IsValid: function()
 	{
-		var d = b2Vec2.Subtract(this.upperBound, this.lowerBound);
-		var valid = d.x >= 0.0 && d.y >= 0.0;
-		valid = valid && this.lowerBound.IsValid() && this.upperBound.IsValid();
-		return valid;
+		return (this.upperBound.x - this.lowerBound.x) >= 0.0 && (this.upperBound.y - this.lowerBound.y) >= 0.0 && this.lowerBound.IsValid() && this.upperBound.IsValid();
 	},
 
 	/// Get the center of the AABB.
 	GetCenter: function()
 	{
-		return b2Vec2.Multiply(0.5, b2Vec2.Add(this.lowerBound, this.upperBound));
+		return new b2Vec2(0.5 * (this.lowerBound.x + this.upperBound.x), 0.5 * (this.lowerBound.y + this.upperBound.y));
 	},
 
 	/// Get the extents of the AABB (half-widths).
 	GetExtents: function()
 	{
-		return b2Vec2.Multiply(0.5, b2Vec2.Subtract(this.upperBound, this.lowerBound));
+		return new b2Vec2(0.5 * (this.upperBound.x - this.lowerBound.x), 0.5 * (this.upperBound.y - this.lowerBound.y));
 	},
 
 	/// Get the perimeter length
 	GetPerimeter: function()
 	{
-		var wx = this.upperBound.x - this.lowerBound.x;
-		var wy = this.upperBound.y - this.lowerBound.y;
-		return 2.0 * (wx + wy);
+		return 2.0 * ((this.upperBound.x - this.lowerBound.x) + (this.upperBound.y - this.lowerBound.y));
 	},
 
 	/// Combine one or two AABBs into this one.
 	Combine: function(aabb1, aabb2)
 	{
-		if (typeof(aabb2) !== 'undefined')
+		if (aabb2)
 		{
-			this.lowerBound.Assign(b2Min_v2(aabb1.lowerBound, aabb2.lowerBound));
-			this.upperBound.Assign(b2Max_v2(aabb1.upperBound, aabb2.upperBound));
+			//this.lowerBound.Assign(b2Min_v2(aabb1.lowerBound, aabb2.lowerBound));
+			this.lowerBound.x = b2Min(aabb1.lowerBound.x, aabb2.lowerBound.x);
+			this.lowerBound.y = b2Min(aabb1.lowerBound.y, aabb2.lowerBound.y);
+			//this.upperBound.Assign(b2Max_v2(aabb1.upperBound, aabb2.upperBound));
+			this.upperBound.x = b2Max(aabb1.upperBound.x, aabb2.upperBound.x);
+			this.upperBound.y = b2Max(aabb1.upperBound.y, aabb2.upperBound.y);
 		}
 		else
 		{
-			this.lowerBound.Assign(b2Min_v2(this.lowerBound, aabb.lowerBound));
-			this.upperBound.Assign(b2Max_v2(this.upperBound, aabb.upperBound));
+			//this.lowerBound.Assign(b2Min_v2(this.lowerBound, aabb1.lowerBound));
+			this.lowerBound.x = b2Min(this.lowerBound.x, aabb1.lowerBound.x);
+			this.lowerBound.y = b2Min(this.lowerBound.y, aabb1.lowerBound.y);
+			//this.upperBound.Assign(b2Max_v2(this.upperBound, aabb1.upperBound));
+			this.upperBound.x = b2Max(this.upperBound.x, aabb1.upperBound.x);
+			this.upperBound.y = b2Max(this.upperBound.y, aabb1.upperBound.y);
 		}
 	},
 
 	/// Does this aabb contain the provided AABB.
 	Contains: function(aabb)
 	{
-		var result = true;
-		result = result && this.lowerBound.x <= aabb.lowerBound.x;
-		result = result && this.lowerBound.y <= aabb.lowerBound.y;
-		result = result && aabb.upperBound.x <= this.upperBound.x;
-		result = result && aabb.upperBound.y <= this.upperBound.y;
-		return result;
+		return	   this.lowerBound.x <= aabb.lowerBound.x
+				&& this.lowerBound.y <= aabb.lowerBound.y
+				&& aabb.upperBound.x <= this.upperBound.x
+				&& aabb.upperBound.y <= this.upperBound.y;
 	},
 
 	RayCast: function(output, input)
@@ -437,7 +442,7 @@ b2AABB.prototype =
 				// Push the min up
 				if (t1 > tmin)
 				{
-					normal.SetZero();
+					normal.x = normal.y = 0;
 					normal.set_i(i, s);
 					tmin = t1;
 				}
@@ -461,7 +466,8 @@ b2AABB.prototype =
 
 		// Intersection.
 		output.fraction = tmin;
-		output.normal.Assign(normal);
+		output.normal.x = normal.x;
+		output.normal.y = normal.y;
 		return true;
 	}
 };
@@ -476,8 +482,9 @@ function b2CollideCircles(manifold,
 	var pA = b2Mul_t_v2(xfA, circleA.m_p);
 	var pB = b2Mul_t_v2(xfB, circleB.m_p);
 
-	var d = b2Vec2.Subtract(pB, pA);
-	var distSqr = b2Dot_v2_v2(d, d);
+	var dx = pB.x - pA.x;//b2Vec2.Subtract(pB, pA);
+	var dy = pB.y - pA.y;
+	var distSqr = dx * dx + dy * dy;//b2Dot_v2_v2(d, d);
 	var rA = circleA.m_radius, rB = circleB.m_radius;
 	var radius = rA + rB;
 	if (distSqr > radius * radius)
@@ -486,12 +493,14 @@ function b2CollideCircles(manifold,
 	}
 
 	manifold.type = b2Manifold.e_circles;
-	manifold.localPoint = circleA.m_p;
-	manifold.localNormal.SetZero();
+	manifold.localPoint.x = circleA.m_p.x;
+	manifold.localPoint.y = circleA.m_p.y;
+	manifold.localNormal.x = manifold.localNormal.y = 0;
 	manifold.pointCount = 1;
 
 	manifold.points[0] = new b2ManifoldPoint();
-	manifold.points[0].localPoint.Assign(circleB.m_p);
+	manifold.points[0].localPoint.x = circleB.m_p.x;
+	manifold.points[0].localPoint.y = circleB.m_p.y;
 	manifold.points[0].id.Reset();
 }
 
@@ -516,7 +525,7 @@ function b2CollidePolygonAndCircle(manifold,
 
 	for (var i = 0; i < vertexCount; ++i)
 	{
-		var s = b2Dot_v2_v2(normals[i], b2Vec2.Subtract(cLocal, vertices[i]));
+		var s = normals[i].x * (cLocal.x - vertices[i].x) + normals[i].y * (cLocal.y - vertices[i].y);//b2Dot_v2_v2(normals[i], b2Vec2.Subtract(cLocal, vertices[i]));
 
 		if (s > radius)
 		{
@@ -542,17 +551,20 @@ function b2CollidePolygonAndCircle(manifold,
 	{
 		manifold.pointCount = 1;
 		manifold.type = b2Manifold.e_faceA;
-		manifold.localNormal.Assign(normals[normalIndex]);
-		manifold.localPoint.Assign(b2Vec2.Multiply(0.5, b2Vec2.Add(v1, v2)));
+		manifold.localNormal.x = normals[normalIndex].x;//.Assign(normals[normalIndex]);
+		manifold.localNormal.y = normals[normalIndex].y;
+		manifold.localPoint.x = 0.5 * (v1.x + v2.x);//.Assign(b2Vec2.Multiply(0.5, b2Vec2.Add(v1, v2)));
+		manifold.localPoint.y = 0.5 * (v1.y + v2.y);
 		manifold.points[0] = new b2ManifoldPoint();
-		manifold.points[0].localPoint.Assign(circleB.m_p);
+		manifold.points[0].localPoint.x = circleB.m_p.x;
+		manifold.points[0].localPoint.y = circleB.m_p.y;
 		manifold.points[0].id.Reset();
 		return;
 	}
 
 	// Compute barycentric coordinates
-	var u1 = b2Dot_v2_v2(b2Vec2.Subtract(cLocal, v1), b2Vec2.Subtract(v2, v1));
-	var u2 = b2Dot_v2_v2(b2Vec2.Subtract(cLocal, v2), b2Vec2.Subtract(v1, v2));
+	var u1 = (cLocal.x - v1.x) * (v2.x - v1.x) + (cLocal.y - v1.y) * (v2.y - v1.y);//b2Dot_v2_v2(b2Vec2.Subtract(cLocal, v1), b2Vec2.Subtract(v2, v1));
+	var u2 = (cLocal.x - v2.x) * (v1.x - v2.x) + (cLocal.y - v2.y) * (v1.y - v2.y);//b2Dot_v2_v2(b2Vec2.Subtract(cLocal, v2), b2Vec2.Subtract(v1, v2));
 	if (u1 <= 0.0)
 	{
 		if (b2DistanceSquared(cLocal, v1) > radius * radius)
@@ -562,11 +574,14 @@ function b2CollidePolygonAndCircle(manifold,
 
 		manifold.pointCount = 1;
 		manifold.type = b2Manifold.e_faceA;
-		manifold.localNormal.Assign(b2Vec2.Subtract(cLocal, v1));
+		manifold.localNormal.x = cLocal.x - v1.x;//.Assign(b2Vec2.Subtract(cLocal, v1));
+		manifold.localNormal.y = cLocal.y - v1.y;
 		manifold.localNormal.Normalize();
-		manifold.localPoint.Assign(v1);
+		manifold.localPoint.x = v1.x;
+		manifold.localPoint.y = v1.y;
 		manifold.points[0] = new b2ManifoldPoint();
-		manifold.points[0].localPoint.Assign(circleB.m_p);
+		manifold.points[0].localPoint.x = circleB.m_p.x;
+		manifold.points[0].localPoint.y = circleB.m_p.y;
 		manifold.points[0].id.Reset();
 	}
 	else if (u2 <= 0.0)
@@ -578,17 +593,21 @@ function b2CollidePolygonAndCircle(manifold,
 
 		manifold.pointCount = 1;
 		manifold.type = b2Manifold.e_faceA;
-		manifold.localNormal.Assign(b2Vec2.Subtract(cLocal, v2));
+		manifold.localNormal.x = cLocal.x - v2.x;//.Assign(b2Vec2.Subtract(cLocal, v2));
+		manifold.localNormal.y = cLocal.y - v2.y;
 		manifold.localNormal.Normalize();
-		manifold.localPoint.Assign(v2);
+		manifold.localPoint.x = v2.x;
+		manifold.localPoint.y = v2.y;
 		manifold.points[0] = new b2ManifoldPoint();
-		manifold.points[0].localPoint.Assign(circleB.m_p);
+		manifold.points[0].localPoint.x = circleB.m_p.x;
+		manifold.points[0].localPoint.y = circleB.m_p.y;
 		manifold.points[0].id.Reset();
 	}
 	else
 	{
-		var faceCenter = b2Vec2.Multiply(0.5, b2Vec2.Add(v1, v2));
-		var separation = b2Dot_v2_v2(b2Vec2.Subtract(cLocal, faceCenter), normals[vertIndex1]);
+		var faceCenterx = 0.5 * (v1.x + v2.x);//b2Vec2.Multiply(0.5, b2Vec2.Add(v1, v2));
+		var faceCentery = 0.5 * (v1.y + v2.y);
+		var separation = (cLocal.x - faceCenterx) * normals[vertIndex1].x + (cLocal.y - faceCentery) * normals[vertIndex1].y;//b2Dot_v2_v2(b2Vec2.Subtract(cLocal, faceCenter), normals[vertIndex1]);
 		if (separation > radius)
 		{
 			return;
@@ -596,10 +615,13 @@ function b2CollidePolygonAndCircle(manifold,
 
 		manifold.pointCount = 1;
 		manifold.type = b2Manifold.e_faceA;
-		manifold.localNormal.Assign(normals[vertIndex1]);
-		manifold.localPoint.Assign(faceCenter);
+		manifold.localNormal.x = normals[vertIndex1].x;
+		manifold.localNormal.y = normals[vertIndex1].y;
+		manifold.localPoint.x = faceCenterx;
+		manifold.localPoint.y = faceCentery;
 		manifold.points[0] = new b2ManifoldPoint();
-		manifold.points[0].localPoint.Assign(circleB.m_p);
+		manifold.points[0].localPoint.x = circleB.m_p.x;
+		manifold.points[0].localPoint.y = circleB.m_p.y;
 		manifold.points[0].id.Reset();
 	}
 }
@@ -621,14 +643,16 @@ function b2FindMaxSeparation(edgeIndex,
 	for (var i = 0; i < count1; ++i)
 	{
 		// Get poly1 normal in frame2.
-		var n = b2Mul_r_v2(xf.q, n1s[i]);
-		var v1 = b2Mul_t_v2(xf, v1s[i]);
+		var nx = xf.q.c * n1s[i].x - xf.q.s * n1s[i].y;//b2Mul_r_v2(xf.q, n1s[i]);
+		var ny = xf.q.s * n1s[i].x + xf.q.c * n1s[i].y;
+		var v1x = (xf.q.c * v1s[i].x - xf.q.s * v1s[i].y) + xf.p.x;//b2Mul_t_v2(xf, v1s[i]);
+		var v1y = (xf.q.s * v1s[i].x + xf.q.c * v1s[i].y) + xf.p.y;
 
 		// Find deepest point for normal i.
 		var si = b2_maxFloat;
 		for (var j = 0; j < count2; ++j)
 		{
-			var sij = b2Dot_v2_v2(n, b2Vec2.Subtract(v2s[j], v1));
+			var sij = nx * (v2s[j].x - v1x) + ny * (v2s[j].y - v1y);//b2Dot_v2_v2(n, b2Vec2.Subtract(v2s[j], v1));
 			if (sij < si)
 			{
 				si = sij;
@@ -661,14 +685,18 @@ function b2FindIncidentEdge(c,
 '#endif';
 
 	// Get the normal of the reference edge in poly2's frame.
-	var normal1 = b2MulT_r_v2(xf2.q, b2Mul_r_v2(xf1.q, normals1[edge1]));
+	//var normal1 = b2MulT_r_v2(xf2.q, b2Mul_r_v2(xf1.q, normals1[edge1]));
+	var t1x = xf1.q.c * normals1[edge1].x - xf1.q.s * normals1[edge1].y;
+	var t1y = xf1.q.s * normals1[edge1].x + xf1.q.c * normals1[edge1].y;
+	var normal1x = xf2.q.c * t1x + xf2.q.s * t1y;
+	var normal1y = -xf2.q.s * t1x + xf2.q.c * t1y;
 
 	// Find the incident edge on poly2.
 	var index = 0;
 	var minDot = b2_maxFloat;
 	for (var i = 0; i < count2; ++i)
 	{
-		var dot = b2Dot_v2_v2(normal1, normals2[i]);
+		var dot = normal1x * normals2[i].x + normal1y * normals2[i].y;//b2Dot_v2_v2(normal1, normals2[i]);
 		if (dot < minDot)
 		{
 			minDot = dot;
@@ -680,13 +708,15 @@ function b2FindIncidentEdge(c,
 	var i1 = index;
 	var i2 = i1 + 1 < count2 ? i1 + 1 : 0;
 
-	c[0].v.Assign(b2Mul_t_v2(xf2, vertices2[i1]));
+	c[0].v.x = (xf2.q.c * vertices2[i1].x - xf2.q.s * vertices2[i1].y) + xf2.p.x;//.Assign(b2Mul_t_v2(xf2, vertices2[i1]));
+	c[0].v.y = (xf2.q.s * vertices2[i1].x + xf2.q.c * vertices2[i1].y) + xf2.p.y;
 	c[0].id.indexA = edge1;
 	c[0].id.indexB = i1;
 	c[0].id.typeA = b2ContactID.e_face;
 	c[0].id.typeB = b2ContactID.e_vertex;
 
-	c[1].v.Assign(b2Mul_t_v2(xf2, vertices2[i2]));
+	c[1].v.x = (xf2.q.c * vertices2[i2].x - xf2.q.s * vertices2[i2].y) + xf2.p.x;//.Assign(b2Mul_t_v2(xf2, vertices2[i2]));
+	c[1].v.y = (xf2.q.s * vertices2[i2].x + xf2.q.c * vertices2[i2].y) + xf2.p.y;
 	c[1].id.indexA = edge1;
 	c[1].id.indexB = i2;
 	c[1].id.typeA = b2ContactID.e_face;
@@ -750,24 +780,29 @@ function b2CollidePolygons(manifold,
 	var v11 = vertices1[iv1];
 	var v12 = vertices1[iv2];
 
-	var localTangent = b2Vec2.Subtract(v12, v11);
-	localTangent.Normalize();
+	b2CollidePolygons._localTangent.x = v12.x - v11.x;
+	b2CollidePolygons._localTangent.y = v12.y - v11.y;
+	b2CollidePolygons._localTangent.Normalize();
 
-	var localNormal = b2Cross_v2_f(localTangent, 1.0);
-	var planePoint = b2Vec2.Multiply(0.5, b2Vec2.Add(v11, v12));
+	var localNormalx = 1.0 * b2CollidePolygons._localTangent.y;//b2Cross_v2_f(b2CollidePolygons._localTangent, 1.0);
+	var localNormaly = -1.0 * b2CollidePolygons._localTangent.x;
+	var planePointx = 0.5 * (v11.x + v12.x);//b2Vec2.Multiply(0.5, b2Vec2.Add(v11, v12));
+	var planePointy = 0.5 * (v11.y + v12.y);
 
-	var tangent = b2Mul_r_v2(xf1.q, localTangent);
-	var normal = b2Cross_v2_f(tangent, 1.0);
+	var tangentx = xf1.q.c * b2CollidePolygons._localTangent.x - xf1.q.s * b2CollidePolygons._localTangent.y;//b2Mul_r_v2(xf1.q, b2CollidePolygons._localTangent);
+	var tangenty = xf1.q.s * b2CollidePolygons._localTangent.x + xf1.q.c * b2CollidePolygons._localTangent.y;
+	var normalx = 1.0 * tangenty;//b2Cross_v2_f(tangent, 1.0);
+	var normaly = -1.0 * tangentx;
 
 	v11 = b2Mul_t_v2(xf1, v11);
 	v12 = b2Mul_t_v2(xf1, v12);
 
 	// Face offset.
-	var frontOffset = b2Dot_v2_v2(normal, v11);
+	var frontOffset = normalx * v11.x + normaly * v11.y;//b2Dot_v2_v2(normal, v11);
 
 	// Side offsets, extended by polytope skin thickness.
-	var sideOffset1 = -b2Dot_v2_v2(tangent, v11) + totalRadius;
-	var sideOffset2 = b2Dot_v2_v2(tangent, v12) + totalRadius;
+	var sideOffset1 = /*-b2Dot_v2_v2(tangent, v11)*/-(tangentx * v11.x + tangenty * v11.y) + totalRadius;
+	var sideOffset2 = /*b2Dot_v2_v2(tangent, v12)*/(tangentx * v12.x + tangenty * v12.y) + totalRadius;
 
 	// Clip incident edge against extruded edge1 side edges.
 	var clipPoints1 = new Array(2);
@@ -775,13 +810,13 @@ function b2CollidePolygons(manifold,
 	var np;
 
 	// Clip to box side 1
-	np = b2ClipSegmentToLine(clipPoints1, b2CollidePolygons._local_incidentEdges, tangent.Negate(), sideOffset1, iv1);
+	np = b2ClipSegmentToLine(clipPoints1, b2CollidePolygons._local_incidentEdges, -tangentx, -tangenty, sideOffset1, iv1);
 
 	if (np < 2)
 		return;
 
 	// Clip to negative box side 1
-	np = b2ClipSegmentToLine(clipPoints2, clipPoints1, tangent, sideOffset2, iv2);
+	np = b2ClipSegmentToLine(clipPoints2, clipPoints1, tangentx, tangenty, sideOffset2, iv2);
 
 	if (np < 2)
 	{
@@ -789,13 +824,15 @@ function b2CollidePolygons(manifold,
 	}
 
 	// Now clipPoints2 contains the clipped points.
-	manifold.localNormal.Assign(localNormal);
-	manifold.localPoint.Assign(planePoint);
+	manifold.localNormal.x = localNormalx;//.Assign(localNormal);
+	manifold.localNormal.y = localNormaly;
+	manifold.localPoint.x = planePointx;//.Assign(planePoint);
+	manifold.localPoint.y = planePointy;
 
 	var pointCount = 0;
 	for (var i = 0; i < b2_maxManifoldPoints; ++i)
 	{
-		var separation = b2Dot_v2_v2(normal, clipPoints2[i].v) - frontOffset;
+		var separation = /*b2Dot_v2_v2(normal, clipPoints2[i].v)*/(normalx * clipPoints2[i].v.x + normaly * clipPoints2[i].v.y) - frontOffset;
 
 		if (separation <= totalRadius)
 		{
@@ -819,6 +856,8 @@ function b2CollidePolygons(manifold,
 	manifold.pointCount = pointCount;
 }
 
+b2CollidePolygons._localTangent = new b2Vec2();
+
 b2CollidePolygons._local_incidentEdges = [new b2ClipVertex(), new b2ClipVertex()];
 
 /// Compute the collision manifold between an edge and a circle.
@@ -832,11 +871,12 @@ function b2CollideEdgeAndCircle(manifold,
 	var Q = b2MulT_t_v2(xfA, b2Mul_t_v2(xfB, circleB.m_p));
 
 	var A = edgeA.m_vertex1, B = edgeA.m_vertex2;
-	var e = b2Vec2.Subtract(B, A);
+	var ex = B.x - A.x;//b2Vec2.Subtract(B, A);
+	var ey = B.y - A.y;
 
 	// Barycentric coordinates
-	var u = b2Dot_v2_v2(e, b2Vec2.Subtract(B, Q));
-	var v = b2Dot_v2_v2(e, b2Vec2.Subtract(Q, A));
+	var u = ex * (B.x - Q.x) + ey * (B.y - Q.y);//b2Dot_v2_v2(e, b2Vec2.Subtract(B, Q));
+	var v = ex * (Q.x - A.x) + ey * (Q.y - A.y);//b2Dot_v2_v2(e, b2Vec2.Subtract(Q, A));
 
 	var radius = edgeA.m_radius + circleB.m_radius;
 
@@ -848,8 +888,9 @@ function b2CollideEdgeAndCircle(manifold,
 	if (v <= 0.0)
 	{
 		var P = A;
-		var d = b2Vec2.Subtract(Q, P);
-		var dd = b2Dot_v2_v2(d, d);
+		var dx = Q.x - P.x;//b2Vec2.Subtract(Q, P);
+		var dy = Q.y - P.y;
+		var dd = dx * dx + dy * dy;//b2Dot_v2_v2(d, d);
 		if (dd > radius * radius)
 		{
 			return;
@@ -860,8 +901,9 @@ function b2CollideEdgeAndCircle(manifold,
 		{
 			var A1 = edgeA.m_vertex0;
 			var B1 = A;
-			var e1 = b2Vec2.Subtract(B1, A1);
-			var u1 = b2Dot_v2_v2(e1, b2Vec2.Subtract(B1, Q));
+			var e1x = B1.x - A1.x;//b2Vec2.Subtract(B1, A1);
+			var e1y = B1.y - A1.y;
+			var u1 = e1x * (B1.x - Q.x) + e1y * (B1.y - Q.y);//b2Dot_v2_v2(e1, b2Vec2.Subtract(B1, Q));
 
 			// Is the circle in Region AB of the previous edge?
 			if (u1 > 0.0)
@@ -874,11 +916,13 @@ function b2CollideEdgeAndCircle(manifold,
 		cf.typeA = b2ContactID.e_vertex;
 		manifold.pointCount = 1;
 		manifold.type = b2Manifold.e_circles;
-		manifold.localNormal.SetZero();
-		manifold.localPoint.Assign(P);
+		manifold.localNormal.x = manifold.localNormal.y = 0;
+		manifold.localPoint.x = P.x;
+		manifold.localPoint.y = P.y;
 		manifold.points[0] = new b2ManifoldPoint();
 		manifold.points[0].id.Assign(cf);
-		manifold.points[0].localPoint.Assign(circleB.m_p);
+		manifold.points[0].localPoint.x = circleB.m_p.x;
+		manifold.points[0].localPoint.y = circleB.m_p.y;
 		return;
 	}
 
@@ -886,8 +930,9 @@ function b2CollideEdgeAndCircle(manifold,
 	if (u <= 0.0)
 	{
 		var P = B;
-		var d = b2Vec2.Subtract(Q, P);
-		var dd = b2Dot_v2_v2(d, d);
+		var dx = Q.x - P.x;//b2Vec2.Subtract(Q, P);
+		var dy = Q.y - P.y;
+		var dd = dx * dx + dy * dy;//b2Dot_v2_v2(d, d);
 		if (dd > radius * radius)
 		{
 			return;
@@ -898,8 +943,9 @@ function b2CollideEdgeAndCircle(manifold,
 		{
 			var B2 = edgeA.m_vertex3;
 			var A2 = B;
-			var e2 = b2Vec2.Subtract(B2, A2);
-			var v2 = b2Dot_v2_v2(e2, b2Vec2.Subtract(Q, A2));
+			var e2x = B2.x - A2.x;//b2Vec2.Subtract(B2, A2);
+			var e2y = B2.y - A2.y;
+			var v2 = e2x * (Q.x - A2.x) + e2y * (Q.y - A2.y);//b2Dot_v2_v2(e2, b2Vec2.Subtract(Q, A2));
 
 			// Is the circle in Region AB of the next edge?
 			if (v2 > 0.0)
@@ -912,43 +958,53 @@ function b2CollideEdgeAndCircle(manifold,
 		cf.typeA = b2ContactID.e_vertex;
 		manifold.pointCount = 1;
 		manifold.type = b2Manifold.e_circles;
-		manifold.localNormal.SetZero();
-		manifold.localPoint.Assign(P);
+		manifold.localNormal.x = manifold.localNormal.y = 0;
+		manifold.localPoint.x = P.x;
+		manifold.localPoint.y = P.y;
 		manifold.points[0] = new b2ManifoldPoint();
 		manifold.points[0].id.Assign(cf);
-		manifold.points[0].localPoint.Assign(circleB.m_p);
+		manifold.points[0].localPoint.x = circleB.m_p.x;
+		manifold.points[0].localPoint.y = circleB.m_p.y;
 		return;
 	}
 
 	// Region AB
-	var den = b2Dot_v2_v2(e, e);
+	var den = ex * ex + ey * ey;//b2Dot_v2_v2(e, e);
 '#if @DEBUG';
 	b2Assert(den > 0.0);
 '#endif';
-	var P = b2Vec2.Multiply((1.0 / den), b2Vec2.Add(b2Vec2.Multiply(u, A), b2Vec2.Multiply(v, B)));
-	var d = b2Vec2.Subtract(Q, P);
-	var dd = b2Dot_v2_v2(d, d);
+	var Px = (1.0 / den) * ((u * A.x) + (v * B.x));
+	var Py = (1.0 / den) * ((u * A.y) + (v * B.y));//b2Vec2.Multiply((1.0 / den), b2Vec2.Add(b2Vec2.Multiply(u, A), b2Vec2.Multiply(v, B)));
+	var dx = Q.x - Px;//b2Vec2.Subtract(Q, P);
+	var dy = Q.y - Py;
+	var dd = dx * dx + dy * dy;//b2Dot_v2_v2(d, d);
 	if (dd > radius * radius)
 	{
 		return;
 	}
 
-	var n = new b2Vec2(-e.y, e.x);
-	if (b2Dot_v2_v2(n, b2Vec2.Subtract(Q, A)) < 0.0)
+	var nx = -ey;//new b2Vec2(-ey, ex);
+	var ny = ex;
+	if (nx * (Q.x - A.x) + ny * (Q.y - A.y) < 0.0)//b2Dot_v2_v2(n, b2Vec2.Subtract(Q, A)) < 0.0)
 	{
-		n.Set(-n.x, -n.y);
+		nx = -nx;//.Set(-n.x, -n.y);
+		ny = -ny;
 	}
-	n.Normalize();
+	//n.Normalize();
 
 	cf.indexA = 0;
 	cf.typeA = b2ContactID.e_face;
 	manifold.pointCount = 1;
 	manifold.type = b2Manifold.e_faceA;
-	manifold.localNormal.Assign(n);
-	manifold.localPoint.Assign(A);
+	manifold.localNormal.x = nx;
+	manifold.localNormal.y = ny;
+	manifold.localNormal.Normalize();
+	manifold.localPoint.x = A.x;
+	manifold.localPoint.y = A.y;
 	manifold.points[0] = new b2ManifoldPoint();
 	manifold.points[0].id.Assign(cf);
-	manifold.points[0].localPoint.Assign(circleB.m_p);
+	manifold.points[0].localPoint.x = circleB.m_p.x;
+	manifold.points[0].localPoint.y = circleB.m_p.y;
 }
 
 // This structure is used to keep track of the best separating axis.
@@ -1004,6 +1060,10 @@ function b2EPCollider()
 	this.m_front = false;
 }
 
+b2EPCollider._temp_edge = new b2Vec2();
+b2EPCollider._temp_edge0 = new b2Vec2();
+b2EPCollider._temp_edge2 = new b2Vec2();
+
 b2EPCollider.prototype =
 {
 	// Algorithm:
@@ -1020,41 +1080,58 @@ b2EPCollider.prototype =
 	{
 		this.m_xf.Assign(b2MulT_t_t(xfA, xfB));
 
-		this.m_centroidB.Assign(b2Mul_t_v2(this.m_xf, polygonB.m_centroid));
+		//this.m_centroidB.Assign(b2Mul_t_v2(this.m_xf, polygonB.m_centroid));
+		this.m_centroidB.x = (this.m_xf.q.c * polygonB.m_centroid.x - this.m_xf.q.s * polygonB.m_centroid.y) + this.m_xf.p.x;
+		this.m_centroidB.y = (this.m_xf.q.s * polygonB.m_centroid.x + this.m_xf.q.c * polygonB.m_centroid.y) + this.m_xf.p.y;
 
-		this.m_v0.Assign(edgeA.m_vertex0);
-		this.m_v1.Assign(edgeA.m_vertex1);
-		this.m_v2.Assign(edgeA.m_vertex2);
-		this.m_v3.Assign(edgeA.m_vertex3);
+		this.m_v0.x = edgeA.m_vertex0.x;
+		this.m_v0.y = edgeA.m_vertex0.y;
+		this.m_v1.x = edgeA.m_vertex1.x;
+		this.m_v1.y = edgeA.m_vertex1.y;
+		this.m_v2.x = edgeA.m_vertex2.x;
+		this.m_v2.y = edgeA.m_vertex2.y;
+		this.m_v3.x = edgeA.m_vertex3.x;
+		this.m_v3.y = edgeA.m_vertex3.y;
 
 		var hasVertex0 = edgeA.m_hasVertex0;
 		var hasVertex3 = edgeA.m_hasVertex3;
 
-		var edge1 = b2Vec2.Subtract(this.m_v2, this.m_v1);
-		edge1.Normalize();
-		this.m_normal1.Set(edge1.y, -edge1.x);
-		var offset1 = b2Dot_v2_v2(this.m_normal1, b2Vec2.Subtract(this.m_centroidB, this.m_v1));
+		b2EPCollider._temp_edge.x = this.m_v2.x - this.m_v1.x;// = b2Vec2.Subtract(this.m_v2, this.m_v1);
+		b2EPCollider._temp_edge.y = this.m_v2.y - this.m_v1.y;
+		b2EPCollider._temp_edge.Normalize();
+		this.m_normal1.x = b2EPCollider._temp_edge.y;
+		this.m_normal1.y = -b2EPCollider._temp_edge.x;
+		//var offset1 = b2Dot_v2_v2(this.m_normal1, b2Vec2.Subtract(this.m_centroidB, this.m_v1));
+		var offset1 = this.m_normal1.x * (this.m_centroidB.x - this.m_v1.x) + this.m_normal1.y * (this.m_centroidB.y - this.m_v1.y);
 		var offset0 = 0.0, offset2 = 0.0;
 		var convex1 = false, convex2 = false;
 
 		// Is there a preceding edge?
 		if (hasVertex0)
 		{
-			var edge0 = b2Vec2.Subtract(this.m_v1, this.m_v0);
-			edge0.Normalize();
-			this.m_normal0.Set(edge0.y, -edge0.x);
-			convex1 = b2Cross_v2_v2(edge0, edge1) >= 0.0;
-			offset0 = b2Dot_v2_v2(this.m_normal0, b2Vec2.Subtract(this.m_centroidB, this.m_v0));
+			b2EPCollider._temp_edge0.x = this.m_v1.x - this.m_v0.x;
+			b2EPCollider._temp_edge0.y = this.m_v1.y - this.m_v0.y;
+			b2EPCollider._temp_edge0.Normalize();
+			this.m_normal0.x = b2EPCollider._temp_edge0.y;
+			this.m_normal0.y = -b2EPCollider._temp_edge0.x;
+			//convex1 = b2Cross_v2_v2(b2EPCollider._temp_edge0, b2EPCollider._temp_edge) >= 0.0;
+			convex1 = (b2EPCollider._temp_edge0.x * b2EPCollider._temp_edge.y - b2EPCollider._temp_edge0.y * b2EPCollider._temp_edge.x) >= 0;
+			//offset0 = b2Dot_v2_v2(this.m_normal0, b2Vec2.Subtract(this.m_centroidB, this.m_v0));
+			offset0 = this.m_normal0.x * (this.m_centroidB.x - this.m_v0.x) + this.m_normal0.y * (this.m_centroidB.y - this.m_v0.y);
 		}
 
 		// Is there a following edge?
 		if (hasVertex3)
 		{
-			var edge2 = b2Vec2.Subtract(this.m_v3, this.m_v2);
-			edge2.Normalize();
-			this.m_normal2.Set(edge2.y, -edge2.x);
-			convex2 = b2Cross_v2_v2(edge1, edge2) > 0.0;
-			offset2 = b2Dot_v2_v2(this.m_normal2, b2Vec2.Subtract(this.m_centroidB, this.m_v2));
+			b2EPCollider._temp_edge2.x = this.m_v3.x - this.m_v2.x;
+			b2EPCollider._temp_edge2.y = this.m_v3.y - this.m_v2.y;
+			b2EPCollider._temp_edge2.Normalize();
+			this.m_normal2.x = b2EPCollider._temp_edge2.y;
+			this.m_normal2.y = -b2EPCollider._temp_edge2.x;
+			//convex2 = b2Cross_v2_v2(b2EPCollider._temp_edge, b2EPCollider._temp_edge2) > 0.0;
+			convex2 = (b2EPCollider._temp_edge.x * b2EPCollider._temp_edge2.y - b2EPCollider._temp_edge.y * b2EPCollider._temp_edge2.x) > 0.0;
+			//offset2 = b2Dot_v2_v2(this.m_normal2, b2Vec2.Subtract(this.m_centroidB, this.m_v2));
+			offset2 = this.m_normal2.x * (this.m_centroidB.x - this.m_v2.x) + this.m_normal2.y * (this.m_centroidB.y - this.m_v2.y);
 		}
 
 		// Determine front or back collision. Determine collision normal limits.
@@ -1065,15 +1142,21 @@ b2EPCollider.prototype =
 				this.m_front = offset0 >= 0.0 || offset1 >= 0.0 || offset2 >= 0.0;
 				if (this.m_front)
 				{
-					this.m_normal = this.m_normal1;
-					this.m_lowerLimit = this.m_normal0;
-					this.m_upperLimit = this.m_normal2;
+					this.m_normal.x = this.m_normal1.x;
+					this.m_normal.y = this.m_normal1.y;
+					this.m_lowerLimit.x = this.m_normal0.x;
+					this.m_lowerLimit.y = this.m_normal0.y;
+					this.m_upperLimit.x = this.m_normal2.x;
+					this.m_upperLimit.y = this.m_normal2.y;
 				}
 				else
 				{
-					this.m_normal = this.m_normal1.Negate();
-					this.m_lowerLimit = this.m_normal1.Negate();
-					this.m_upperLimit = this.m_normal1.Negate();
+					this.m_normal.x = -this.m_normal1.x;
+					this.m_normal.y = -this.m_normal1.y;
+					this.m_lowerLimit.x = -this.m_normal1.x;
+					this.m_lowerLimit.y = -this.m_normal1.y;
+					this.m_upperLimit.x = -this.m_normal1.x;
+					this.m_upperLimit.y = -this.m_normal1.y;
 				}
 			}
 			else if (convex1)
@@ -1081,15 +1164,21 @@ b2EPCollider.prototype =
 				this.m_front = offset0 >= 0.0 || (offset1 >= 0.0 && offset2 >= 0.0);
 				if (this.m_front)
 				{
-					this.m_normal = this.m_normal1;
-					this.m_lowerLimit = this.m_normal0;
-					this.m_upperLimit = this.m_normal1;
+					this.m_normal.x = this.m_normal1.x;
+					this.m_normal.y = this.m_normal1.y;
+					this.m_lowerLimit.x = this.m_normal0.x;
+					this.m_lowerLimit.y = this.m_normal0.y;
+					this.m_upperLimit.x = this.m_normal1.x;
+					this.m_upperLimit.y = this.m_normal1.y;
 				}
 				else
 				{
-					this.m_normal = this.m_normal1.Negate();
-					this.m_lowerLimit = this.m_normal2.Negate();
-					this.m_upperLimit = this.m_normal1.Negate();
+					this.m_normal.x = -this.m_normal1.x;
+					this.m_normal.y = -this.m_normal1.y;
+					this.m_lowerLimit.x = -this.m_normal2.x;
+					this.m_lowerLimit.y = -this.m_normal2.y;
+					this.m_upperLimit.x = -this.m_normal1.x;
+					this.m_upperLimit.y = -this.m_normal1.y;
 				}
 			}
 			else if (convex2)
@@ -1097,15 +1186,21 @@ b2EPCollider.prototype =
 				this.m_front = offset2 >= 0.0 || (offset0 >= 0.0 && offset1 >= 0.0);
 				if (this.m_front)
 				{
-					this.m_normal = this.m_normal1;
-					this.m_lowerLimit = this.m_normal1;
-					this.m_upperLimit = this.m_normal2;
+					this.m_normal.x = this.m_normal1.x;
+					this.m_normal.y = this.m_normal1.y;
+					this.m_lowerLimit.x = this.m_normal1.x;
+					this.m_lowerLimit.y = this.m_normal1.y;
+					this.m_upperLimit.x = this.m_normal2.x;
+					this.m_upperLimit.y = this.m_normal2.y;
 				}
 				else
 				{
-					this.m_normal = this.m_normal1.Negate();
-					this.m_lowerLimit = this.m_normal1.Negate();
-					this.m_upperLimit = this.m_normal0.Negate();
+					this.m_normal.x = -this.m_normal1.x;
+					this.m_normal.y = -this.m_normal1.y;
+					this.m_lowerLimit.x = -this.m_normal1.x;
+					this.m_lowerLimit.y = -this.m_normal1.y;
+					this.m_upperLimit.x = -this.m_normal0.x;
+					this.m_upperLimit.y = -this.m_normal0.y;
 				}
 			}
 			else
@@ -1113,15 +1208,21 @@ b2EPCollider.prototype =
 				this.m_front = offset0 >= 0.0 && offset1 >= 0.0 && offset2 >= 0.0;
 				if (this.m_front)
 				{
-					this.m_normal = this.m_normal1;
-					this.m_lowerLimit = this.m_normal1;
-					this.m_upperLimit = this.m_normal1;
+					this.m_normal.x = this.m_normal1.x;
+					this.m_normal.y = this.m_normal1.y;
+					this.m_lowerLimit.x = this.m_normal1.x;
+					this.m_lowerLimit.y = this.m_normal1.y;
+					this.m_upperLimit.x = this.m_normal1.x;
+					this.m_upperLimit.y = this.m_normal1.y;
 				}
 				else
 				{
-					this.m_normal = this.m_normal1.Negate();
-					this.m_lowerLimit = this.m_normal2.Negate();
-					this.m_upperLimit = this.m_normal0.Negate();
+					this.m_normal.x = -this.m_normal1.x;
+					this.m_normal.y = -this.m_normal1.y;
+					this.m_lowerLimit.x = -this.m_normal2.x;
+					this.m_lowerLimit.y = -this.m_normal2.y;
+					this.m_upperLimit.x = -this.m_normal0.x;
+					this.m_upperLimit.y = -this.m_normal0.y;
 				}
 			}
 		}
@@ -1132,15 +1233,21 @@ b2EPCollider.prototype =
 				this.m_front = offset0 >= 0.0 || offset1 >= 0.0;
 				if (this.m_front)
 				{
-					this.m_normal = this.m_normal1;
-					this.m_lowerLimit = this.m_normal0;
-					this.m_upperLimit = this.m_normal1.Negate();
+					this.m_normal.x = this.m_normal1.x;
+					this.m_normal.y = this.m_normal1.y;
+					this.m_lowerLimit.x = this.m_normal0.x;
+					this.m_lowerLimit.y = this.m_normal0.y;
+					this.m_upperLimit.x = -this.m_normal1.x;
+					this.m_upperLimit.y = -this.m_normal1.y;
 				}
 				else
 				{
-					this.m_normal = this.m_normal1.Negate();
-					this.m_lowerLimit = this.m_normal1;
-					this.m_upperLimit = this.m_normal1.Negate();
+					this.m_normal.x = -this.m_normal1.x;
+					this.m_normal.y = -this.m_normal1.y;
+					this.m_lowerLimit.x = this.m_normal1.x;
+					this.m_lowerLimit.y = this.m_normal1.y;
+					this.m_upperLimit.x = -this.m_normal1.x;
+					this.m_upperLimit.y = -this.m_normal1.y;
 				}
 			}
 			else
@@ -1148,15 +1255,21 @@ b2EPCollider.prototype =
 				this.m_front = offset0 >= 0.0 && offset1 >= 0.0;
 				if (this.m_front)
 				{
-					this.m_normal = this.m_normal1;
-					this.m_lowerLimit = this.m_normal1;
-					this.m_upperLimit = this.m_normal1.Negate();
+					this.m_normal.x = this.m_normal1.x;
+					this.m_normal.y = this.m_normal1.y;
+					this.m_lowerLimit.x = this.m_normal1.x;
+					this.m_lowerLimit.y = this.m_normal1.y;
+					this.m_upperLimit.x = -this.m_normal1.x;
+					this.m_upperLimit.y = -this.m_normal1.y;
 				}
 				else
 				{
-					this.m_normal = this.m_normal1.Negate();
-					this.m_lowerLimit = this.m_normal1;
-					this.m_upperLimit = this.m_normal0.Negate();
+					this.m_normal.x = -this.m_normal1.x;
+					this.m_normal.y = -this.m_normal1.y;
+					this.m_lowerLimit.x = this.m_normal1.x;
+					this.m_lowerLimit.y = this.m_normal1.y;
+					this.m_upperLimit.x = -this.m_normal0.x;
+					this.m_upperLimit.y = -this.m_normal0.y;
 				}
 			}
 		}
@@ -1167,15 +1280,21 @@ b2EPCollider.prototype =
 				this.m_front = offset1 >= 0.0 || offset2 >= 0.0;
 				if (this.m_front)
 				{
-					this.m_normal = this.m_normal1;
-					this.m_lowerLimit = this.m_normal1.Negate();
-					this.m_upperLimit = this.m_normal2;
+					this.m_normal.x = this.m_normal1.x;
+					this.m_normal.y = this.m_normal1.y;
+					this.m_lowerLimit.x = -this.m_normal1.x;
+					this.m_lowerLimit.y = -this.m_normal1.y;
+					this.m_upperLimit.x = this.m_normal2.x;
+					this.m_upperLimit.y = this.m_normal2.y;
 				}
 				else
 				{
-					this.m_normal = this.m_normal1.Negate();
-					this.m_lowerLimit = this.m_normal1.Negate();
-					this.m_upperLimit = this.m_normal1;
+					this.m_normal.x = -this.m_normal1.x;
+					this.m_normal.y = -this.m_normal1.y;
+					this.m_lowerLimit.x = -this.m_normal1.x;
+					this.m_lowerLimit.y = -this.m_normal1.y;
+					this.m_upperLimit.x = this.m_normal1.x;
+					this.m_upperLimit.y = this.m_normal1.y;
 				}
 			}
 			else
@@ -1183,15 +1302,21 @@ b2EPCollider.prototype =
 				this.m_front = offset1 >= 0.0 && offset2 >= 0.0;
 				if (this.m_front)
 				{
-					this.m_normal = this.m_normal1;
-					this.m_lowerLimit = this.m_normal1.Negate();
-					this.m_upperLimit = this.m_normal1;
+					this.m_normal.x = this.m_normal1.x;
+					this.m_normal.y = this.m_normal1.y;
+					this.m_lowerLimit.x = -this.m_normal1.x;
+					this.m_lowerLimit.y = -this.m_normal1.y;
+					this.m_upperLimit.x = this.m_normal1.x;
+					this.m_upperLimit.y = this.m_normal1.y;
 				}
 				else
 				{
-					this.m_normal = this.m_normal1.Negate();
-					this.m_lowerLimit = this.m_normal2.Negate();
-					this.m_upperLimit = this.m_normal1;
+					this.m_normal.x = -this.m_normal1.x;
+					this.m_normal.y = -this.m_normal1.y;
+					this.m_lowerLimit.x = -this.m_normal2.x;
+					this.m_lowerLimit.y = -this.m_normal2.y;
+					this.m_upperLimit.x = this.m_normal1.x;
+					this.m_upperLimit.y = this.m_normal1.y;
 				}
 			}
 		}
@@ -1200,15 +1325,21 @@ b2EPCollider.prototype =
 			this.m_front = offset1 >= 0.0;
 			if (this.m_front)
 			{
-				this.m_normal = this.m_normal1;
-				this.m_lowerLimit = this.m_normal1.Negate();
-				this.m_upperLimit = this.m_normal1.Negate();
+				this.m_normal.x = this.m_normal1.x;
+				this.m_normal.y = this.m_normal1.y;
+				this.m_lowerLimit.x = -this.m_normal1.x;
+				this.m_lowerLimit.y = -this.m_normal1.y;
+				this.m_upperLimit.x = -this.m_normal1.x;
+				this.m_upperLimit.y = -this.m_normal1.y;
 			}
 			else
 			{
-				this.m_normal = this.m_normal1.Negate();
-				this.m_lowerLimit = this.m_normal1;
-				this.m_upperLimit = this.m_normal1;
+				this.m_normal.x = -this.m_normal1.x;
+				this.m_normal.y = -this.m_normal1.y;
+				this.m_lowerLimit.x = this.m_normal1.x;
+				this.m_lowerLimit.y = this.m_normal1.y;
+				this.m_upperLimit.x = this.m_normal1.x;
+				this.m_upperLimit.y = this.m_normal1.y;
 			}
 		}
 
@@ -1269,10 +1400,10 @@ b2EPCollider.prototype =
 
 			// Search for the polygon normal that is most anti-parallel to the edge normal.
 			var bestIndex = 0;
-			var bestValue = b2Dot_v2_v2(this.m_normal, this.m_polygonB.normals[0]);
+			var bestValue = this.m_normal.x * this.m_polygonB.normals[0].x + this.m_normal.y * this.m_polygonB.normals[0].y;//b2Dot_v2_v2(this.m_normal, this.m_polygonB.normals[0]);
 			for (var i = 1; i < this.m_polygonB.count; ++i)
 			{
-				var value = b2Dot_v2_v2(this.m_normal, this.m_polygonB.normals[i]);
+				var value = this.m_normal.x * this.m_polygonB.normals[i].x + this.m_normal.y * this.m_polygonB.normals[i].y;//b2Dot_v2_v2(this.m_normal, this.m_polygonB.normals[i]);
 				if (value < bestValue)
 				{
 					bestValue = value;
@@ -1284,14 +1415,16 @@ b2EPCollider.prototype =
 			var i2 = i1 + 1 < this.m_polygonB.count ? i1 + 1 : 0;
 
 			ie[0] = new b2ClipVertex();
-			ie[0].v.Assign(this.m_polygonB.vertices[i1]);
+			ie[0].v.x = this.m_polygonB.vertices[i1].x;
+			ie[0].v.y = this.m_polygonB.vertices[i1].y;
 			ie[0].id.indexA = 0;
 			ie[0].id.indexB = i1;
 			ie[0].id.typeA = b2ContactID.e_face;
 			ie[0].id.typeB = b2ContactID.e_vertex;
 
 			ie[1] = new b2ClipVertex();
-			ie[1].v.Assign(this.m_polygonB.vertices[i2]);
+			ie[1].v.x = this.m_polygonB.vertices[i2].x;
+			ie[1].v.y = this.m_polygonB.vertices[i2].y;
 			ie[1].id.indexA = 0;
 			ie[1].id.indexB = i2;
 			ie[1].id.typeA = b2ContactID.e_face;
@@ -1301,17 +1434,23 @@ b2EPCollider.prototype =
 			{
 				rf.i1 = 0;
 				rf.i2 = 1;
-				rf.v1.Assign(this.m_v1);
-				rf.v2.Assign(this.m_v2);
-				rf.normal.Assign(this.m_normal1);
+				rf.v1.x = this.m_v1.x;
+				rf.v1.y = this.m_v1.y;
+				rf.v2.x = this.m_v2.x;
+				rf.v2.y = this.m_v2.y;
+				rf.normal.x = this.m_normal1.x;
+				rf.normal.y = this.m_normal1.y;
 			}
 			else
 			{
 				rf.i1 = 1;
 				rf.i2 = 0;
-				rf.v1.Assign(this.m_v2);
-				rf.v2.Assign(this.m_v1);
-				rf.normal.Assign(this.m_normal1.Negate());
+				rf.v1.x = this.m_v2.x;
+				rf.v1.y = this.m_v2.y;
+				rf.v2.x = this.m_v1.x;
+				rf.v2.y = this.m_v1.y;
+				rf.normal.x = -this.m_normal1.x;
+				rf.normal.y = -this.m_normal1.y;
 			}
 		}
 		else
@@ -1334,15 +1473,20 @@ b2EPCollider.prototype =
 
 			rf.i1 = primaryAxis.index;
 			rf.i2 = rf.i1 + 1 < this.m_polygonB.count ? rf.i1 + 1 : 0;
-			rf.v1 = this.m_polygonB.vertices[rf.i1];
-			rf.v2 = this.m_polygonB.vertices[rf.i2];
-			rf.normal = this.m_polygonB.normals[rf.i1];
+			rf.v1.x = this.m_polygonB.vertices[rf.i1].x;
+			rf.v1.y = this.m_polygonB.vertices[rf.i1].y;
+			rf.v2.x = this.m_polygonB.vertices[rf.i2].x;
+			rf.v2.y = this.m_polygonB.vertices[rf.i2].y;
+			rf.normal.x = this.m_polygonB.normals[rf.i1].x;
+			rf.normal.y = this.m_polygonB.normals[rf.i1].y;
 		}
 
-		rf.sideNormal1.Set(rf.normal.y, -rf.normal.x);
-		rf.sideNormal2 = rf.sideNormal1.Negate();
-		rf.sideOffset1 = b2Dot_v2_v2(rf.sideNormal1, rf.v1);
-		rf.sideOffset2 = b2Dot_v2_v2(rf.sideNormal2, rf.v2);
+		rf.sideNormal1.x = rf.normal.y;
+		rf.sideNormal1.y = -rf.normal.x;
+		rf.sideNormal2.x = -rf.sideNormal1.x;
+		rf.sideNormal2.y = -rf.sideNormal1.y;
+		rf.sideOffset1 = rf.sideNormal1.x * rf.v1.x + rf.sideNormal1.y * rf.v1.y;//b2Dot_v2_v2(rf.sideNormal1, rf.v1);
+		rf.sideOffset2 = rf.sideNormal2.x * rf.v2.x + rf.sideNormal2.y * rf.v2.y;//b2Dot_v2_v2(rf.sideNormal2, rf.v2);
 
 		// Clip incident edge against extruded edge1 side edges.
 		var clipPoints1 = new Array(2);
@@ -1350,7 +1494,7 @@ b2EPCollider.prototype =
 		var np;
 
 		// Clip to box side 1
-		np = b2ClipSegmentToLine(clipPoints1, ie, rf.sideNormal1, rf.sideOffset1, rf.i1);
+		np = b2ClipSegmentToLine(clipPoints1, ie, rf.sideNormal1.x, rf.sideNormal1.y, rf.sideOffset1, rf.i1);
 
 		if (np < b2_maxManifoldPoints)
 		{
@@ -1358,7 +1502,7 @@ b2EPCollider.prototype =
 		}
 
 		// Clip to negative box side 1
-		np = b2ClipSegmentToLine(clipPoints2, clipPoints1, rf.sideNormal2, rf.sideOffset2, rf.i2);
+		np = b2ClipSegmentToLine(clipPoints2, clipPoints1, rf.sideNormal2.x, rf.sideNormal2.y, rf.sideOffset2, rf.i2);
 
 		if (np < b2_maxManifoldPoints)
 		{
@@ -1368,21 +1512,25 @@ b2EPCollider.prototype =
 		// Now clipPoints2 contains the clipped points.
 		if (primaryAxis.type == b2EPAxis.e_edgeA)
 		{
-			manifold.localNormal.Assign(rf.normal);
-			manifold.localPoint.Assign(rf.v1);
+			manifold.localNormal.x = rf.normal.x;
+			manifold.localNormal.y = rf.normal.y;
+			manifold.localPoint.x = rf.v1.x;
+			manifold.localPoint.y = rf.v1.y;
 		}
 		else
 		{
-			manifold.localNormal.Assign(polygonB.m_normals[rf.i1]);
-			manifold.localPoint.Assign(polygonB.m_vertices[rf.i1]);
+			manifold.localNormal.x = polygonB.m_normals[rf.i1].x;
+			manifold.localNormal.y = polygonB.m_normals[rf.i1].y;
+			manifold.localPoint.x = polygonB.m_vertices[rf.i1].x;
+			manifold.localPoint.y = polygonB.m_vertices[rf.i1].y;
 		}
 
 		var pointCount = 0;
 		for (var i = 0; i < b2_maxManifoldPoints; ++i)
 		{
-			var separation;
-
-			separation = b2Dot_v2_v2(rf.normal, b2Vec2.Subtract(clipPoints2[i].v, rf.v1));
+			//var separation;
+			//separation = b2Dot_v2_v2(rf.normal, b2Vec2.Subtract(clipPoints2[i].v, rf.v1));
+			var separation = rf.normal.x * (clipPoints2[i].v.x - rf.v1.x) + rf.normal.y * (clipPoints2[i].v.y - rf.v1.y);
 
 			if (separation <= this.m_radius)
 			{
@@ -1395,7 +1543,9 @@ b2EPCollider.prototype =
 				}
 				else
 				{
-					cp.localPoint.Assign(clipPoints2[i].v);
+					//cp.localPoint.Assign(clipPoints2[i].v);
+					cp.localPoint.x = clipPoints2[i].v.x;
+					cp.localPoint.y = clipPoints2[i].v.y;
 					cp.id.typeA = clipPoints2[i].id.typeB;
 					cp.id.typeB = clipPoints2[i].id.typeA;
 					cp.id.indexA = clipPoints2[i].id.indexB;
@@ -1418,7 +1568,8 @@ b2EPCollider.prototype =
 
 		for (var i = 0; i < this.m_polygonB.count; ++i)
 		{
-			var s = b2Dot_v2_v2(this.m_normal, b2Vec2.Subtract(this.m_polygonB.vertices[i], this.m_v1));
+			//var s = b2Dot_v2_v2(this.m_normal, b2Vec2.Subtract(this.m_polygonB.vertices[i], this.m_v1));
+			var s = this.m_normal.x * (this.m_polygonB.vertices[i].x - this.m_v1.x) + this.m_normal.y * (this.m_polygonB.vertices[i].y - this.m_v1.y);
 			if (s < axis.separation)
 			{
 				axis.separation = s;
@@ -1427,6 +1578,7 @@ b2EPCollider.prototype =
 
 		return axis;
 	},
+
 	ComputePolygonSeparation: function()
 	{
 		var axis = new b2EPAxis();
@@ -1434,14 +1586,18 @@ b2EPCollider.prototype =
 		axis.index = -1;
 		axis.separation = -Number.MAX_VALUE;
 
-		var perp = new b2Vec2(-this.m_normal.y, this.m_normal.x);
+		var perpx = -this.m_normal.y;// = new b2Vec2(-this.m_normal.y, this.m_normal.x);
+		var perpy = this.m_normal.x;
 
 		for (var i = 0; i < this.m_polygonB.count; ++i)
 		{
-			var n = this.m_polygonB.normals[i].Negate();
+			var nx = -this.m_polygonB.normals[i].x;//this.m_polygonB.normals[i].Negate();
+			var ny = -this.m_polygonB.normals[i].y;
 
-			var s1 = b2Dot_v2_v2(n, b2Vec2.Subtract(this.m_polygonB.vertices[i], this.m_v1));
-			var s2 = b2Dot_v2_v2(n, b2Vec2.Subtract(this.m_polygonB.vertices[i], this.m_v2));
+			//var s1 = b2Dot_v2_v2(n, b2Vec2.Subtract(this.m_polygonB.vertices[i], this.m_v1));
+			var s1 = nx * (this.m_polygonB.vertices[i].x - this.m_v1.x) + ny * (this.m_polygonB.vertices[i].y - this.m_v1.y);
+			//var s2 = b2Dot_v2_v2(n, b2Vec2.Subtract(this.m_polygonB.vertices[i], this.m_v2));
+			var s2 = nx * (this.m_polygonB.vertices[i].x - this.m_v2.x) + ny * (this.m_polygonB.vertices[i].y - this.m_v2.y);
 			var s = b2Min(s1, s2);
 
 			if (s > this.m_radius)
@@ -1454,16 +1610,19 @@ b2EPCollider.prototype =
 			}
 
 			// Adjacency
-			if (b2Dot_v2_v2(n, perp) >= 0.0)
+			if (/*b2Dot_v2_v2(n, perp)*/nx * perpx + ny * perpy >= 0.0)
 			{
-				if (b2Dot_v2_v2(b2Vec2.Subtract(n, this.m_upperLimit), this.m_normal) < -b2_angularSlop)
+				if (/*b2Dot_v2_v2(b2Vec2.Subtract(n, this.m_upperLimit), this.m_normal)*/
+					(nx - this.m_upperLimit.x) * this.m_normal.x + (ny - this.m_upperLimit.y) * this.m_normal.y < -b2_angularSlop)
 				{
 					continue;
 				}
 			}
 			else
 			{
-				if (b2Dot_v2_v2(b2Vec2.Subtract(n, this.m_lowerLimit), this.m_normal) < -b2_angularSlop)
+				if (
+					/*b2Dot_v2_v2(b2Vec2.Subtract(n, this.m_lowerLimit), this.m_normal)*/
+					(nx - this.m_lowerLimit.x) * this.m_normal.x + (ny - this.m_lowerLimit.y) * this.m_normal.y< -b2_angularSlop)
 				{
 					continue;
 				}
@@ -1490,20 +1649,21 @@ function b2CollideEdgeAndPolygon(manifold,
 							   edgeA, xfA,
 							   polygonB, xfB)
 {
-	var collider = new b2EPCollider();
-	collider.Collide(manifold, edgeA, xfA, polygonB, xfB);
+	b2CollideEdgeAndPolygon.collider.Collide(manifold, edgeA, xfA, polygonB, xfB);
 }
+
+b2CollideEdgeAndPolygon.collider = new b2EPCollider();
 
 /// Clipping for contact manifolds.
 function b2ClipSegmentToLine(vOut, vIn,
-							normal, offset, vertexIndexA)
+							normalx, normaly, offset, vertexIndexA)
 {
 	// Start with no output points
 	var numOut = 0;
 
 	// Calculate the distance of end points to the line
-	var distance0 = b2Dot_v2_v2(normal, vIn[0].v) - offset;
-	var distance1 = b2Dot_v2_v2(normal, vIn[1].v) - offset;
+	var distance0 = /*b2Dot_v2_v2(normal, vIn[0].v)*/(normalx * vIn[0].v.x + normaly * vIn[0].v.y) - offset;
+	var distance1 = /*b2Dot_v2_v2(normal, vIn[1].v)*/(normalx * vIn[1].v.x + normaly * vIn[1].v.y) - offset;
 
 	// If the points are behind the plane
 	if (distance0 <= 0.0) vOut[numOut++] = vIn[0];
@@ -1515,7 +1675,9 @@ function b2ClipSegmentToLine(vOut, vIn,
 		// Find intersection point of edge and plane
 		var interp = distance0 / (distance0 - distance1);
 		vOut[numOut] = new b2ClipVertex();
-		vOut[numOut].v.Assign(b2Vec2.Add(vIn[0].v, b2Vec2.Multiply(interp, b2Vec2.Subtract(vIn[1].v, vIn[0].v))));
+		//vOut[numOut].v.Assign(b2Vec2.Add(vIn[0].v, b2Vec2.Multiply(interp, b2Vec2.Subtract(vIn[1].v, vIn[0].v))));
+		vOut[numOut].v.x = vIn[0].v.x + (interp * (vIn[1].v.x - vIn[0].v.x));
+		vOut[numOut].v.y = vIn[0].v.y + (interp * (vIn[1].v.y - vIn[0].v.y));
 
 		// VertexA is hitting edgeB.
 		vOut[numOut].id.indexA = vertexIndexA;
@@ -1533,34 +1695,24 @@ function b2TestShapeOverlap(shapeA, indexA,
 					shapeB, indexB,
 					xfA, xfB)
 {
-	var input = new b2DistanceInput();
-	input.proxyA.Set(shapeA, indexA);
-	input.proxyB.Set(shapeB, indexB);
-	input.transformA = xfA;
-	input.transformB = xfB;
-	input.useRadii = true;
+	b2TestShapeOverlap.input.proxyA.Set(shapeA, indexA);
+	b2TestShapeOverlap.input.proxyB.Set(shapeB, indexB);
+	b2TestShapeOverlap.input.transformA = xfA;
+	b2TestShapeOverlap.input.transformB = xfB;
+	b2TestShapeOverlap.input.useRadii = true;
 
-	var cache = new b2SimplexCache();
-	cache.count = 0;
+	b2TestShapeOverlap.cache.count = 0;
 
-	var output = new b2DistanceOutput();
+	b2DistanceFunc(b2TestShapeOverlap.output, b2TestShapeOverlap.cache, b2TestShapeOverlap.input);
 
-	b2DistanceFunc(output, cache, input);
-
-	return output.distance < 10.0 * b2_epsilon;
+	return b2TestShapeOverlap.output.distance < 10.0 * b2_epsilon;
 }
+
+b2TestShapeOverlap.input = new b2DistanceInput();
+b2TestShapeOverlap.cache = new b2SimplexCache();
+b2TestShapeOverlap.output = new b2DistanceOutput();
 
 function b2TestOverlap(a, b)
 {
-	var d1, d2;
-	d1 = b2Vec2.Subtract(b.lowerBound, a.upperBound);
-	d2 = b2Vec2.Subtract(a.lowerBound, b.upperBound);
-
-	if (d1.x > 0.0 || d1.y > 0.0)
-		return false;
-
-	if (d2.x > 0.0 || d2.y > 0.0)
-		return false;
-
-	return true;
+	return !((b.lowerBound.x - a.upperBound.x) > 0.0 || (b.lowerBound.y - a.upperBound.y) > 0.0 || (a.lowerBound.x - b.upperBound.x) > 0.0 || (a.lowerBound.y - b.upperBound.y) > 0.0);
 }

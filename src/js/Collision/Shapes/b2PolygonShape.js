@@ -322,19 +322,26 @@ b2PolygonShape.prototype =
 	/// @see b2Shape::ComputeAABB
 	ComputeAABB: function(aabb, xf, childIndex)
 	{
-		var lower = b2Mul_t_v2(xf, this.m_vertices[0]);
-		var upper = lower.Clone();
+		var lowerx = (xf.q.c * this.m_vertices[0].x - xf.q.s * this.m_vertices[0].y) + xf.p.x;//b2Mul_t_v2(xf, this.m_vertices[0]);
+		var lowery = (xf.q.s * this.m_vertices[0].x + xf.q.c * this.m_vertices[0].y) + xf.p.y;
+		var upperx = lowerx;
+		var uppery = lowery;
 
 		for (var i = 1; i < this.m_count; ++i)
 		{
-			var v = b2Mul_t_v2(xf, this.m_vertices[i]);
-			lower = b2Min_v2(lower, v);
-			upper = b2Max_v2(upper, v);
+			var vx = (xf.q.c * this.m_vertices[i].x - xf.q.s * this.m_vertices[i].y) + xf.p.x;//b2Mul_t_v2(xf, this.m_vertices[i]);
+			var vy = (xf.q.s * this.m_vertices[i].x + xf.q.c * this.m_vertices[i].y) + xf.p.y;
+			lowerx = b2Min(lowerx, vx);//b2Min_v2(lower, v);
+			lowery = b2Min(lowery, vy);
+			upperx = b2Max(upperx, vx);//b2Max_v2(upper, v);
+			uppery = b2Max(uppery, vy);
 		}
 
-		var r = new b2Vec2(this.m_radius, this.m_radius);
-		aabb.lowerBound = b2Vec2.Subtract(lower, r);
-		aabb.upperBound = b2Vec2.Add(upper, r);
+		//var r = new b2Vec2(this.m_radius, this.m_radius);
+		aabb.lowerBound.x = lowerx - this.m_radius; //b2Vec2.Subtract(lower, r);
+		aabb.lowerBound.y = lowery - this.m_radius;
+		aabb.upperBound.x = upperx + this.m_radius; //b2Vec2.Add(upper, r);
+		aabb.upperBound.y = uppery + this.m_radius;
 	},
 
 	/// @see b2Shape::ComputeMass

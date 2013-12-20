@@ -784,7 +784,10 @@ function b2MulT_t_t(A, B)
 {
 	var C = new b2Transform();
 	C.q = b2MulT_r_r(A.q, B.q);
-	C.p = b2MulT_r_v2(A.q, b2Vec2.Subtract(B.p, A.p));
+	var tvx = B.p.x - A.p.x;
+	var tvy = B.p.y - A.p.y;
+	C.p.x = A.q.c * tvx + A.q.s * tvy;// = b2MulT_r_v2(A.q, b2Vec2.Subtract(B.p, A.p));
+	C.p.y = -A.q.s * tvx + A.q.c * tvy;
 	return C;
 }
 

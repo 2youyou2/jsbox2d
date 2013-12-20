@@ -34,7 +34,7 @@ TestEdgeShapes.prototype =
 			var bd = new b2BodyDef();
 			var ground = this.m_world.CreateBody(bd);
 
-			var x1 = -20.0;
+			/*var x1 = -20.0;
 			var y1 = 2.0 * Math.cos(x1 / 10.0 * Math.PI);
 			for (var i = 0; i < 80; ++i)
 			{
@@ -47,7 +47,27 @@ TestEdgeShapes.prototype =
 
 				x1 = x2;
 				y1 = y2;
+			}*/
+
+			var shape = new b2ChainShape();
+			var verts = [];
+
+			var w = 20;
+			var yS = 4;
+
+			verts.push(new b2Vec2(-w, Math.cos(0) * yS));
+
+			var splits = 300;
+			var mps = Math.PI / splits;
+			var v = w / splits;
+
+			for (var x = -w + v, pv = mps; x < w + v; x += v, pv += mps)
+			{
+				verts.push(new b2Vec2(x, Math.cos(pv) * yS));
 			}
+
+			shape.CreateChain(verts, verts.length);
+			ground.CreateFixture(shape, 0);
 		}
 
 		this.m_polygons = [];

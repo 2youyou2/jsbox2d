@@ -91,9 +91,12 @@ b2CircleShape.prototype =
 	/// @see b2Shape::ComputeAABB
 	ComputeAABB: function(aabb, transform, childIndex)
 	{
-		var p = b2Vec2.Add(transform.p, b2Mul_r_v2(transform.q, this.m_p));
-		aabb.lowerBound.Set(p.x - this.m_radius, p.y - this.m_radius);
-		aabb.upperBound.Set(p.x + this.m_radius, p.y + this.m_radius);
+		var px = transform.p.x + (transform.q.c * this.m_p.x - transform.q.s * this.m_p.y);//b2Vec2.Add(transform.p, b2Mul_r_v2(transform.q, this.m_p));
+		var py = transform.p.y + (transform.q.s * this.m_p.x + transform.q.c * this.m_p.y);
+		aabb.lowerBound.x = px - this.m_radius;
+		aabb.lowerBound.y = py - this.m_radius;
+		aabb.upperBound.x = px + this.m_radius;
+		aabb.upperBound.y = py + this.m_radius;
 	},
 
 	/// @see b2Shape::ComputeMass

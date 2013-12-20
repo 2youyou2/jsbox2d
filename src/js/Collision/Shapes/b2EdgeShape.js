@@ -137,15 +137,21 @@ b2EdgeShape.prototype =
 	/// @see b2Shape::ComputeAABB
 	ComputeAABB: function(aabb, xf, childIndex)
 	{
-		var v1 = b2Mul_t_v2(xf, this.m_vertex1);
-		var v2 = b2Mul_t_v2(xf, this.m_vertex2);
+		var v1x = (xf.q.c * this.m_vertex1.x - xf.q.s * this.m_vertex1.y) + xf.p.x;//b2Mul_t_v2(xf, this.m_vertex1);
+		var v1y = (xf.q.s * this.m_vertex1.x + xf.q.c * this.m_vertex1.y) + xf.p.y;
+		var v2x = (xf.q.c * this.m_vertex2.x - xf.q.s * this.m_vertex2.y) + xf.p.x;//b2Mul_t_v2(xf, this.m_vertex2);
+		var v2y = (xf.q.s * this.m_vertex2.x + xf.q.c * this.m_vertex2.y) + xf.p.y;
 
-		var lower = b2Min_v2(v1, v2);
-		var upper = b2Max_v2(v1, v2);
+		var lowerx = b2Min(v1x, v2x);// = b2Min_v2(v1, v2);
+		var lowery = b2Min(v1y, v2y);
+		var upperx = b2Max(v1x, v2x); //= b2Max_v2(v1, v2);
+		var uppery = b2Max(v1y, v2y);
 
-		var r = new b2Vec2(this.m_radius, this.m_radius);
-		aabb.lowerBound = b2Vec2.Subtract(lower, r);
-		aabb.upperBound = b2Vec2.Add(upper, r);
+		//var r = new b2Vec2(this.m_radius, this.m_radius);
+		aabb.lowerBound.x = lowerx - this.m_radius; //= b2Vec2.Subtract(lower, r);
+		aabb.lowerBound.y = lowery - this.m_radius;
+		aabb.upperBound.x = upperx + this.m_radius; //= b2Vec2.Add(upper, r);
+		aabb.upperBound.y = uppery + this.m_radius;
 	},
 
 	/// @see b2Shape::ComputeMass
