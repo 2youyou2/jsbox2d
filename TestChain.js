@@ -35,6 +35,8 @@ TestChain.prototype =
 			{
 				var bd = new b2BodyDef();
 				bd.type = b2Body.b2_dynamicBody;
+				bd.angularDamping = 2;
+				bd.linearDamping = 2;
 				bd.position.Set(0.5 + i, y);
 				var body = this.m_world.CreateBody(bd);
 				body.CreateFixture(fd);
