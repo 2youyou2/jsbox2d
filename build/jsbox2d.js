@@ -1,7 +1,6 @@
 (function()
 {
-"use strict";
-
+'use strict';
 Function.prototype._extend = function(parent)
 {
 	this.prototype.parent = parent;
@@ -169,8 +168,6 @@ var b2Profiler = (function()
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-"use strict";
-
 
 function b2Assert(A)
 {
@@ -308,8 +305,6 @@ var b2_version = new b2Version(2, 3, 1);
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
-"use strict";
 
 /// This function is used to ensure that a floating point number is not a NaN or infinity.
 function b2IsValid(x)
@@ -1173,8 +1168,6 @@ function b2RandomFloat(lo, hi)
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-"use strict";
-
 /// Color for debug drawing. Each value has the range [0,1].
 function b2Color(r, g, b)
 {
@@ -1249,8 +1242,6 @@ b2Draw.e_frictionImpulses = 128;
 b2Draw.e_statistics = 256;
 b2Draw.e_profile = 512;
 b2Draw.e_pairBit = 1024;
-"use strict";
-
 if (typeof(performance) === 'undefined')
 {
 	window.performance = { now: function() { return +new Date(); } };
@@ -1295,8 +1286,6 @@ b2Timer.prototype =
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-"use strict";
-
 /// This holds the mass data computed for a shape.
 function b2MassData()
 {
@@ -1313,6 +1302,11 @@ function b2MassData()
 /// A shape is used for collision detection. You can create a shape however you like.
 /// Shapes used for simulation in b2World are created automatically when a b2Fixture
 /// is created. Shapes may encapsulate a one or more child shapes.
+/**
+ * A shape.
+ * @constructor
+ * @returns {b2Shape}
+ */
 function b2Shape()
 {
 	this.m_type = 0;
@@ -1395,8 +1389,6 @@ b2Shape.e_typeCount = 4;
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
-"use strict";
 
 /// A circle shape.
 function b2CircleShape()
@@ -1544,8 +1536,6 @@ b2CircleShape._extend(b2Shape);
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
-"use strict";
 
 /// A line segment (edge) shape. These can be connected in chains or loops
 /// to other edge shapes. The connectivity information is used to ensure
@@ -1750,8 +1740,6 @@ b2EdgeShape._extend(b2Shape);
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
-"use strict";
 
 /// A chain shape is a free form sequence of line segments.
 /// The chain has two-sided collision, so you can use inside and outside collision.
@@ -2055,8 +2043,6 @@ b2ChainShape._extend(b2Shape);
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
-"use strict";
 
 /// A convex polygon. It is assumed that the interior of the polygon is to
 /// the left of each edge.
@@ -2606,8 +2592,6 @@ b2PolygonShape.ComputeCentroid = function(vs, count)
 
 b2PolygonShape._extend(b2Shape);
 
-"use strict";
-
 function b2Pair()
 {
 	this.proxyIdA = 0;
@@ -2861,8 +2845,6 @@ b2BroadPhase.e_nullProxy = -1;
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
-"use strict";
 
 /// A distance proxy is used by the GJK algorithm.
 /// It encapsulates any shape.
@@ -3214,8 +3196,8 @@ b2Simplex.prototype =
 
 		case 3:
 			//pA.Assign(b2Vec2.Add(b2Vec2.Add(b2Vec2.Multiply(this.m_v[0].a, this.m_v[0].wA), b2Vec2.Multiply(this.m_v[1].a, this.m_v[1].wA)), b2Vec2.Multiply(this.m_v[2].a, this.m_v[2].wA)));
-			pA.x = (this.m_v[0].a, this.m_v[0].wA.x) + (this.m_v[1].a, this.m_v[1].wA.x) + (this.m_v[2].a, this.m_v[2].wA.x);
-			pA.y = (this.m_v[0].a, this.m_v[0].wA.y) + (this.m_v[1].a, this.m_v[1].wA.y) + (this.m_v[2].a, this.m_v[2].wA.y);
+			pA.x = (this.m_v[0].a * this.m_v[0].wA.x) + (this.m_v[1].a * this.m_v[1].wA.x) + (this.m_v[2].a * this.m_v[2].wA.x);
+			pA.y = (this.m_v[0].a * this.m_v[0].wA.y) + (this.m_v[1].a * this.m_v[1].wA.y) + (this.m_v[2].a * this.m_v[2].wA.y);
 			pB.x = pA.x;//.Assign(pA);
 			pB.y = pA.y;
 			break;
@@ -3616,8 +3598,6 @@ function b2DistanceFunc(output,
 b2DistanceFunc.b2_gjkCalls = 0;
 b2DistanceFunc.b2_gjkIters = 0;
 b2DistanceFunc.b2_gjkMaxIters = 0;
-"use strict";
-
 var b2_nullFeature = 255;
 
 /// The features that intersect to form the contact point
@@ -5352,8 +5332,6 @@ function b2TestOverlap(a, b)
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-"use strict";
-
 var b2_nullNode = -1;
 
 /// A node in the dynamic tree. The client does not interact with this directly.
@@ -6331,8 +6309,6 @@ b2DynamicTree.prototype =
 		this.ValidateMetrics(child2);
 	}
 };
-"use strict";
-
 /// Input parameters for b2TimeOfImpact
 function b2TOIInput()
 {
@@ -6844,8 +6820,6 @@ b2TimeOfImpact.b2_toiIters = 0;
 b2TimeOfImpact.b2_toiMaxIters = 0;
 b2TimeOfImpact.b2_toiRootIters = 0;
 b2TimeOfImpact.b2_toiMaxRootIters = 0;
-
-"use strict";
 
 /// A body definition holds all the data needed to construct a rigid body.
 /// You can safely re-use body definitions. Shapes are added to a body after construction.
@@ -7988,8 +7962,6 @@ b2Body.prototype =
 	}
 };
 
-"use strict";
-
 /// This holds contact filtering data.
 function b2Filter()
 {
@@ -8419,8 +8391,6 @@ b2Fixture.prototype =
 	}
 };
 
-"use strict";
-
 /// Joints and fixtures are destroyed when their associated
 /// body is destroyed. Implement this listener so that you
 /// may nullify references to these joints and shapes.
@@ -8555,8 +8525,6 @@ b2RayCastCallback.prototype =
 	/// closest hit, 1 to continue
 	ReportFixture: function(fixture, point, normal, fraction) { }
 };
-"use strict";
-
 /// This is an internal structure.
 function b2TimeStep()
 {
@@ -8589,8 +8557,6 @@ function b2SolverData()
 	this.positions = null;
 	this.velocities = null;
 }
-"use strict";
-
 var profile_world_step = b2Profiler.create("step");
 var profile_world_collide = b2Profiler.create("collide", "step");
 var profile_world_solve = b2Profiler.create("solve", "step");
@@ -10026,8 +9992,6 @@ b2World.e_newFixture = 0x0001;
 b2World.e_locked = 0x0002;
 b2World.e_clearForces = 0x0004;
 
-"use strict";
-
 /// Friction mixing law. The idea is to allow either fixture to drive the restitution to zero.
 /// For example, anything slides on ice.
 function b2MixFriction(friction1, friction2)
@@ -10704,8 +10668,6 @@ b2Contact.Destroy = function(contact)
 
 b2Contact.s_registers = [];
 b2Contact.s_initialized = false;
-"use strict";
-
 var b2_defaultFilter = new b2ContactFilter();
 var b2_defaultListener = new b2ContactListener();
 
@@ -11965,7 +11927,6 @@ b2ContactSolver.prototype =
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-"use strict";
 
 /// This is an internal class.
 function b2Island()
@@ -16307,7 +16268,11 @@ b2MotorJoint.prototype =
 			this.m_angularMass = 1.0 / this.m_angularMass;
 		}
 
-		this.m_linearError.Assign(b2Vec2.Subtract(b2Vec2.Subtract(b2Vec2.Subtract(b2Vec2.Add(cB, this.m_rB), cA), this.m_rA), b2Mul_r_v2(qA, this.m_linearOffset)));
+		//m_linearError = cB + m_rB - cA - m_rA - b2Mul(qA, m_linearOffset);
+		//this.m_linearError.Assign(b2Vec2.Subtract(b2Vec2.Subtract(b2Vec2.Subtract(b2Vec2.Add(cB, this.m_rB), cA), this.m_rA), b2Mul_r_v2(qA, this.m_linearOffset)));
+		//,
+		this.m_linearError.x = cB.x + this.m_rB.x - cA.x - this.m_rA.x - (qA.c * this.m_linearOffset.x - qA.s * this.m_linearOffset.y); //b2Mul_r_v2(qA, m_linearOffset);
+		this.m_linearError.y = cB.y + this.m_rB.y - cA.y - this.m_rA.y - (qA.s * this.m_linearOffset.x + qA.c * this.m_linearOffset.y); //b2Mul_r_v2(qA, m_linearOffset);
 		this.m_angularError = aB - aA - this.m_angularOffset;
 
 		if (data.step.warmStarting)
@@ -16362,10 +16327,15 @@ b2MotorJoint.prototype =
 
 		// Solve linear friction
 		{
-			var Cdot = b2Vec2.Add(b2Vec2.Subtract(b2Vec2.Subtract(b2Vec2.Add(vB, b2Cross_f_v2(wB, this.m_rB)), vA), b2Cross_f_v2(wA, this.m_rA)), b2Vec2.Multiply(inv_h, b2Vec2.Multiply(this.m_correctionFactor, this.m_linearError)));
+			// b2Vec2 Cdot = vB + b2Cross(wB, m_rB) - vA - b2Cross(wA, m_rA) + inv_h * m_correctionFactor * m_linearError;
+			//var Cdot = b2Vec2.Add(b2Vec2.Subtract(b2Vec2.Subtract(b2Vec2.Add(vB, b2Cross_f_v2(wB, this.m_rB)), vA), b2Cross_f_v2(wA, this.m_rA)), b2Vec2.Multiply(inv_h, b2Vec2.Multiply(this.m_correctionFactor, this.m_linearError)));
+			var Cdot = new b2Vec2(
+				vB.x + (-wB * this.m_rB.x) - vA.x - (-wA * this.m_rA.x) + inv_h * this.m_correctionFactor * this.m_linearError.x,
+				vB.y + (wB * this.m_rB.y) - vA.y - (wA * this.m_rA.y) + inv_h * this.m_correctionFactor * this.m_linearError.y
+			);
 
 			var impulse = b2Mul_m22_v2(this.m_linearMass, Cdot).Negate();
-			var oldImpulse = this.m_linearImpulse;
+			var oldImpulse = this.m_linearImpulse.Clone();
 			this.m_linearImpulse.Add(impulse);
 
 			var maxImpulse = h * this.m_maxForce;

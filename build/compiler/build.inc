@@ -1,5 +1,6 @@
 (function()
 {
+'use strict';
 '#include ../../src/js/System/Class.js';
 '#include ../../src/js/System/Profiling.js';
 
