@@ -16,8 +16,6 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-"use strict";
-
 /// A chain shape is a free form sequence of line segments.
 /// The chain has two-sided collision, so you can use inside and outside collision.
 /// Therefore, you may use any winding order.
@@ -40,6 +38,8 @@ function b2ChainShape()
 	Object.seal(this);
 }
 
+b2ChainShape._tempEdge = new b2EdgeShape();
+
 b2ChainShape.prototype =
 {
 	/// Create a loop. This automatically adjusts connectivity.
@@ -50,18 +50,16 @@ b2ChainShape.prototype =
 '#if @DEBUG';
 		b2Assert(this.m_vertices == null && this.m_count == 0);
 		b2Assert(count >= 3);
-'#endif';
 
 		for (var i = 1; i < count; ++i)
 		{
 			var v1 = vertices[i-1];
 			var v2 = vertices[i];
 
-'#if @DEBUG';
 			// If the code crashes here, it means your vertices are too close together.
 			b2Assert(b2DistanceSquared(v1, v2) > b2_linearSlop * b2_linearSlop);
-'#endif';
 		}
+'#endif';
 
 		this.m_count = count + 1;
 
@@ -85,18 +83,16 @@ b2ChainShape.prototype =
 '#if @DEBUG';
 		b2Assert(this.m_vertices == null && this.m_count == 0);
 		b2Assert(count >= 2);
-'#endif';
 
 		for (var i = 1; i < count; ++i)
 		{
 			var v1 = vertices[i-1];
 			var v2 = vertices[i];
 
-'#if @DEBUG';
 			// If the code crashes here, it means your vertices are too close together.
 			b2Assert(b2DistanceSquared(v1, v2) > b2_linearSlop * b2_linearSlop);
-'#endif';
 		}
+'#endif';
 
 		this.m_count = count;
 		this.m_vertices = new Array(count);
@@ -202,8 +198,6 @@ b2ChainShape.prototype =
 		b2Assert(childIndex < this.m_count);
 '#endif';
 
-		var edgeShape = new b2EdgeShape();
-
 		var i1 = childIndex;
 		var i2 = childIndex + 1;
 		if (i2 == this.m_count)
@@ -211,10 +205,10 @@ b2ChainShape.prototype =
 			i2 = 0;
 		}
 
-		edgeShape.m_vertex1 = this.m_vertices[i1].Clone();
-		edgeShape.m_vertex2 = this.m_vertices[i2].Clone();
+		b2ChainShape._tempEdge.m_vertex1 = this.m_vertices[i1].Clone();
+		b2ChainShape._tempEdge.m_vertex2 = this.m_vertices[i2].Clone();
 
-		return edgeShape.RayCast(output, input, xf, 0);
+		return b2ChainShape._tempEdge.RayCast(output, input, xf, 0);
 	},
 
 	/// @see b2Shape::ComputeAABB
@@ -250,6 +244,14 @@ b2ChainShape.prototype =
 		massData.center.SetZero();
 		massData.I = 0.0;
 	},
+
+//'#if @LIQUIDFUN';
+	ComputeDistance: function(xf, p, distance, normal, childIndex)
+	{
+		this.GetChildEdge(b2ChainShape._tempEdge, childIndex);
+		b2ChainShape._tempEdge.ComputeDistance(xf, p, distance, normal, 0);
+	},
+//'#endif';
 
 	_serialize: function(out)
 	{

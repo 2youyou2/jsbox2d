@@ -16,8 +16,6 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-"use strict";
-
 var b2_nullNode = -1;
 
 /// A node in the dynamic tree. The client does not interact with this directly.

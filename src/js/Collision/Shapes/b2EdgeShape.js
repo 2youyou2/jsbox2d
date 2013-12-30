@@ -16,8 +16,6 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-"use strict";
-
 /// A line segment (edge) shape. These can be connected in chains or loops
 /// to other edge shapes. The connectivity information is used to ensure
 /// correct contact normals.
@@ -161,6 +159,34 @@ b2EdgeShape.prototype =
 		massData.center = b2Vec2.Multiply(0.5, b2Vec2.Add(this.m_vertex1, this.m_vertex2));
 		massData.I = 0.0;
 	},
+
+//'#if @LIQUIDFUN';
+	ComputeDistance: function(xf, p, distance, normal, childIndex)
+	{
+		var v1 = b2Mul_t_v2(xf, this.m_vertex1);
+		var v2 = b2Mul_t_v2(xf, this.m_vertex2);
+
+		var d = b2Vec2.Subtract(p, v1);
+		var s = b2Vec2.Subtract(v2, v1);
+		var ds = b2Dot_v2_v2(d, s);
+		if (ds > 0)
+		{
+			var s2 = b2Dot_v2_v2(s, s);
+			if (ds > s2)
+			{
+				d.Assign(b2Vec2.Subtract(p, v2));
+			}
+			else
+			{
+				d.Subtract(b2Vec2.Multiply(ds / s2, s));
+			}
+		}
+
+		var d1 = d.Length();
+		distance[0] = d1;
+		normal.Assign(d1 > 0 ? b2Vec2.Multiply(1 / d1, d) : new b2Vec2(0, 0));
+	},
+//'#endif';
 
 	_serialize: function(out)
 	{

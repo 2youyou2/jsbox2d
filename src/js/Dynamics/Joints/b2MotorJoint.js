@@ -242,7 +242,11 @@ b2MotorJoint.prototype =
 			this.m_angularMass = 1.0 / this.m_angularMass;
 		}
 
-		this.m_linearError.Assign(b2Vec2.Subtract(b2Vec2.Subtract(b2Vec2.Subtract(b2Vec2.Add(cB, this.m_rB), cA), this.m_rA), b2Mul_r_v2(qA, this.m_linearOffset)));
+		//m_linearError = cB + m_rB - cA - m_rA - b2Mul(qA, m_linearOffset);
+		//this.m_linearError.Assign(b2Vec2.Subtract(b2Vec2.Subtract(b2Vec2.Subtract(b2Vec2.Add(cB, this.m_rB), cA), this.m_rA), b2Mul_r_v2(qA, this.m_linearOffset)));
+		//,
+		this.m_linearError.x = cB.x + this.m_rB.x - cA.x - this.m_rA.x - (qA.c * this.m_linearOffset.x - qA.s * this.m_linearOffset.y); //b2Mul_r_v2(qA, m_linearOffset);
+		this.m_linearError.y = cB.y + this.m_rB.y - cA.y - this.m_rA.y - (qA.s * this.m_linearOffset.x + qA.c * this.m_linearOffset.y); //b2Mul_r_v2(qA, m_linearOffset);
 		this.m_angularError = aB - aA - this.m_angularOffset;
 
 		if (data.step.warmStarting)
@@ -297,10 +301,15 @@ b2MotorJoint.prototype =
 
 		// Solve linear friction
 		{
-			var Cdot = b2Vec2.Add(b2Vec2.Subtract(b2Vec2.Subtract(b2Vec2.Add(vB, b2Cross_f_v2(wB, this.m_rB)), vA), b2Cross_f_v2(wA, this.m_rA)), b2Vec2.Multiply(inv_h, b2Vec2.Multiply(this.m_correctionFactor, this.m_linearError)));
+			// b2Vec2 Cdot = vB + b2Cross(wB, m_rB) - vA - b2Cross(wA, m_rA) + inv_h * m_correctionFactor * m_linearError;
+			//var Cdot = b2Vec2.Add(b2Vec2.Subtract(b2Vec2.Subtract(b2Vec2.Add(vB, b2Cross_f_v2(wB, this.m_rB)), vA), b2Cross_f_v2(wA, this.m_rA)), b2Vec2.Multiply(inv_h, b2Vec2.Multiply(this.m_correctionFactor, this.m_linearError)));
+			var Cdot = new b2Vec2(
+				vB.x + (-wB * this.m_rB.x) - vA.x - (-wA * this.m_rA.x) + inv_h * this.m_correctionFactor * this.m_linearError.x,
+				vB.y + (wB * this.m_rB.y) - vA.y - (wA * this.m_rA.y) + inv_h * this.m_correctionFactor * this.m_linearError.y
+			);
 
 			var impulse = b2Mul_m22_v2(this.m_linearMass, Cdot).Negate();
-			var oldImpulse = this.m_linearImpulse;
+			var oldImpulse = this.m_linearImpulse.Clone();
 			this.m_linearImpulse.Add(impulse);
 
 			var maxImpulse = h * this.m_maxForce;

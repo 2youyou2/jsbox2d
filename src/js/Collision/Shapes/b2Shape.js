@@ -16,8 +16,6 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-"use strict";
-
 /// This holds the mass data computed for a shape.
 function b2MassData()
 {
@@ -34,6 +32,11 @@ function b2MassData()
 /// A shape is used for collision detection. You can create a shape however you like.
 /// Shapes used for simulation in b2World are created automatically when a b2Fixture
 /// is created. Shapes may encapsulate a one or more child shapes.
+/**
+ * A shape.
+ * @constructor
+ * @returns {b2Shape}
+ */
 function b2Shape()
 {
 	this.m_type = 0;
@@ -76,6 +79,15 @@ b2Shape.prototype =
 	/// @param massData returns the mass data for this shape.
 	/// @param density the density in kilograms per meter squared.
 	ComputeMass: function(massData, density) { },
+
+//'#if @LIQUIDFUN';
+	/// Compute the distance from the current shape to the specified point. This only works for convex shapes.
+	/// @param xf the shape world transform.
+	/// @param p a point in world coordinates.
+	/// @param distance returns the distance from the current shape.
+	/// @param normal returns the direction in which the distance increases.
+	ComputeDistance: function(xf, p, distance, normal, childIndex) { },
+//'#endif';
 
 	_serialize: function(out)
 	{

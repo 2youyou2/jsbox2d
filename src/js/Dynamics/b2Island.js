@@ -15,7 +15,6 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-"use strict";
 
 /// This is an internal class.
 function b2Island()

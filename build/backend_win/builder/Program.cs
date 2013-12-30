@@ -74,6 +74,21 @@ namespace builder
 				}
 			}
 
+			if (!arguments.ContainsKey("input"))
+			{
+				Console.WriteLine("Input missing.");
+				return;
+			}
+
+			if (!arguments.ContainsKey("output"))
+			{
+				Console.WriteLine("Output missing.");
+				return;
+			}
+
+			ctx.Run("definitions[\"__INPUT__\"] = \"" + arguments["input"] + "\";");
+			ctx.Run("definitions[\"__OUTPUT__\"] = \"" + arguments["output"] + "\";");
+
 			ctx.Run("build()");
 		}
 	}

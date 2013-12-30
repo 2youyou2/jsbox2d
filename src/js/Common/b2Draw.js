@@ -16,8 +16,6 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-"use strict";
-
 /// Color for debug drawing. Each value has the range [0,1].
 function b2Color(r, g, b)
 {
@@ -77,6 +75,11 @@ b2Draw.prototype =
 	/// Draw a transform. Choose your own length scale.
 	/// @param xf a transform.
 	DrawTransform: function(xf) { },
+
+//'#if @LIQUIDFUN';
+	/// Draw a particle array
+	DrawParticles: function(centers, radius, colors, count) { },
+//'#endif';
 
 	m_drawFlags: 0
 };

@@ -16,8 +16,6 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-"use strict";
-
 /// A distance proxy is used by the GJK algorithm.
 /// It encapsulates any shape.
 function b2DistanceProxy()
@@ -368,8 +366,8 @@ b2Simplex.prototype =
 
 		case 3:
 			//pA.Assign(b2Vec2.Add(b2Vec2.Add(b2Vec2.Multiply(this.m_v[0].a, this.m_v[0].wA), b2Vec2.Multiply(this.m_v[1].a, this.m_v[1].wA)), b2Vec2.Multiply(this.m_v[2].a, this.m_v[2].wA)));
-			pA.x = (this.m_v[0].a, this.m_v[0].wA.x) + (this.m_v[1].a, this.m_v[1].wA.x) + (this.m_v[2].a, this.m_v[2].wA.x);
-			pA.y = (this.m_v[0].a, this.m_v[0].wA.y) + (this.m_v[1].a, this.m_v[1].wA.y) + (this.m_v[2].a, this.m_v[2].wA.y);
+			pA.x = (this.m_v[0].a * this.m_v[0].wA.x) + (this.m_v[1].a * this.m_v[1].wA.x) + (this.m_v[2].a * this.m_v[2].wA.x);
+			pA.y = (this.m_v[0].a * this.m_v[0].wA.y) + (this.m_v[1].a * this.m_v[1].wA.y) + (this.m_v[2].a * this.m_v[2].wA.y);
 			pB.x = pA.x;//.Assign(pA);
 			pB.y = pA.y;
 			break;

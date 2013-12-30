@@ -1,5 +1,3 @@
-"use strict";
-
 /// Input parameters for b2TimeOfImpact
 function b2TOIInput()
 {

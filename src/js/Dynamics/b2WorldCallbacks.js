@@ -1,5 +1,3 @@
-"use strict";
-
 /// Joints and fixtures are destroyed when their associated
 /// body is destroyed. Implement this listener so that you
 /// may nullify references to these joints and shapes.
@@ -16,6 +14,18 @@ b2DestructionListener.prototype =
 	/// Called when any fixture is about to be destroyed due
 	/// to the destruction of its parent body.
 	SayGoodbyeFixture: function(fixture) { }
+
+//'#if @LIQUIDFUN';
+	,
+	/// Called when any particle group is about to be destroyed.
+	SayGoodbyeParticleGroup: function(group) { },
+
+	/// Called when a particle is about to be destroyed.
+	/// The index can be used in conjunction with
+	/// b2World::GetParticleUserDataBuffer() to determine which particle has
+	/// been destroyed.
+	SayGoodbyeParticle: function (index) { }
+//'#endif';
 };
 
 /// Implement this class to provide collision filtering. In other words, you can implement
@@ -110,7 +120,14 @@ b2QueryCallback.prototype =
 {
 	/// Called for each fixture found in the query AABB.
 	/// @return false to terminate the query.
-	ReportFixture: function(fixture) { }
+	ReportFixture: function(fixture) { return false; }
+
+//'#if @LIQUIDFUN';
+	,
+	/// Called for each particle found in the query AABB.
+	/// @return false to terminate the query.
+	ReportParticle: function(index) { return false; }
+//'#endif';
 };
 
 /// Callback class for ray casts.
@@ -133,4 +150,10 @@ b2RayCastCallback.prototype =
 	/// @return -1 to filter, 0 to terminate, fraction to clip the ray for
 	/// closest hit, 1 to continue
 	ReportFixture: function(fixture, point, normal, fraction) { }
+
+//'#if @LIQUIDFUN';
+	,
+	/// Called for each particle found in the query.
+	ReportParticle: function(index, point, normal, fraction) { return 0; }
+//'#endif';
 };

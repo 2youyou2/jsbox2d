@@ -1,5 +1,3 @@
-"use strict";
-
 var b2_nullFeature = 255;
 
 /// The features that intersect to form the contact point
@@ -340,8 +338,8 @@ b2AABB.prototype =
 		var clone = new b2AABB();
 		clone.lowerBound.x = this.lowerBound.x; //.Assign(this.lowerBound);
 		clone.lowerBound.y = this.lowerBound.y;
-		clone.lowerBound.x = this.lowerBound.x;//.Assign(this.upperBound);
-		clone.lowerBound.y = this.lowerBound.y;
+		clone.upperBound.x = this.upperBound.x;//.Assign(this.upperBound);
+		clone.upperBound.y = this.upperBound.y;
 		return clone;
 	},
 

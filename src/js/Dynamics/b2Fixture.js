@@ -1,5 +1,3 @@
-"use strict";
-
 /// This holds contact filtering data.
 function b2Filter()
 {
@@ -412,6 +410,13 @@ b2Fixture.prototype =
 			broadPhase.MoveProxy(proxy.proxyId, proxy.aabb, displacement);
 		}
 	},
+
+//'#if @LIQUIDFUN';
+	ComputeDistance: function(p, d, n, childIndex)
+	{
+		this.m_shape.ComputeDistance(this.m_body.GetTransform(), p, d, n, childIndex);
+	},
+//'#endif';
 
 	_serialize: function(out)
 	{

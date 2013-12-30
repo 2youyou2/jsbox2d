@@ -1,5 +1,3 @@
-"use strict";
-
 function b2Pair()
 {
 	this.proxyIdA = 0;

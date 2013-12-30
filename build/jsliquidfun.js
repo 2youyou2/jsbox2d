@@ -393,6 +393,27 @@ var b2_linearSleepTolerance		= 0.01;
 var b2_angularSleepTolerance	= (2.0 / 180.0 * b2_pi);
 
 
+// Particle
+
+/// A symbolic constant that stands for particle allocation error.
+var b2_invalidParticleIndex		= (-1);
+
+/// The standard distance between particles, divided by the particle radius.
+var b2_particleStride			= 0.75;
+
+/// The minimum particle weight that produces pressure.
+var b2_minParticleWeight			= 1.0;
+
+/// The upper limit for particle weight used in pressure calculation.
+var b2_maxParticleWeight		= 5.0;
+
+/// The maximum distance between particles in a triad, divided by the particle radius.
+var b2_maxTriadDistance			= 2;
+var b2_maxTriadDistanceSquared		= (b2_maxTriadDistance * b2_maxTriadDistance);
+
+/// The initial size of particle data buffers.
+var b2_minParticleBufferCapacity	= 256;
+
 
 /// Version numbering scheme.
 /// See http://en.wikipedia.org/wiki/Software_versioning
@@ -1354,6 +1375,9 @@ b2Draw.prototype =
 	DrawTransform: function(xf) { },
 
 //
+	/// Draw a particle array
+	DrawParticles: function(centers, radius, colors, count) { },
+//
 
 	m_drawFlags: 0
 };
@@ -1477,6 +1501,13 @@ b2Shape.prototype =
 	/// @param density the density in kilograms per meter squared.
 	ComputeMass: function(massData, density) { },
 
+//
+	/// Compute the distance from the current shape to the specified point. This only works for convex shapes.
+	/// @param xf the shape world transform.
+	/// @param p a point in world coordinates.
+	/// @param distance returns the distance from the current shape.
+	/// @param normal returns the direction in which the distance increases.
+	ComputeDistance: function(xf, p, distance, normal, childIndex) { },
 //
 
 	_serialize: function(out)
@@ -1628,6 +1659,15 @@ b2CircleShape.prototype =
 		return this.m_p;
 	},
 
+//
+	ComputeDistance: function(transform, p, distance, normal, childIndex)
+	{
+		var center = b2Vec2.Add(transform.p, b2Mul_r_v2(transform.q, this.m_p));
+		var d = b2Vec2.Subtract(p, center);
+		var d1 = d.Length();
+		distance[0] = d1 - this.m_radius;
+		normal.Assign(b2Vec2.Multiply(1 / d1, d));
+	},
 //
 
 	_serialize: function(out)
@@ -1812,6 +1852,32 @@ b2EdgeShape.prototype =
 		massData.I = 0.0;
 	},
 
+//
+	ComputeDistance: function(xf, p, distance, normal, childIndex)
+	{
+		var v1 = b2Mul_t_v2(xf, this.m_vertex1);
+		var v2 = b2Mul_t_v2(xf, this.m_vertex2);
+
+		var d = b2Vec2.Subtract(p, v1);
+		var s = b2Vec2.Subtract(v2, v1);
+		var ds = b2Dot_v2_v2(d, s);
+		if (ds > 0)
+		{
+			var s2 = b2Dot_v2_v2(s, s);
+			if (ds > s2)
+			{
+				d.Assign(b2Vec2.Subtract(p, v2));
+			}
+			else
+			{
+				d.Subtract(b2Vec2.Multiply(ds / s2, s));
+			}
+		}
+
+		var d1 = d.Length();
+		distance[0] = d1;
+		normal.Assign(d1 > 0 ? b2Vec2.Multiply(1 / d1, d) : new b2Vec2(0, 0));
+	},
 //
 
 	_serialize: function(out)
@@ -2103,6 +2169,12 @@ b2ChainShape.prototype =
 		massData.I = 0.0;
 	},
 
+//
+	ComputeDistance: function(xf, p, distance, normal, childIndex)
+	{
+		this.GetChildEdge(b2ChainShape._tempEdge, childIndex);
+		b2ChainShape._tempEdge.ComputeDistance(xf, p, distance, normal, 0);
+	},
 //
 
 	_serialize: function(out)
@@ -2630,6 +2702,48 @@ b2PolygonShape.prototype =
 		return true;
 	},
 
+//
+	ComputeDistance: function(xf, p, distanceOut, normal, childIndex)
+	{
+		var pLocal = b2MulT_r_v2(xf.q, b2Vec2.Subtract(p, xf.p));
+		var maxDistance = -Number.MAX_VALUE;
+		var normalForMaxDistance = pLocal;
+
+		for (var i = 0; i < this.m_count; ++i)
+		{
+			var dot = b2Dot_v2_v2(this.m_normals[i], b2Vec2.Subtract(pLocal, this.m_vertices[i]));
+			if (dot > maxDistance)
+			{
+				maxDistance = dot;
+				normalForMaxDistance = this.m_normals[i];
+			}
+		}
+
+		if (maxDistance > 0)
+		{
+			var minDistance = normalForMaxDistance;
+			var minDistance2 = maxDistance * maxDistance;
+			for (var i = 0; i < this.m_count; ++i)
+			{
+				var distance = b2Vec2.Subtract(pLocal, this.m_vertices[i]);
+				var distance2 = distance.LengthSquared();
+				if (minDistance2 > distance2)
+				{
+					minDistance = distance;
+					minDistance2 = distance2;
+				}
+			}
+
+			distanceOut[0] = b2Sqrt(minDistance2);
+			normal.Assign(b2Mul_r_v2(xf.q, minDistance));
+			normal.Normalize();
+		}
+		else
+		{
+			distanceOut[0] = maxDistance;
+			normal.Assign(b2Mul_r_v2(xf.q, normalForMaxDistance));
+		}
+	},
 //
 
 	_serialize: function(out)
@@ -7074,6 +7188,9 @@ function b2Body(bd, world)
 	this.m_xf.p.Assign(bd.position);
 	this.m_xf.q.Set(bd.angle);
 
+	this.m_xf0 = new b2Transform();
+	this.m_xf0.Assign(this.m_xf);
+
 
 	this.m_sweep = new b2Sweep();
 	this.m_sweep.localCenter.SetZero();
@@ -7294,6 +7411,8 @@ b2Body.prototype =
 
 		this.m_xf.q.Set(angle);
 		this.m_xf.p.Assign(position);
+
+		this.m_xf0.Assign(this.m_xf);
 
 
 		this.m_sweep.c.Assign(b2Mul_t_v2(this.m_xf, this.m_sweep.localCenter));
@@ -8511,6 +8630,11 @@ b2Fixture.prototype =
 	},
 
 //
+	ComputeDistance: function(p, d, n, childIndex)
+	{
+		this.m_shape.ComputeDistance(this.m_body.GetTransform(), p, d, n, childIndex);
+	},
+//
 
 	_serialize: function(out)
 	{
@@ -8545,6 +8669,16 @@ b2DestructionListener.prototype =
 	/// to the destruction of its parent body.
 	SayGoodbyeFixture: function(fixture) { }
 
+//
+	,
+	/// Called when any particle group is about to be destroyed.
+	SayGoodbyeParticleGroup: function(group) { },
+
+	/// Called when a particle is about to be destroyed.
+	/// The index can be used in conjunction with
+	/// b2World::GetParticleUserDataBuffer() to determine which particle has
+	/// been destroyed.
+	SayGoodbyeParticle: function (index) { }
 //
 };
 
@@ -8643,6 +8777,11 @@ b2QueryCallback.prototype =
 	ReportFixture: function(fixture) { return false; }
 
 //
+	,
+	/// Called for each particle found in the query AABB.
+	/// @return false to terminate the query.
+	ReportParticle: function(index) { return false; }
+//
 };
 
 /// Callback class for ray casts.
@@ -8666,6 +8805,10 @@ b2RayCastCallback.prototype =
 	/// closest hit, 1 to continue
 	ReportFixture: function(fixture, point, normal, fraction) { }
 
+//
+	,
+	/// Called for each particle found in the query.
+	ReportParticle: function(index, point, normal, fraction) { return 0; }
 //
 };
 /// This is an internal structure.
@@ -8737,6 +8880,9 @@ function b2World(gravity)
 	this.p_step = new b2TimeStep();
 	this.p_island = new b2Island();
 
+
+	this.m_particleSystem = new b2ParticleSystem();
+	this.m_particleSystem.m_world = this;
 
 }
 
@@ -9167,6 +9313,8 @@ b2World.prototype =
 		{
 			profile_world_solve.start();
 
+			this.m_particleSystem.Solve(this.p_step); // Particle Simulation
+
 			this.Solve(this.p_step);
 			profile_world_solve.stop();
 		}
@@ -9249,6 +9397,8 @@ b2World.prototype =
 					}
 				}
 			}
+
+		this.DrawParticleSystem(this.m_particleSystem);
 
 		}
 
@@ -9339,6 +9489,8 @@ b2World.prototype =
 		wrapper.callback = callback;
 		this.m_contactManager.m_broadPhase.Query(wrapper, aabb);
 
+		this.m_particleSystem.QueryAABB(callback, aabb);
+
 	},
 
 	/// Ray-cast the world for all fixtures in the path of the ray. Your callback
@@ -9357,6 +9509,8 @@ b2World.prototype =
 		input.p1 = point1;
 		input.p2 = point2;
 		this.m_contactManager.m_broadPhase.RayCast(wrapper, input);
+
+		this.m_particleSystem.RayCast(callback, point1, point2);
 
 	},
 
@@ -9533,6 +9687,12 @@ b2World.prototype =
 
 	Solve: function(step)
 	{
+
+		// update previous transforms
+		for (var b = this.m_bodyList; b; b = b.m_next)
+		{
+			b.m_xf0.Assign(b.m_xf);
+		}
 
 
 		// Size the island for the worst case.
@@ -10150,11 +10310,2859 @@ b2World.prototype =
 	}
 
 //
+	,
+
+	GetParticleMaxCount: function()
+	{
+		return this.m_particleSystem.GetParticleMaxCount();
+	},
+
+	SetParticleMaxCount: function(count)
+	{
+		this.m_particleSystem.SetParticleMaxCount(count);
+	},
+
+	SetParticleDensity: function(density)
+	{
+		this.m_particleSystem.SetParticleDensity(density);
+	},
+
+	GetParticleDensity: function()
+	{
+		return this.m_particleSystem.GetParticleDensity();
+	},
+
+	SetParticleGravityScale: function(gravityScale)
+	{
+		this.m_particleSystem.SetParticleGravityScale(gravityScale);
+	},
+
+	GetParticleGravityScale: function()
+	{
+		return this.m_particleSystem.GetParticleGravityScale();
+	},
+
+	SetParticleDamping: function(damping)
+	{
+		this.m_particleSystem.SetParticleDamping(damping);
+	},
+
+	GetParticleDamping: function()
+	{
+		return this.m_particleSystem.GetParticleDamping();
+	},
+
+	SetParticleRadius: function(radius)
+	{
+		this.m_particleSystem.SetParticleRadius(radius);
+	},
+
+	GetParticleRadius: function()
+	{
+		return this.m_particleSystem.GetParticleRadius();
+	},
+
+	CreateParticle: function(def)
+	{
+
+		b2Assert(this.IsLocked() == false);
+
+		if (this.IsLocked())
+		{
+			return 0;
+		}
+		var p = this.m_particleSystem.CreateParticle(def);
+		return p;
+	},
+
+	DestroyParticle: function(index, callDestructionListener)
+	{
+		this.m_particleSystem.DestroyParticle(index, callDestructionListener);
+	},
+
+	DestroyParticlesInShape: function(shape, xf, callDestructionListener)
+	{
+
+		b2Assert(this.IsLocked() == false);
+
+		if (this.IsLocked())
+		{
+			return 0;
+		}
+		return this.m_particleSystem.DestroyParticlesInShape(shape, xf,
+														callDestructionListener);
+	},
+
+	CreateParticleGroup: function(def)
+	{
+
+		b2Assert(this.IsLocked() == false);
+
+		if (this.IsLocked())
+		{
+			return null;
+		}
+		var g = this.m_particleSystem.CreateParticleGroup(def);
+		return g;
+	},
+
+	JoinParticleGroups: function(groupA, groupB)
+	{
+
+		b2Assert(this.IsLocked() == false);
+
+		if (this.IsLocked())
+		{
+			return;
+		}
+		this.m_particleSystem.JoinParticleGroups(groupA, groupB);
+	},
+
+	DestroyParticlesInGroup: function(group, callDestructionListener)
+	{
+
+		b2Assert(this.IsLocked() == false);
+
+		if (this.IsLocked())
+		{
+			return;
+		}
+		this.m_particleSystem.DestroyParticlesInGroup(group, callDestructionListener);
+	},
+
+	GetParticleFlagsBuffer: function()
+	{
+		return this.m_particleSystem.GetParticleFlagsBuffer();
+	},
+
+	GetParticlePositionBuffer: function()
+	{
+		return this.m_particleSystem.GetParticlePositionBuffer();
+	},
+
+	GetParticleVelocityBuffer: function()
+	{
+		return this.m_particleSystem.GetParticleVelocityBuffer();
+	},
+
+	GetParticleColorBuffer: function()
+	{
+		return this.m_particleSystem.GetParticleColorBuffer();
+	},
+
+	GetParticleUserDataBuffer: function()
+	{
+		return this.m_particleSystem.GetParticleUserDataBuffer();
+	},
+
+	GetParticleGroupBuffer: function()
+	{
+		return this.m_particleSystem.GetParticleGroupBuffer();
+	},
+
+	SetParticleFlagsBuffer: function(buffer, capacity)
+	{
+		this.m_particleSystem.SetParticleFlagsBuffer(buffer, capacity);
+	},
+
+	SetParticlePositionBuffer: function(buffer, capacity)
+	{
+		this.m_particleSystem.SetParticlePositionBuffer(buffer, capacity);
+	},
+
+	SetParticleVelocityBuffer: function(buffer, capacity)
+	{
+		this.m_particleSystem.SetParticleVelocityBuffer(buffer, capacity);
+	},
+
+	SetParticleColorBuffer: function(buffer, capacity)
+	{
+		this.m_particleSystem.SetParticleColorBuffer(buffer, capacity);
+	},
+
+	SetParticleUserDataBuffer: function(buffer, capacity)
+	{
+		this.m_particleSystem.SetParticleUserDataBuffer(buffer, capacity);
+	},
+
+	GetParticleContacts: function()
+	{
+		return this.m_particleSystem.m_contactBuffer;
+	},
+
+	GetParticleContactCount: function()
+	{
+		return this.m_particleSystem.m_contactCount;
+	},
+
+	GetParticleBodyContacts: function()
+	{
+		return this.m_particleSystem.m_bodyContactBuffer;
+	},
+
+	GetParticleBodyContactCount: function()
+	{
+		return this.m_particleSystem.m_bodyContactCount;
+	},
+
+	ComputeParticleCollisionEnergy: function()
+	{
+		return this.m_particleSystem.ComputeParticleCollisionEnergy();
+	},
+
+	GetParticleGroupList: function()
+	{
+		return this.m_particleSystem.GetParticleGroupList();
+	},
+
+	GetParticleGroupCount: function()
+	{
+		return this.m_particleSystem.GetParticleGroupCount();
+	},
+
+	GetParticleCount: function()
+	{
+		return this.m_particleSystem.GetParticleCount();
+	},
+
+	DrawParticleSystem: function(system)
+	{
+		var particleCount = system.GetParticleCount();
+		if (particleCount)
+		{
+			var particleRadius = system.GetParticleRadius();
+			var positionBuffer = system.GetParticlePositionBuffer();
+			if (system.m_colorBuffer.data)
+			{
+				var colorBuffer = system.GetParticleColorBuffer();
+				this.g_debugDraw.DrawParticles(positionBuffer, particleRadius, colorBuffer, particleCount);
+			}
+			else
+			{
+				this.g_debugDraw.DrawParticles(positionBuffer, particleRadius, null, particleCount);
+			}
+		}
+	}
+//
 };
 
 b2World.e_newFixture = 0x0001;
 b2World.e_locked = 0x0002;
 b2World.e_clearForces = 0x0004;
+
+
+function b2StackQueue(capacity)
+{
+	this.m_buffer = new Array(capacity);
+	this.m_front = 0;
+	this.m_back = 0;
+	this.m_end = capacity;
+}
+
+b2StackQueue.prototype =
+{
+	Push: function(item)
+	{
+		if (this.m_back >= this.m_end)
+			return;
+
+		this.m_buffer[this.m_back++] = item;
+	},
+
+	Pop: function()
+	{
+
+		b2Assert(this.m_front < this.m_back);
+
+		this.m_front++;
+	},
+
+	Empty: function()
+	{
+		return this.m_front >= this.m_back;
+	},
+
+	Front: function()
+	{
+		return this.m_buffer[this.m_front];
+	}
+};
+/// A field representing the nearest generator from each point.
+
+function b2VoronoiDiagram(generatorCapacity)
+{
+	this.m_generatorBuffer = new Array(generatorCapacity);
+	this.m_generatorCount = 0;
+	this.m_countX = 0;
+	this.m_countY = 0;
+	this.m_diagram = null;
+}
+
+b2VoronoiDiagram.Generator = function()
+{
+	this.center = new b2Vec2();
+	this.tag = 0;
+};
+
+b2VoronoiDiagram.b2VoronoiDiagramTask = function(x, y, i, g)
+{
+	this.m_x = x;
+	this.m_y = y;
+	this.m_i = i;
+	this.m_generator = g;
+};
+
+b2VoronoiDiagram.prototype =
+{
+	AddGenerator: function(center, tag)
+	{
+		var g = (this.m_generatorBuffer[this.m_generatorCount++] = new b2VoronoiDiagram.Generator());
+		g.center.Assign(center);
+		g.tag = tag;
+	},
+
+	Generate: function(radius)
+	{
+
+		b2Assert(this.m_diagram == null);
+
+		var inverseRadius = 1 / radius;
+		var lower = new b2Vec2(+b2_maxFloat, +b2_maxFloat);
+		var upper = new b2Vec2(-b2_maxFloat, -b2_maxFloat);
+
+		for (var k = 0; k < this.m_generatorCount; k++)
+		{
+			var g = this.m_generatorBuffer[k];
+			lower.Assign(b2Min_v2(lower, g.center));
+			upper.Assign(b2Max_v2(upper, g.center));
+		}
+
+		this.m_countX = 1 + ((inverseRadius * (upper.x - lower.x)) >>> 0);
+		this.m_countY = 1 + ((inverseRadius * (upper.y - lower.y)) >>> 0);
+
+		this.m_diagram = new Array(this.m_countX * this.m_countY);
+
+		for (var i = 0; i < this.m_countX * this.m_countY; i++)
+			this.m_diagram[i] = null;
+
+		var queue = new b2StackQueue(this.m_countX * this.m_countX);
+		for (var k = 0; k < this.m_generatorCount; k++)
+		{
+			var g = this.m_generatorBuffer[k];
+			g.center.Assign(b2Vec2.Multiply(inverseRadius, b2Vec2.Subtract(g.center, lower)));
+			var x = b2Max(0, b2Min(Math.floor(g.center.x), this.m_countX - 1));
+			var y = b2Max(0, b2Min(Math.floor(g.center.y), this.m_countY - 1));
+			queue.Push(new b2VoronoiDiagram.b2VoronoiDiagramTask(x, y, x + y * this.m_countX, g));
+		}
+		while (!queue.Empty())
+		{
+			var x = queue.Front().m_x;
+			var y = queue.Front().m_y;
+			var i = queue.Front().m_i;
+			var g = queue.Front().m_generator;
+			queue.Pop();
+			if (!this.m_diagram[i])
+			{
+				this.m_diagram[i] = g;
+				if (x > 0)
+				{
+					queue.Push(new b2VoronoiDiagram.b2VoronoiDiagramTask(x - 1, y, i - 1, g));
+				}
+				if (y > 0)
+				{
+					queue.Push(new b2VoronoiDiagram.b2VoronoiDiagramTask(x, y - 1, i - this.m_countX, g));
+				}
+				if (x < this.m_countX - 1)
+				{
+					queue.Push(new b2VoronoiDiagram.b2VoronoiDiagramTask(x + 1, y, i + 1, g));
+				}
+				if (y < this.m_countY - 1)
+				{
+					queue.Push(new b2VoronoiDiagram.b2VoronoiDiagramTask(x, y + 1, i + this.m_countX, g));
+				}
+			}
+		}
+		var maxIteration = this.m_countX + this.m_countY;
+		for (var iteration = 0; iteration < maxIteration; iteration++)
+		{
+			for (var y = 0; y < this.m_countY; y++)
+			{
+				for (var x = 0; x < this.m_countX - 1; x++)
+				{
+					var i = x + y * this.m_countX;
+					var a = this.m_diagram[i];
+					var b = this.m_diagram[i + 1];
+					if (a != b)
+					{
+						queue.Push(new b2VoronoiDiagram.b2VoronoiDiagramTask(x, y, i, b));
+						queue.Push(new b2VoronoiDiagram.b2VoronoiDiagramTask(x + 1, y, i + 1, a));
+					}
+				}
+			}
+			for (var y = 0; y < this.m_countY - 1; y++)
+			{
+				for (var x = 0; x < this.m_countX; x++)
+				{
+					var i = x + y * this.m_countX;
+					var a = this.m_diagram[i];
+					var b = this.m_diagram[i + this.m_countX];
+					if (a != b)
+					{
+						queue.Push(new b2VoronoiDiagram.b2VoronoiDiagramTask(x, y, i, b));
+						queue.Push(new b2VoronoiDiagram.b2VoronoiDiagramTask(x, y + 1, i + this.m_countX, a));
+					}
+				}
+			}
+			var updated = false;
+			while (!queue.Empty())
+			{
+				var x = queue.Front().m_x;
+				var y = queue.Front().m_y;
+				var i = queue.Front().m_i;
+				var k = queue.Front().m_generator;
+				queue.Pop();
+				var a = this.m_diagram[i];
+				var b = k;
+				if (a != b)
+				{
+					var ax = a.center.x - x;
+					var ay = a.center.y - y;
+					var bx = b.center.x - x;
+					var by = b.center.y - y;
+					var a2 = ax * ax + ay * ay;
+					var b2 = bx * bx + by * by;
+					if (a2 > b2)
+					{
+						this.m_diagram[i] = b;
+						if (x > 0)
+						{
+							queue.Push(new b2VoronoiDiagram.b2VoronoiDiagramTask(x - 1, y, i - 1, b));
+						}
+						if (y > 0)
+						{
+							queue.Push(new b2VoronoiDiagram.b2VoronoiDiagramTask(x, y - 1, i - this.m_countX, b));
+						}
+						if (x < this.m_countX - 1)
+						{
+							queue.Push(new b2VoronoiDiagram.b2VoronoiDiagramTask(x + 1, y, i + 1, b));
+						}
+						if (y < this.m_countY - 1)
+						{
+							queue.Push(new b2VoronoiDiagram.b2VoronoiDiagramTask(x, y + 1, i + this.m_countX, b));
+						}
+						updated = true;
+					}
+				}
+			}
+			if (!updated)
+			{
+				break;
+			}
+		}
+	},
+
+	GetNodes: function(callback)
+	{
+		for (var y = 0; y < this.m_countY - 1; y++)
+		{
+			for (var x = 0; x < this.m_countX - 1; x++)
+			{
+				var i = x + y * this.m_countX;
+				var a = this.m_diagram[i];
+				var b = this.m_diagram[i + 1];
+				var c = this.m_diagram[i + this.m_countX];
+				var d = this.m_diagram[i + 1 + this.m_countX];
+				if (b != c)
+				{
+					if (a != b && a != c)
+					{
+						callback(a.tag, b.tag, c.tag);
+					}
+					if (d != b && d != c)
+					{
+						callback(b.tag, d.tag, c.tag);
+					}
+				}
+			}
+		}
+	}
+};
+
+/// Small color object for each particle
+/// Constructor with four elements: r (red), g (green), b (blue), and a (opacity).
+/// Each element can be specified 0 to 255.
+function b2ParticleColor(r, g, b, a)
+{
+	if (r instanceof b2Color)
+	{
+		this.r = (255 * r.r);
+		this.g = (255 * r.g);
+		this.b = (255 * r.b);
+		this.a = 255;
+	}
+	else if (typeof(r) !== 'undefined')
+	{
+		this.r = r;
+		this.g = g;
+		this.b = b;
+		this.a = a;
+	}
+	else
+		this.r = this.g = this.b = this.a = 0;
+}
+
+b2ParticleColor.prototype =
+{
+	/// True when all four color elements equal 0. When true, no memory is used for particle color.
+	///
+	IsZero: function()
+	{
+		return !this.r && !this.g && !this.b && !this.a;
+	},
+
+	/// Used internally to convert the value of b2Color.
+	///
+	GetColor: function()
+	{
+		return new b2Color(
+			1.0 / 255 * this.r,
+			1.0 / 255 * this.g,
+			1.0 / 255 * this.b);
+	},
+
+	/// Sets color for current object using the four elements described above.
+	///
+	Set: function(r_, g_, b_, a_)
+	{
+		if (r_ instanceof b2Color)
+		{
+			this.r = (255 * r_.r);
+			this.g = (255 * r_.g);
+			this.b = (255 * r_.b);
+			this.a = 255;
+		}
+		else
+		{
+			this.r = r_;
+			this.g = g_;
+			this.b = b_;
+			this.a = a_;
+		}
+	},
+
+	Assign: function(pc)
+	{
+		this.r = pc.r;
+		this.g = pc.g;
+		this.b = pc.b;
+		this.a = pc.a;
+	},
+
+	Clone: function()
+	{
+		return new b2ParticleColor(this.r, this.g, this.b, this.a);
+	}
+};
+
+b2ParticleColor.zero = new b2ParticleColor();
+
+/// A particle definition holds all the data needed to construct a particle.
+/// You can safely re-use these definitions.
+function b2ParticleDef()
+{
+	/// Specifies the type of particle. A particle may be more than one type.
+	/// Multiple types are chained by logical sums, for example:
+	/// pd.flags = b2_elasticParticle | b2_viscousParticle
+	this.flags = 0;
+
+	/// The world position of the particle.
+	this.position = new b2Vec2();
+
+	/// The linear velocity of the particle in world co-ordinates.
+	this.velocity = new b2Vec2();
+
+	/// The color of the particle.
+	this.color = new b2ParticleColor();
+
+	/// Use this to store application-specific body data.
+	this.userData = null;
+}
+
+/// The particle type. Can be combined with | operator.
+/// Zero means liquid.
+b2ParticleDef.b2_waterParticle =       0;
+b2ParticleDef.b2_zombieParticle =      1 << 1; // removed after next step
+b2ParticleDef.b2_wallParticle =        1 << 2; // zero velocity
+b2ParticleDef.b2_springParticle =      1 << 3; // with restitution from stretching
+b2ParticleDef.b2_elasticParticle =     1 << 4; // with restitution from deformation
+b2ParticleDef.b2_viscousParticle =     1 << 5; // with viscosity
+b2ParticleDef.b2_powderParticle =      1 << 6; // without isotropic pressure
+b2ParticleDef.b2_tensileParticle =     1 << 7; // with surface tension
+b2ParticleDef.b2_colorMixingParticle = 1 << 8; // mixing color between contacting particles
+b2ParticleDef.b2_destructionListener = 1 << 9; // call b2DestructionListener on destruction
+/// A particle group definition holds all the data needed to construct a particle group.
+/// You can safely re-use these definitions.
+function b2ParticleGroupDef()
+{
+	/// The particle-behavior flags.
+	this.flags = 0;
+
+	/// The group-construction flags.
+	this.groupFlags = 0;
+
+	/// The world position of the group.
+	/// Moves the group's shape a distance equal to the value of position.
+	this.position = new b2Vec2();
+
+	/// The world angle of the group in radians.
+	/// Rotates the shape by an angle equal to the value of angle.
+	this.angle = 0;
+
+	/// The linear velocity of the group's origin in world co-ordinates.
+	this.linearVelocity = new b2Vec2();
+
+	/// The angular velocity of the group.
+	this.angularVelocity = 0;
+
+	/// The color of all particles in the group.
+	this.color = new b2ParticleColor();
+
+	/// The strength of cohesion among the particles in a group with flag b2_elasticParticle or b2_springParticle.
+	this.strength = 1;
+
+	/// Shape containing the particle group.
+	this.shape = null;
+
+	/// If true, destroy the group automatically after its last particle has been destroyed.
+	this.destroyAutomatically = true;
+
+	/// Use this to store application-specific group data.
+	this.userData = null;
+}
+
+/// A group of particles. These are created via b2World::CreateParticleGroup.
+function b2ParticleGroup()
+{
+	this.m_system = null;
+	this.m_firstIndex = 0;
+	this.m_lastIndex = 0;
+	this.m_groupFlags = 0;
+	this.m_strength = 1.0;
+	this.m_prev = null;
+	this.m_next = null;
+
+	this.m_timestamp = -1;
+	this.m_mass = 0;
+	this.m_inertia = 0;
+	this.m_center = new b2Vec2();
+	this.m_linearVelocity = new b2Vec2();
+	this.m_angularVelocity = 0;
+	this.m_transform = new b2Transform();
+	this.m_transform.SetIdentity();
+
+	this.m_destroyAutomatically = true;
+	this.m_toBeDestroyed = false;
+	this.m_toBeSplit = false;
+
+	this.m_userData = null;
+}
+
+b2ParticleGroup.prototype =
+{
+	/// Get the next particle group from the list in b2_World.
+	GetNext: function() { return this.m_next; },
+
+	/// Get the number of particles.
+	GetParticleCount: function()
+	{
+		return this.m_lastIndex - this.m_firstIndex;
+	},
+
+	/// Get the offset of this group in the global particle buffer
+	GetBufferIndex: function()
+	{
+		return this.m_firstIndex;
+	},
+
+	/// Get the construction flags for the group.
+	GetGroupFlags: function()
+	{
+		return this.m_groupFlags;
+	},
+
+	/// Set the construction flags for the group.
+	SetGroupFlags: function(flags)
+	{
+		this.m_groupFlags = flags;
+	},
+
+	/// Get the total mass of the group: the sum of all particles in it.
+	GetMass: function()
+	{
+		this.UpdateStatistics();
+		return this.m_mass;
+	},
+
+	/// Get the moment of inertia for the group.
+	GetInertia: function()
+	{
+		this.UpdateStatistics();
+		return this.m_inertia;
+	},
+
+	/// Get the center of gravity for the group.
+	GetCenter: function()
+	{
+		this.UpdateStatistics();
+		return this.m_center;
+	},
+
+	/// Get the linear velocity of the group.
+	GetLinearVelocity: function()
+	{
+		this.UpdateStatistics();
+		return this.m_linearVelocity;
+	},
+
+	/// Get the angular velocity of the group.
+	GetAngularVelocity: function()
+	{
+		this.UpdateStatistics();
+		return this.m_angularVelocity;
+	},
+
+	/// Get the position of the group's origin and rotation.
+	/// Used only with groups of rigid particles.
+	GetTransform: function()
+	{
+		return this.m_transform;
+	},
+
+	/// Get position of the particle group as a whole.
+	/// Used only with groups of rigid particles.
+	GetPosition: function()
+	{
+		return this.m_transform.p;
+	},
+
+	/// Get the rotational angle of the particle group as a whole.
+	/// Used only with groups of rigid particles.
+	GetAngle: function()
+	{
+		return this.m_transform.q.GetAngle();
+	},
+
+	/// Get the user data pointer that was provided in the group definition.
+	GetUserData: function()
+	{
+		return this.m_userData;
+	},
+
+	/// Set the user data. Use this to store your application specific data.
+	SetUserData: function(data)
+	{
+		this.m_userData = data;
+	},
+
+	UpdateStatistics: function()
+	{
+		if (this.m_timestamp != this.m_system.m_timestamp)
+		{
+			var m = this.m_system.GetParticleMass();
+			this.m_mass = 0;
+			this.m_center.SetZero();
+			this.m_linearVelocity.SetZero();
+			for (var i = this.m_firstIndex; i < this.m_lastIndex; i++)
+			{
+				this.m_mass += m;
+				this.m_center.Add(b2Vec2.Multiply(m, this.m_system.m_positionBuffer.data[i]));
+				this.m_linearVelocity.Add(b2Vec2.Multiply(m, this.m_system.m_velocityBuffer.data[i]));
+			}
+			if (this.m_mass > 0)
+			{
+				this.m_center.Multiply(1 / this.m_mass);
+				this.m_linearVelocity.Multiply(1 / this.m_mass);
+			}
+			this.m_inertia = 0;
+			this.m_angularVelocity = 0;
+			for (var i = this.m_firstIndex; i < this.m_lastIndex; i++)
+			{
+				var p = b2Vec2.Subtract(this.m_system.m_positionBuffer.data[i], this.m_center);
+				var v = b2Vec2.Subtract(this.m_system.m_velocityBuffer.data[i], this.m_linearVelocity);
+				this.m_inertia += m * b2Dot_v2_v2(p, p);
+				this.m_angularVelocity += m * b2Cross_v2_v2(p, v);
+			}
+			if (this.m_inertia > 0)
+			{
+				this.m_angularVelocity *= 1 / this.m_inertia;
+			}
+			this.m_timestamp = this.m_system.m_timestamp;
+		}
+	}
+};
+
+b2ParticleGroup.b2_solidParticleGroup =   1 << 0; // resists penetration
+b2ParticleGroup.b2_rigidParticleGroup =   1 << 1; // keeps its shape
+
+function b2ParticleContact()
+{
+	///Indices of the respective particles making contact.
+	///
+	this.indexA = this.indexB = 0;
+	///The logical sum of the particle behaviors that have been set.
+	///
+	this.flags = 0;
+	/// Weight of the contact. A value between 0.0f and 1.0f.
+	///
+	this.weight = 0.0;
+	///The normalized direction from A to B.
+	///
+	this.normal = new b2Vec2();
+};
+
+function b2ParticleBodyContact()
+{
+	/// Index of the particle making contact.
+	///
+	this.index = 0;
+	/// The body making contact.
+	///
+	this.body = null;
+	///Weight of the contact. A value between 0.0f and 1.0f.
+	///
+	this.weight = 0.0;
+	/// The normalized direction from the particle to the body.
+	///
+	this.normal = new b2Vec2();
+	/// The effective mass used in calculating force.
+	///
+	this.mass = 0.0;
+};
+
+function b2ParticleSystem()
+{
+	this.m_timestamp = 0;
+	this.m_allParticleFlags = 0;
+	this.m_allGroupFlags = 0;
+	this.m_density = 1;
+	this.m_inverseDensity = 1;
+	this.m_gravityScale = 1;
+	this.m_particleDiameter = 1;
+	this.m_inverseDiameter = 1;
+	this.m_squaredDiameter = 1;
+
+	this.m_count = 0;
+	this.m_internalAllocatedCapacity = 0;
+	this.m_maxCount = 0;
+	this.m_flagsBuffer = new b2ParticleSystem.ParticleBuffer();
+	this.m_positionBuffer = new b2ParticleSystem.ParticleBuffer();
+	this.m_velocityBuffer = new b2ParticleSystem.ParticleBuffer();
+	this.m_accumulationBuffer = null;
+	this.m_accumulation2Buffer = null;
+	this.m_depthBuffer = null;
+	this.m_colorBuffer = new b2ParticleSystem.ParticleBuffer();
+	this.m_groupBuffer = null;
+	this.m_userDataBuffer = new b2ParticleSystem.ParticleBuffer();
+
+	this.m_proxyCount = 0;
+	this.m_proxyCapacity = 0;
+	this.m_proxyBuffer = null;
+
+	this.m_contactCount = 0;
+	this.m_contactCapacity = 0;
+	this.m_contactBuffer = null;
+
+	this.m_bodyContactCount = 0;
+	this.m_bodyContactCapacity = 0;
+	this.m_bodyContactBuffer = null;
+
+	this.m_pairCount = 0;
+	this.m_pairCapacity = 0;
+	this.m_pairBuffer = null;
+
+	this.m_triadCount = 0;
+	this.m_triadCapacity = 0;
+	this.m_triadBuffer = null;
+
+	this.m_groupCount = 0;
+	this.m_groupList = null;
+
+	this.m_pressureStrength = 0.05;
+	this.m_dampingStrength = 1.0;
+	this.m_elasticStrength = 0.25;
+	this.m_springStrength = 0.25;
+	this.m_viscousStrength = 0.25;
+	this.m_surfaceTensionStrengthA = 0.1;
+	this.m_surfaceTensionStrengthB = 0.2;
+	this.m_powderStrength = 0.5;
+	this.m_ejectionStrength = 0.5;
+	this.m_colorMixingStrength = 0.5;
+
+	this.m_world = null;
+}
+
+b2ParticleSystem.ParticleBuffer = function()
+{
+	this.data = null;
+	this.userSuppliedCapacity = 0;
+};
+
+/// Used for detecting particle contacts
+b2ParticleSystem.Proxy = function()
+{
+	this.index = 0;
+	this.tag = 0;
+};
+
+b2ParticleSystem.Proxy.LessThan_p_p = function(a, b)
+{
+	return a.tag < b.tag;
+};
+
+b2ParticleSystem.Proxy.LessThan_i_p = function(a, b)
+{
+	return a < b.tag;
+};
+
+b2ParticleSystem.Proxy.LessThan_p_i = function(a, b)
+{
+	return a.tag < b;
+};
+
+/// Connection between two particles
+b2ParticleSystem.Pair = function()
+{
+	this.indexA = this.indexB = 0;
+	this.flags = 0;
+	this.strength = 0.0;
+	this.distance = 0.0;
+};
+
+/// Connection between three particles
+b2ParticleSystem.Triad = function()
+{
+	this.indexA = this.indexB = this.indexC = 0;
+	this.flags = 0;
+	this.strength = 0.0;
+	this.pa = new b2Vec2(), this.pb = new b2Vec2(), this.pc = new b2Vec2();
+	this.ka = 0.0, this.kb = 0.0, this.kc = 0.0, this.s = 0.0;
+};
+
+/// All particle types that require creating pairs
+b2ParticleSystem.k_pairFlags = b2ParticleDef.b2_springParticle;
+/// All particle types that require creating triads
+b2ParticleSystem.k_triadFlags = b2ParticleDef.b2_elasticParticle;
+/// All particle types that require computing depth
+b2ParticleSystem.k_noPressureFlags = b2ParticleDef.b2_powderParticle;
+
+b2ParticleSystem.xTruncBits = 12;
+b2ParticleSystem.yTruncBits = 12;
+b2ParticleSystem.tagBits = 8 * 4/*sizeof(uint32)*/;
+b2ParticleSystem.yOffset = 1 << (b2ParticleSystem.yTruncBits - 1);
+b2ParticleSystem.yShift = b2ParticleSystem.tagBits - b2ParticleSystem.yTruncBits;
+b2ParticleSystem.xShift = b2ParticleSystem.tagBits - b2ParticleSystem.yTruncBits - b2ParticleSystem.xTruncBits;
+b2ParticleSystem.xScale = 1 << b2ParticleSystem.xShift;
+b2ParticleSystem.xOffset = b2ParticleSystem.xScale * (1 << (b2ParticleSystem.xTruncBits - 1));
+b2ParticleSystem.xMask = (1 << b2ParticleSystem.xTruncBits) - 1;
+b2ParticleSystem.yMask = (1 << b2ParticleSystem.yTruncBits) - 1;
+
+function computeTag(x, y)
+{
+	return ((y + b2ParticleSystem.yOffset) << b2ParticleSystem.yShift) + (b2ParticleSystem.xScale * x + b2ParticleSystem.xOffset) >>> 0;
+}
+
+function computeRelativeTag(tag, x, y)
+{
+	return tag + (y << b2ParticleSystem.yShift) + (x << b2ParticleSystem.xShift);
+}
+
+function LimitCapacity(capacity, maxCount)
+{
+	return maxCount && capacity > maxCount ? maxCount : capacity;
+}
+
+function b2ParticleContactIsZombie(contact)
+{
+	return (contact.flags & b2ParticleDef.b2_zombieParticle) == b2ParticleDef.b2_zombieParticle;
+}
+
+b2ParticleSystem.prototype =
+{
+	/*// Callback used with b2VoronoiDiagram.
+	class CreateParticleGroupCallback
+	{
+	public:
+		void operator()(int32 a, int32 b, int32 c) const;
+		b2ParticleSystem* system;
+		const b2ParticleGroupDef* def;
+		int32 firstIndex;
+	};
+
+	// Callback used with b2VoronoiDiagram.
+	class JoinParticleGroupsCallback
+	{
+	public:
+		void operator()(int32 a, int32 b, int32 c) const;
+		b2ParticleSystem* system;
+		b2ParticleGroup* groupA;
+		b2ParticleGroup* groupB;
+	};*/
+
+
+	// Reallocate a buffer
+	ReallocateBuffer3: function(oldBuffer, oldCapacity, newCapacity)
+	{
+
+		b2Assert(newCapacity > oldCapacity);
+
+		var newBuffer = (oldBuffer) ? oldBuffer.slice() : [];
+		newBuffer.length = newCapacity;
+		return newBuffer;
+	},
+
+	// Reallocate a buffer
+	ReallocateBuffer5: function(buffer, userSuppliedCapacity, oldCapacity, newCapacity, deferred)
+	{
+
+		b2Assert(newCapacity > oldCapacity);
+		// A 'deferred' buffer is reallocated only if it is not null.
+		// If 'userSuppliedCapacity' is not zero, buffer is user supplied and must be kept.
+		b2Assert(!userSuppliedCapacity || newCapacity <= userSuppliedCapacity);
+
+		if ((!deferred || buffer) && !userSuppliedCapacity)
+		{
+			buffer = this.ReallocateBuffer3(buffer, oldCapacity, newCapacity);
+		}
+		return buffer;
+	},
+
+	// Reallocate a buffer
+	ReallocateBuffer4: function(buffer, oldCapacity, newCapacity, deferred)
+	{
+
+		b2Assert(newCapacity > oldCapacity);
+
+		return this.ReallocateBuffer5(buffer.data, buffer.userSuppliedCapacity, oldCapacity, newCapacity, deferred);
+	},
+
+	RequestParticleBuffer: function(buffer)
+	{
+		if (!buffer)
+		{
+			buffer = new Array(this.m_internalAllocatedCapacity);
+		}
+		return buffer;
+	},
+
+	CreateParticle: function(def)
+	{
+		if (this.m_count >= this.m_internalAllocatedCapacity)
+		{
+			var capacity = this.m_count ? 2 * this.m_count : b2_minParticleBufferCapacity;
+			capacity = LimitCapacity(capacity, this.m_maxCount);
+			capacity = LimitCapacity(capacity, this.m_flagsBuffer.userSuppliedCapacity);
+			capacity = LimitCapacity(capacity, this.m_positionBuffer.userSuppliedCapacity);
+			capacity = LimitCapacity(capacity, this.m_velocityBuffer.userSuppliedCapacity);
+			capacity = LimitCapacity(capacity, this.m_colorBuffer.userSuppliedCapacity);
+			capacity = LimitCapacity(capacity, this.m_userDataBuffer.userSuppliedCapacity);
+			if (this.m_internalAllocatedCapacity < capacity)
+			{
+				this.m_flagsBuffer.data = this.ReallocateBuffer4(this.m_flagsBuffer, this.m_internalAllocatedCapacity, capacity, false);
+				this.m_positionBuffer.data = this.ReallocateBuffer4(this.m_positionBuffer, this.m_internalAllocatedCapacity, capacity, false);
+				this.m_velocityBuffer.data = this.ReallocateBuffer4(this.m_velocityBuffer, this.m_internalAllocatedCapacity, capacity, false);
+				this.m_accumulationBuffer = this.ReallocateBuffer5(this.m_accumulationBuffer, 0, this.m_internalAllocatedCapacity, capacity, false);
+				this.m_accumulation2Buffer = this.ReallocateBuffer5(this.m_accumulation2Buffer, 0, this.m_internalAllocatedCapacity, capacity, true);
+				this.m_depthBuffer = this.ReallocateBuffer5(this.m_depthBuffer, 0, this.m_internalAllocatedCapacity, capacity, true);
+				this.m_colorBuffer.data = this.ReallocateBuffer4(this.m_colorBuffer, this.m_internalAllocatedCapacity, capacity, true);
+				this.m_groupBuffer = this.ReallocateBuffer5(this.m_groupBuffer, 0, this.m_internalAllocatedCapacity, capacity, false);
+				this.m_userDataBuffer.data = this.ReallocateBuffer4(this.m_userDataBuffer, this.m_internalAllocatedCapacity, capacity, true);
+				this.m_internalAllocatedCapacity = capacity;
+			}
+		}
+		if (this.m_count >= this.m_internalAllocatedCapacity)
+		{
+			return this.b2_invalidParticleIndex;
+		}
+		var index = this.m_count++;
+		this.m_flagsBuffer.data[index] = def.flags;
+		this.m_positionBuffer.data[index] = def.position.Clone();
+		this.m_velocityBuffer.data[index] = def.velocity.Clone();
+		this.m_groupBuffer[index] = null;
+		if (this.m_depthBuffer)
+		{
+			this.m_depthBuffer[index] = 0;
+		}
+		if (this.m_colorBuffer.data || !def.color.IsZero())
+		{
+			this.m_colorBuffer.data = this.RequestParticleBuffer(this.m_colorBuffer.data);
+			this.m_colorBuffer.data[index] = def.color.Clone();
+		}
+		if (this.m_userDataBuffer.data || def.userData)
+		{
+			this.m_userDataBuffer.data= this.RequestParticleBuffer(this.m_userDataBuffer.data);
+			this.m_userDataBuffer.data[index] = def.userData;
+		}
+		if (this.m_proxyCount >= this.m_proxyCapacity)
+		{
+			var oldCapacity = this.m_proxyCapacity;
+			var newCapacity = this.m_proxyCount ? 2 * this.m_proxyCount : b2_minParticleBufferCapacity;
+			this.m_proxyBuffer = this.ReallocateBuffer3(this.m_proxyBuffer, oldCapacity, newCapacity);
+			this.m_proxyCapacity = newCapacity;
+		}
+		this.m_proxyBuffer[this.m_proxyCount] = new b2ParticleSystem.Proxy();
+		this.m_proxyBuffer[this.m_proxyCount++].index = index;
+		return index;
+	},
+
+	DestroyParticle: function(index, callDestructionListener)
+	{
+		var flags = b2ParticleDef.b2_zombieParticle;
+		if (callDestructionListener)
+		{
+			flags |= b2ParticleDef.b2_destructionListener;
+		}
+		this.m_flagsBuffer.data[index] |= flags;
+	},
+
+	DestroyParticlesInShape: function(shape, xf, callDestructionListener)
+	{
+		function DestroyParticlesInShapeCallback(system, shape, xf, callDestructionListener)
+		{
+			this.m_system = system;
+			this.m_shape = shape;
+			this.m_xf = xf;
+			this.m_callDestructionListener = callDestructionListener;
+			this.m_destroyed = 0;
+		}
+
+		DestroyParticlesInShapeCallback.prototype =
+		{
+			ReportFixture: function(fixture)
+			{
+				return false;
+			},
+
+			ReportParticle: function(index)
+			{
+
+				b2Assert(index >=0 && index < this.m_system.m_count);
+
+				if (this.m_shape.TestPoint(this.m_xf, this.m_system.m_positionBuffer.data[index]))
+				{
+					this.m_system.DestroyParticle(index, this.m_callDestructionListener);
+					this.m_destroyed++;
+				}
+				return true;
+			},
+
+			Destroyed: function() { return this.m_destroyed; }
+		};
+
+		var callback = new DestroyParticlesInShapeCallback(this, shape, xf, callDestructionListener);
+
+		var aabb = new b2AABB();
+		shape.ComputeAABB(aabb, xf, 0);
+		this.m_world.QueryAABB(callback, aabb);
+		return callback.Destroyed();
+	},
+
+	DestroyParticlesInGroup: function(group, callDestructionListener)
+	{
+		for (var i = group.m_firstIndex; i < group.m_lastIndex; i++) {
+			this.DestroyParticle(i, callDestructionListener);
+		}
+	},
+
+	CreateParticleGroup: function(groupDef)
+	{
+		var stride = this.GetParticleStride();
+		var identity = new b2Transform();
+		identity.SetIdentity();
+		var transform = identity.Clone();
+		var firstIndex = this.m_count;
+		if (groupDef.shape)
+		{
+			var particleDef = new b2ParticleDef();
+			particleDef.flags = groupDef.flags;
+			particleDef.color = groupDef.color;
+			particleDef.userData = groupDef.userData;
+			var shape = groupDef.shape;
+			transform.Set(groupDef.position, groupDef.angle);
+			var aabb = new b2AABB();
+			var childCount = shape.GetChildCount();
+			for (var childIndex = 0; childIndex < childCount; childIndex++)
+			{
+				if (childIndex == 0)
+				{
+					shape.ComputeAABB(aabb, identity, childIndex);
+				}
+				else
+				{
+					var childAABB = new b2AABB();
+					shape.ComputeAABB(childAABB, identity, childIndex);
+					aabb.Combine(childAABB);
+				}
+			}
+			for (var y = Math.floor(aabb.lowerBound.y / stride) * stride; y < aabb.upperBound.y; y += stride)
+			{
+				for (var x = Math.floor(aabb.lowerBound.x / stride) * stride; x < aabb.upperBound.x; x += stride)
+				{
+					var p = new b2Vec2(x, y);
+					if (shape.TestPoint(identity, p))
+					{
+						p = b2Mul_t_v2(transform, p);
+						particleDef.position.Assign(p);
+						particleDef.velocity.Assign(b2Vec2.Add(groupDef.linearVelocity, b2Cross_f_v2(groupDef.angularVelocity, b2Vec2.Subtract(p, groupDef.position))));
+						this.CreateParticle(particleDef);
+					}
+				}
+			}
+		}
+		var lastIndex = this.m_count;
+
+		var group = new b2ParticleGroup();
+		group.m_system = this;
+		group.m_firstIndex = firstIndex;
+		group.m_lastIndex = lastIndex;
+		group.m_groupFlags = groupDef.groupFlags;
+		group.m_strength = groupDef.strength;
+		group.m_userData = groupDef.userData;
+		group.m_transform = transform;
+		group.m_destroyAutomatically = groupDef.destroyAutomatically;
+		group.m_prev = null;
+		group.m_next = this.m_groupList;
+		if (this.m_groupList)
+		{
+			this.m_groupList.m_prev = group;
+		}
+		this.m_groupList = group;
+		++this.m_groupCount;
+		for (var i = firstIndex; i < lastIndex; i++)
+		{
+			this.m_groupBuffer[i] = group;
+		}
+
+		this.UpdateContacts(true);
+		if (groupDef.flags & b2ParticleSystem.k_pairFlags)
+		{
+			for (var k = 0; k < this.m_contactCount; k++)
+			{
+				var contact = this.m_contactBuffer[k];
+				var a = contact.indexA;
+				var b = contact.indexB;
+				if (a > b)
+				{
+					var oa = a;
+					a = b;
+					b = oa;
+				}
+				if (firstIndex <= a && b < lastIndex)
+				{
+					if (this.m_pairCount >= this.m_pairCapacity)
+					{
+						var oldCapacity = this.m_pairCapacity;
+						var newCapacity = this.m_pairCount ? 2 * this.m_pairCount : b2_minParticleBufferCapacity;
+						this.m_pairBuffer = this.ReallocateBuffer3(this.m_pairBuffer, oldCapacity, newCapacity);
+						this.m_pairCapacity = newCapacity;
+					}
+					var pair = this.m_pairBuffer[this.m_pairCount] = new b2ParticleSystem.Pair();
+					pair.indexA = a;
+					pair.indexB = b;
+					pair.flags = contact.flags;
+					pair.strength = groupDef.strength;
+					pair.distance = b2Distance(
+						this.m_positionBuffer.data[a],
+						this.m_positionBuffer.data[b]);
+					this.m_pairCount++;
+				}
+			}
+		}
+		if (groupDef.flags & b2ParticleSystem.k_triadFlags)
+		{
+			var diagram = new b2VoronoiDiagram(lastIndex - firstIndex);
+			for (var i = firstIndex; i < lastIndex; i++)
+			{
+				diagram.AddGenerator(this.m_positionBuffer.data[i], i);
+			}
+			diagram.Generate(stride / 2);
+			var callback = function CreateParticleGroupCallback(a, b, c)
+			{
+				var pa = this.m_positionBuffer.data[a];
+				var pb = this.m_positionBuffer.data[b];
+				var pc = this.m_positionBuffer.data[c];
+				var dab = b2Vec2.Subtract(pa, pb);
+				var dbc = b2Vec2.Subtract(pb, pc);
+				var dca = b2Vec2.Subtract(pc, pa);
+				var maxDistanceSquared = b2_maxTriadDistanceSquared * this.m_squaredDiameter;
+				if (b2Dot_b2_b2(dab, dab) < maxDistanceSquared &&
+					b2Dot_b2_b2(dbc, dbc) < maxDistanceSquared &&
+					b2Dot_b2_b2(dca, dca) < maxDistanceSquared)
+				{
+					if (this.m_triadCount >= this.m_triadCapacity)
+					{
+						var oldCapacity = this.m_triadCapacity;
+						var newCapacity = this.m_triadCount ? 2 * this.m_triadCount : b2_minParticleBufferCapacity;
+						this.m_triadBuffer = this.ReallocateBuffer3(this.m_triadBuffer, oldCapacity, newCapacity);
+						this.m_triadCapacity = newCapacity;
+					}
+					var triad = this.m_triadBuffer[this.m_triadCount];
+					triad.indexA = a;
+					triad.indexB = b;
+					triad.indexC = c;
+					triad.flags =
+						this.m_flagsBuffer.data[a] |
+						this.m_flagsBuffer.data[b] |
+						this.m_flagsBuffer.data[c];
+					triad.strength = groupDef.strength;
+					var midPoint = b2Vec2.Multiply(1.0 / 3.0, b2Vec2.Add(pa, b2Vec2.Add(pb, pc)));
+					triad.pa = b2Vec2.Subtract(pa, midPoint);
+					triad.pb = b2Vec2.Subtract(pb, midPoint);
+					triad.pc = b2Vec2.Subtract(pc, midPoint);
+					triad.ka = -b2Dot_v2_v2(dca, dab);
+					triad.kb = -b2Dot_v2_v2(dab, dbc);
+					triad.kc = -b2Dot_v2_v2(dbc, dca);
+					triad.s = b2Cross_v2_v2(pa, pb) + b2Cross_v2_v2(pb, pc) + b2Cross_v2_v2(pc, pa);
+					this.m_triadCount++;
+				}
+			};
+			//callback.system = this;
+			//callback.def = groupDef;
+			//callback.firstIndex = firstIndex;
+			diagram.GetNodes(callback);
+		}
+		if (groupDef.groupFlags & b2ParticleDef.b2_solidParticleGroup)
+		{
+			ComputeDepthForGroup(group);
+		}
+
+		return group;
+	},
+
+	JoinParticleGroups: function(groupA, groupB)
+	{
+
+		b2Assert(groupA != groupB);
+
+		this.RotateBuffer(groupB.m_firstIndex, groupB.m_lastIndex, this.m_count);
+
+		b2Assert(groupB.m_lastIndex == this.m_count);
+
+		this.RotateBuffer(groupA.m_firstIndex, groupA.m_lastIndex, groupB.m_firstIndex);
+
+		this.b2Assert(groupA.m_lastIndex == groupB.m_firstIndex);
+
+
+		var particleFlags = 0;
+		for (var i = groupA.m_firstIndex; i < groupB.m_lastIndex; i++)
+		{
+			particleFlags |= this.m_flagsBuffer.data[i];
+		}
+
+		this.UpdateContacts(true);
+		if (particleFlags & b2ParticleSystem.k_pairFlags)
+		{
+			for (var k = 0; k < this.m_contactCount; k++)
+			{
+				var contact = this.m_contactBuffer[k];
+				var a = contact.indexA;
+				var b = contact.indexB;
+				if (a > b)
+				{
+					var oa = a;
+					a = b;
+					b = oa;
+				}
+				if (groupA.m_firstIndex <= a && a < groupA.m_lastIndex &&
+					groupB.m_firstIndex <= b && b < groupB.m_lastIndex)
+				{
+					if (this.m_pairCount >= this.m_pairCapacity)
+					{
+						var oldCapacity = this.m_pairCapacity;
+						var newCapacity = this.m_pairCount ? 2 * this.m_pairCount : b2_minParticleBufferCapacity;
+						this.m_pairBuffer = this.ReallocateBuffer3(this.m_pairBuffer, oldCapacity, newCapacity);
+						this.m_pairCapacity = newCapacity;
+					}
+					var pair = this.m_pairBuffer[this.m_pairCount] = new b2ParticleSystem.Pair();
+					pair.indexA = a;
+					pair.indexB = b;
+					pair.flags = contact.flags;
+					pair.strength = b2Min(groupA.m_strength, groupB.m_strength);
+					pair.distance = b2Distance(this.m_positionBuffer.data[a], this.m_positionBuffer.data[b]);
+					this.m_pairCount++;
+				}
+			}
+		}
+		if (particleFlags & b2ParticleSystem.k_triadFlags)
+		{
+			var diagram = new b2VoronoiDiagram(groupB.m_lastIndex - groupA.m_firstIndex);
+			for (var i = groupA.m_firstIndex; i < groupB.m_lastIndex; i++)
+			{
+				if (!(this.m_flagsBuffer.data[i] & b2ParticleDef.b2_zombieParticle))
+				{
+					diagram.AddGenerator(this.m_positionBuffer.data[i], i);
+				}
+			}
+			diagram.Generate(this.GetParticleStride() / 2);
+			var callback = new JoinParticleGroupsCallback();
+			callback.system = this;
+			callback.groupA = groupA;
+			callback.groupB = groupB;
+			diagram.GetNodes(callback);
+		}
+
+		for (var i = groupB.m_firstIndex; i < groupB.m_lastIndex; i++)
+		{
+			this.m_groupBuffer[i] = groupA;
+		}
+		var groupFlags = groupA.m_groupFlags | groupB.m_groupFlags;
+		groupA.m_groupFlags = groupFlags;
+		groupA.m_lastIndex = groupB.m_lastIndex;
+		groupB.m_firstIndex = groupB.m_lastIndex;
+		this.DestroyParticleGroup(groupB);
+
+		if (groupFlags & b2ParticleDef.b2_solidParticleGroup)
+		{
+			this.ComputeDepthForGroup(groupA);
+		}
+	},
+
+	DestroyParticleGroup: function(group)
+	{
+
+		b2Assert(this.m_groupCount > 0);
+		b2Assert(group);
+
+
+		if (this.m_world.m_destructionListener)
+		{
+			this.m_world.m_destructionListener.SayGoodbye(group);
+		}
+
+		for (var i = group.m_firstIndex; i < group.m_lastIndex; i++)
+		{
+			this.m_groupBuffer[i] = null;
+		}
+
+		if (group.m_prev)
+		{
+			group.m_prev.m_next = group.m_next;
+		}
+		if (group.m_next)
+		{
+			group.m_next.m_prev = group.m_prev;
+		}
+		if (group == this.m_groupList)
+		{
+			this.m_groupList = group.m_next;
+		}
+
+		--this.m_groupCount;
+	},
+
+	ComputeDepthForGroup: function(group)
+	{
+		for (var i = group.m_firstIndex; i < group.m_lastIndex; i++)
+		{
+			this.m_accumulationBuffer[i] = 0;
+		}
+		for (var k = 0; k < this.m_contactCount; k++)
+		{
+			var contact = this.m_contactBuffer[k];
+			var a = contact.indexA;
+			var b = contact.indexB;
+			if (a >= group.m_firstIndex && a < group.m_lastIndex &&
+				b >= group.m_firstIndex && b < group.m_lastIndex)
+			{
+				var w = contact.weight;
+				this.m_accumulationBuffer[a] += w;
+				this.m_accumulationBuffer[b] += w;
+			}
+		}
+		this.m_depthBuffer = this.RequestParticleBuffer(this.m_depthBuffer);
+		for (var i = group.m_firstIndex; i < group.m_lastIndex; i++)
+		{
+			var w = this.m_accumulationBuffer[i];
+			this.m_depthBuffer[i] = w < 0.8 ? 0 : b2_maxFloat;
+		}
+		var interationCount = group.GetParticleCount();
+		for (var t = 0; t < interationCount; t++)
+		{
+			var updated = false;
+			for (var k = 0; k < this.m_contactCount; k++)
+			{
+				var contact = this.m_contactBuffer[k];
+				var a = contact.indexA;
+				var b = contact.indexB;
+				if (a >= group.m_firstIndex && a < group.m_lastIndex &&
+					b >= group.m_firstIndex && b < group.m_lastIndex)
+				{
+					var r = 1 - contact.weight;
+					var ap0 = this.m_depthBuffer[a];
+					var bp0 = this.m_depthBuffer[b];
+					var ap1 = bp0 + r;
+					var bp1 = ap0 + r;
+					if (ap0 > ap1)
+					{
+						ap0 = ap1;
+						updated = true;
+					}
+					if (bp0 > bp1)
+					{
+						bp0 = bp1;
+						updated = true;
+					}
+					this.m_depthBuffer[a] = ap0;
+					this.m_depthBuffer[b] = bp0;
+				}
+			}
+			if (!updated)
+			{
+				break;
+			}
+		}
+		for (var i = group.m_firstIndex; i < group.m_lastIndex; i++)
+		{
+			var p = this.m_depthBuffer[i];
+			if (p < b2_maxFloat)
+			{
+				p *= this.m_particleDiameter;
+			}
+			else
+			{
+				p = 0;
+			}
+			this.m_depthBuffer[i] = p;
+		}
+	},
+
+	AddContact: function(a, b)
+	{
+		var d = b2Vec2.Subtract(this.m_positionBuffer.data[b], this.m_positionBuffer.data[a]);
+		var d2 = b2Dot_v2_v2(d, d);
+		if (d2 < this.m_squaredDiameter)
+		{
+			if (this.m_contactCount >= this.m_contactCapacity)
+			{
+				var oldCapacity = this.m_contactCapacity;
+				var newCapacity = this.m_contactCount ? 2 * this.m_contactCount : b2_minParticleBufferCapacity;
+				this.m_contactBuffer = this.ReallocateBuffer3(this.m_contactBuffer, oldCapacity, newCapacity);
+				this.m_contactCapacity = newCapacity;
+			}
+			var invD = b2InvSqrt(d2);
+			var contact = this.m_contactBuffer[this.m_contactCount] = new b2ParticleContact();
+			contact.indexA = a;
+			contact.indexB = b;
+			contact.flags = this.m_flagsBuffer.data[a] | this.m_flagsBuffer.data[b];
+			contact.weight = 1 - d2 * invD * this.m_inverseDiameter;
+			contact.normal.Assign(b2Vec2.Multiply(invD, d));
+			this.m_contactCount++;
+		}
+	},
+
+	UpdateContacts: function(exceptZombie)
+	{
+		var beginProxy = 0;
+		var endProxy = this.m_proxyCount;
+		for (var proxyID = beginProxy; proxyID < endProxy; ++proxyID)
+		{
+			var proxy = this.m_proxyBuffer[proxyID];
+			var i = proxy.index;
+			var p = this.m_positionBuffer.data[i];
+			proxy.tag = computeTag(this.m_inverseDiameter * p.x, this.m_inverseDiameter * p.y);
+		}
+		this.m_proxyBuffer.qsort(beginProxy, endProxy, function(a, b) { return b2ParticleSystem.Proxy.LessThan_p_p(a, b); });
+		this.m_contactCount = 0;
+		for (var a = beginProxy, c = beginProxy; a < endProxy; a++)
+		{
+			var rightTag = computeRelativeTag(this.m_proxyBuffer[a].tag, 1, 0);
+			for (var b = a + 1; b < endProxy; b++)
+			{
+				if (rightTag < this.m_proxyBuffer[b].tag) break;
+				this.AddContact(this.m_proxyBuffer[a].index, this.m_proxyBuffer[b].index);
+			}
+			var bottomLeftTag = computeRelativeTag(this.m_proxyBuffer[a].tag, -1, 1);
+			for (; c < endProxy; c++)
+			{
+				if (bottomLeftTag <= this.m_proxyBuffer[c].tag) break;
+			}
+			var bottomRightTag = computeRelativeTag(this.m_proxyBuffer[a].tag, 1, 1);
+			for (var b = c; b < endProxy; b++)
+			{
+				if (bottomRightTag < this.m_proxyBuffer[b].tag) break;
+				this.AddContact(this.m_proxyBuffer[a].index, this.m_proxyBuffer[b].index);
+			}
+		}
+		if (exceptZombie)
+		{
+			/*b2ParticleContact* lastContact = std::remove_if(
+				m_contactBuffer, m_contactBuffer + m_contactCount,
+				b2ParticleContactIsZombie);
+			m_contactCount = (int32) (lastContact - m_contactBuffer);*/
+			this.m_contactCount = this.m_contactBuffer.collapse(b2ParticleContactIsZombie, this.m_contactCount);
+		}
+	},
+
+	UpdateBodyContacts: function()
+	{
+		var aabb = new b2AABB();
+		aabb.lowerBound.x = +b2_maxFloat;
+		aabb.lowerBound.y = +b2_maxFloat;
+		aabb.upperBound.x = -b2_maxFloat;
+		aabb.upperBound.y = -b2_maxFloat;
+		for (var i = 0; i < this.m_count; i++)
+		{
+			var p = this.m_positionBuffer.data[i];
+			aabb.lowerBound.Assign(b2Min_v2(aabb.lowerBound, p));
+			aabb.upperBound.Assign(b2Max_v2(aabb.upperBound, p));
+		}
+		aabb.lowerBound.x -= this.m_particleDiameter;
+		aabb.lowerBound.y -= this.m_particleDiameter;
+		aabb.upperBound.x += this.m_particleDiameter;
+		aabb.upperBound.y += this.m_particleDiameter;
+		this.m_bodyContactCount = 0;
+		function UpdateBodyContactsCallback(system)
+		{
+			this.m_system = system;
+		}
+
+		UpdateBodyContactsCallback.prototype =
+		{
+			ReportFixture: function(fixture)
+			{
+				if (fixture.IsSensor())
+				{
+					return true;
+				}
+				var shape = fixture.GetShape();
+				var b = fixture.GetBody();
+				var bp = b.GetWorldCenter();
+				var bm = b.GetMass();
+				var bI = b.GetInertia() - bm * b.GetLocalCenter().LengthSquared();
+				var invBm = bm > 0 ? 1 / bm : 0;
+				var invBI = bI > 0 ? 1 / bI : 0;
+				var childCount = shape.GetChildCount();
+				for (var childIndex = 0; childIndex < childCount; childIndex++)
+				{
+					var aabb = fixture.GetAABB(childIndex).Clone();
+					aabb.lowerBound.x -= this.m_system.m_particleDiameter;
+					aabb.lowerBound.y -= this.m_system.m_particleDiameter;
+					aabb.upperBound.x += this.m_system.m_particleDiameter;
+					aabb.upperBound.y += this.m_system.m_particleDiameter;
+					var beginProxy = 0;
+					var endProxy = this.m_system.m_proxyCount;
+
+					var firstProxy = this.m_system.m_proxyBuffer.lower_bound(
+						beginProxy, endProxy,
+						computeTag(
+							this.m_system.m_inverseDiameter * aabb.lowerBound.x,
+							this.m_system.m_inverseDiameter * aabb.lowerBound.y),
+						function(a, b) { return b2ParticleSystem.Proxy.LessThan_p_i(a, b); });
+
+					var lastProxy = this.m_system.m_proxyBuffer.upper_bound(
+						firstProxy, endProxy,
+						computeTag(
+							this.m_system.m_inverseDiameter * aabb.upperBound.x,
+							this.m_system.m_inverseDiameter * aabb.upperBound.y),
+						function(a, b) { return b2ParticleSystem.Proxy.LessThan_i_p(a, b); });
+
+					for (var proxy = firstProxy; proxy != lastProxy; ++proxy)
+					{
+						var actualProxy = this.m_system.m_proxyBuffer[proxy];
+						var a = actualProxy.index;
+						var ap = this.m_system.m_positionBuffer.data[a];
+						if (aabb.lowerBound.x <= ap.x && ap.x <= aabb.upperBound.x &&
+							aabb.lowerBound.y <= ap.y && ap.y <= aabb.upperBound.y)
+						{
+							var d = [0];
+							var n = new b2Vec2();
+							fixture.ComputeDistance(ap, d, n, childIndex);
+							if (d[0] < this.m_system.m_particleDiameter)
+							{
+								var invAm =
+									this.m_system.m_flagsBuffer.data[a] & b2ParticleDef.b2_wallParticle ?
+									0 : this.m_system.GetParticleInvMass();
+								var rp = b2Vec2.Subtract(ap, bp);
+								var rpn = b2Cross_v2_v2(rp, n);
+								if (this.m_system.m_bodyContactCount >= this.m_system.m_bodyContactCapacity)
+								{
+									var oldCapacity = this.m_system.m_bodyContactCapacity;
+									var newCapacity = this.m_system.m_bodyContactCount ? 2 * this.m_system.m_bodyContactCount : b2_minParticleBufferCapacity;
+									this.m_system.m_bodyContactBuffer = this.m_system.ReallocateBuffer3(this.m_system.m_bodyContactBuffer, oldCapacity, newCapacity);
+									this.m_system.m_bodyContactCapacity = newCapacity;
+								}
+								var contact = this.m_system.m_bodyContactBuffer[this.m_system.m_bodyContactCount] = new b2ParticleBodyContact();
+								contact.index = a;
+								contact.body = b;
+								contact.weight = 1 - d[0] * this.m_system.m_inverseDiameter;
+								contact.normal.Assign(n.Negate());
+								contact.mass = 1 / (invAm + invBm + invBI * rpn * rpn);
+								this.m_system.m_bodyContactCount++;
+							}
+						}
+					}
+				}
+				return true;
+			},
+
+			ReportParticle: function(i) { return false; }
+		};
+
+		var callback = new UpdateBodyContactsCallback(this);
+		this.m_world.QueryAABB(callback, aabb);
+	},
+
+	Solve: function(step)
+	{
+		++this.m_timestamp;
+		if (this.m_count == 0)
+		{
+			return;
+		}
+		this.m_allParticleFlags = 0;
+		for (var i = 0; i < this.m_count; i++)
+		{
+			this.m_allParticleFlags |= this.m_flagsBuffer.data[i];
+		}
+		if (this.m_allParticleFlags & b2ParticleDef.b2_zombieParticle)
+		{
+			this.SolveZombie();
+		}
+		this.m_allGroupFlags = 0;
+		for (var group = this.m_groupList; group; group = group.GetNext())
+		{
+			this.m_allGroupFlags |= group.m_groupFlags;
+		}
+		var gravity = b2Vec2.Multiply(step.dt * this.m_gravityScale, this.m_world.GetGravity());
+		var criticalVelocytySquared = this.GetCriticalVelocitySquared(step);
+		for (var i = 0; i < this.m_count; i++)
+		{
+			var v = this.m_velocityBuffer.data[i];
+			v.Add(gravity);
+			var v2 = b2Dot_v2_v2(v, v);
+			if (v2 > criticalVelocytySquared)
+			{
+				v.Multiply(b2Sqrt(criticalVelocytySquared / v2));
+			}
+		}
+		this.SolveCollision(step);
+		if (this.m_allGroupFlags & b2ParticleGroup.b2_rigidParticleGroup)
+		{
+			this.SolveRigid(step);
+		}
+		if (this.m_allParticleFlags & b2ParticleDef.b2_wallParticle)
+		{
+			this.SolveWall(step);
+		}
+		for (var i = 0; i < this.m_count; i++)
+		{
+			this.m_positionBuffer.data[i].Add(b2Vec2.Multiply(step.dt, this.m_velocityBuffer.data[i]));
+		}
+		this.UpdateBodyContacts();
+		this.UpdateContacts(false);
+		if (this.m_allParticleFlags & b2ParticleDef.b2_viscousParticle)
+		{
+			this.SolveViscous(step);
+		}
+		if (this.m_allParticleFlags & b2ParticleDef.b2_powderParticle)
+		{
+			this.SolvePowder(step);
+		}
+		if (this.m_allParticleFlags & b2ParticleDef.b2_tensileParticle)
+		{
+			this.SolveTensile(step);
+		}
+		if (this.m_allParticleFlags & b2ParticleDef.b2_elasticParticle)
+		{
+			this.SolveElastic(step);
+		}
+		if (this.m_allParticleFlags & b2ParticleDef.b2_springParticle)
+		{
+			this.SolveSpring(step);
+		}
+		if (this.m_allGroupFlags & b2ParticleGroup.b2_solidParticleGroup)
+		{
+			this.SolveSolid(step);
+		}
+		if (this.m_allParticleFlags & b2ParticleDef.b2_colorMixingParticle)
+		{
+			this.SolveColorMixing(step);
+		}
+		this.SolvePressure(step);
+		this.SolveDamping(step);
+	},
+
+	SolveCollision: function(step)
+	{
+		var aabb = new b2AABB();
+		aabb.lowerBound.x = +b2_maxFloat;
+		aabb.lowerBound.y = +b2_maxFloat;
+		aabb.upperBound.x = -b2_maxFloat;
+		aabb.upperBound.y = -b2_maxFloat;
+		for (var i = 0; i < this.m_count; i++)
+		{
+			var v = this.m_velocityBuffer.data[i];
+			var p1 = this.m_positionBuffer.data[i];
+			var p2 = b2Vec2.Add(p1, b2Vec2.Multiply(step.dt, v));
+			aabb.lowerBound = b2Min_v2(aabb.lowerBound, b2Min_v2(p1, p2));
+			aabb.upperBound = b2Max_v2(aabb.upperBound, b2Max_v2(p1, p2));
+		}
+
+		function SolveCollisionCallback(system, step)
+		{
+			this.m_system = system;
+			this.m_step = step;
+		}
+
+		SolveCollisionCallback.prototype =
+		{
+			ReportFixture: function(fixture)
+			{
+				if (fixture.IsSensor())
+				{
+					return true;
+				}
+				var shape = fixture.GetShape();
+				var body = fixture.GetBody();
+				var beginProxy = 0;
+				var endProxy = this.m_system.m_proxyCount;
+				var childCount = shape.GetChildCount();
+				for (var childIndex = 0; childIndex < childCount; childIndex++)
+				{
+					var aabb = fixture.GetAABB(childIndex).Clone();
+					aabb.lowerBound.x -= this.m_system.m_particleDiameter;
+					aabb.lowerBound.y -= this.m_system.m_particleDiameter;
+					aabb.upperBound.x += this.m_system.m_particleDiameter;
+					aabb.upperBound.y += this.m_system.m_particleDiameter;
+					var firstProxy = this.m_system.m_proxyBuffer.lower_bound(
+						beginProxy, endProxy,
+						computeTag(
+							this.m_system.m_inverseDiameter * aabb.lowerBound.x,
+							this.m_system.m_inverseDiameter * aabb.lowerBound.y),
+						function(a, b) { return b2ParticleSystem.Proxy.LessThan_p_i(a, b); });
+					var lastProxy = this.m_system.m_proxyBuffer.upper_bound(
+						firstProxy, endProxy,
+						computeTag(
+							this.m_system.m_inverseDiameter * aabb.upperBound.x,
+							this.m_system.m_inverseDiameter * aabb.upperBound.y),
+						function(a, b) { return b2ParticleSystem.Proxy.LessThan_i_p(a, b); });
+
+					for (var proxy = firstProxy; proxy != lastProxy; ++proxy)
+					{
+						var actualProxy = this.m_system.m_proxyBuffer[proxy];
+						var a = actualProxy.index;
+						var ap = this.m_system.m_positionBuffer.data[a];
+						if (aabb.lowerBound.x <= ap.x && ap.x <= aabb.upperBound.x &&
+							aabb.lowerBound.y <= ap.y && ap.y <= aabb.upperBound.y)
+						{
+							var av = this.m_system.m_velocityBuffer.data[a];
+							var output = new b2RayCastOutput();
+							var input = new b2RayCastInput();
+							input.p1 = b2Mul_t_v2(body.m_xf, b2MulT_t_v2(body.m_xf0, ap));
+							input.p2 = b2Vec2.Add(ap, b2Vec2.Multiply(this.m_step.dt, av));
+							input.maxFraction = 1;
+							if (fixture.RayCast(output, input, childIndex))
+							{
+								var p =
+									b2Vec2.Add(b2Vec2.Add(b2Vec2.Multiply((1 - output.fraction), input.p1),
+									b2Vec2.Multiply(output.fraction, input.p2)),
+									b2Vec2.Multiply(b2_linearSlop, output.normal));
+
+								var v = b2Vec2.Multiply(this.m_step.inv_dt, b2Vec2.Subtract(p, ap));
+								this.m_system.m_velocityBuffer.data[a].Assign(v);
+								var f = b2Vec2.Multiply(this.m_system.GetParticleMass(), b2Vec2.Subtract(av, v));
+								f = b2Vec2.Multiply(b2Dot_v2_v2(f, output.normal), output.normal);
+								body.ApplyLinearImpulse(f, p, true);
+							}
+						}
+					}
+				}
+				return true;
+			},
+
+			ReportParticle: function(i) { return false; }
+		};
+
+		var callback = new SolveCollisionCallback(this, step);
+		this.m_world.QueryAABB(callback, aabb);
+	},
+
+	SolvePressure: function(step)
+	{
+		// calculates the sum of contact-weights for each particle
+		// that means dimensionless density
+		for (var i = 0; i < this.m_count; i++)
+		{
+			this.m_accumulationBuffer[i] = 0;
+		}
+		for (var k = 0; k < this.m_bodyContactCount; k++)
+		{
+			var contact = this.m_bodyContactBuffer[k];
+			var a = contact.index;
+			var w = contact.weight;
+			this.m_accumulationBuffer[a] += w;
+		}
+		for (var k = 0; k < this.m_contactCount; k++)
+		{
+			var contact = this.m_contactBuffer[k];
+			var a = contact.indexA;
+			var b = contact.indexB;
+			var w = contact.weight;
+			this.m_accumulationBuffer[a] += w;
+			this.m_accumulationBuffer[b] += w;
+		}
+		// ignores powder particles
+		if (this.m_allParticleFlags & b2ParticleSystem.k_noPressureFlags)
+		{
+			for (var i = 0; i < this.m_count; i++)
+			{
+				if (this.m_flagsBuffer.data[i] & b2ParticleSystem.k_noPressureFlags)
+				{
+					this.m_accumulationBuffer[i] = 0;
+				}
+			}
+		}
+		// calculates pressure as a linear function of density
+		var pressurePerWeight = this.m_pressureStrength * this.GetCriticalPressure(step);
+		for (var i = 0; i < this.m_count; i++)
+		{
+			var w = this.m_accumulationBuffer[i];
+			var h = pressurePerWeight * b2Max(0.0, b2Min(w, b2_maxParticleWeight) - b2_minParticleWeight);
+			this.m_accumulationBuffer[i] = h;
+		}
+		// applies pressure between each particles in contact
+		var velocityPerPressure = step.dt / (this.m_density * this.m_particleDiameter);
+		for (var k = 0; k < this.m_bodyContactCount; k++)
+		{
+			var contact = this.m_bodyContactBuffer[k];
+			var a = contact.index;
+			var b = contact.body;
+			var w = contact.weight;
+			var m = contact.mass;
+			var n = contact.normal;
+			var p = this.m_positionBuffer.data[a];
+			var h = this.m_accumulationBuffer[a] + pressurePerWeight * w;
+			var f = b2Vec2.Multiply(velocityPerPressure * w * m * h, n);
+			this.m_velocityBuffer.data[a].Subtract(b2Vec2.Multiply(this.GetParticleInvMass(), f));
+			b.ApplyLinearImpulse(f, p, true);
+		}
+		for (var k = 0; k < this.m_contactCount; k++)
+		{
+			var contact = this.m_contactBuffer[k];
+			var a = contact.indexA;
+			var b = contact.indexB;
+			var w = contact.weight;
+			var n = contact.normal;
+			var h = this.m_accumulationBuffer[a] + this.m_accumulationBuffer[b];
+			var f = b2Vec2.Multiply(velocityPerPressure * w * h, n);
+			this.m_velocityBuffer.data[a].Subtract(f);
+			this.m_velocityBuffer.data[b].Add(f);
+		}
+	},
+
+	SolveDamping: function(step)
+	{
+		// reduces normal velocity of each contact
+		var damping = this.m_dampingStrength;
+		for (var k = 0; k < this.m_bodyContactCount; k++)
+		{
+			var contact = this.m_bodyContactBuffer[k];
+			var a = contact.index;
+			var b = contact.body;
+			var w = contact.weight;
+			var m = contact.mass;
+			var n = contact.normal;
+			var p = this.m_positionBuffer.data[a];
+			var v = b2Vec2.Subtract(b.GetLinearVelocityFromWorldPoint(p), this.m_velocityBuffer.data[a]);
+			var vn = b2Dot_v2_v2(v, n);
+			if (vn < 0)
+			{
+				var f = b2Vec2.Multiply(damping * w * m * vn, n);
+				this.m_velocityBuffer.data[a].Add(b2Vec2.Multiply(this.GetParticleInvMass(), f));
+				b.ApplyLinearImpulse(f.Negate(), p, true);
+			}
+		}
+		for (var k = 0; k < this.m_contactCount; k++)
+		{
+			var contact = this.m_contactBuffer[k];
+			var a = contact.indexA;
+			var b = contact.indexB;
+			var w = contact.weight;
+			var n = contact.normal;
+			var v = b2Vec2.Subtract(this.m_velocityBuffer.data[b], this.m_velocityBuffer.data[a]);
+			var vn = b2Dot_v2_v2(v, n);
+			if (vn < 0)
+			{
+				var f = b2Vec2.Multiply(damping * w * vn, n);
+				this.m_velocityBuffer.data[a].Add(f);
+				this.m_velocityBuffer.data[b].Subtract(f);
+			}
+		}
+	},
+
+	SolveWall: function(step)
+	{
+		for (var i = 0; i < this.m_count; i++)
+		{
+			if (this.m_flagsBuffer.data[i] & b2ParticleDef.b2_wallParticle)
+			{
+				this.m_velocityBuffer.data[i].SetZero();
+			}
+		}
+	},
+
+	SolveRigid: function(step)
+	{
+		for (var group = this.m_groupList; group; group = group.GetNext())
+		{
+			if (group.m_groupFlags & b2ParticleGroup.b2_rigidParticleGroup)
+			{
+				group.UpdateStatistics();
+				var rotation = new b2Rot(step.dt * group.m_angularVelocity);
+				var transform = new b2Transform(
+					b2Vec2.Add(group.m_center, b2Vec2.Subtract(b2Vec2.Multiply(step.dt, group.m_linearVelocity), b2Mul_r_v2(rotation, group.m_center))),
+					rotation);
+				group.m_transform = b2Mul_t_t(transform, group.m_transform);
+				var velocityTransform = new b2Transform();
+				velocityTransform.p.x = step.inv_dt * transform.p.x;
+				velocityTransform.p.y = step.inv_dt * transform.p.y;
+				velocityTransform.q.s = step.inv_dt * transform.q.s;
+				velocityTransform.q.c = step.inv_dt * (transform.q.c - 1);
+				for (var i = group.m_firstIndex; i < group.m_lastIndex; i++)
+				{
+					this.m_velocityBuffer.data[i].Assign(b2Mul_t_v2(velocityTransform, this.m_positionBuffer.data[i]));
+				}
+			}
+		}
+	},
+
+	SolveElastic: function(step)
+	{
+		var elasticStrength = step.inv_dt * this.m_elasticStrength;
+		for (var k = 0; k < this.m_triadCount; k++)
+		{
+			var triad = this.m_triadBuffer[k];
+			if (triad.flags & b2ParticleDef.b2_elasticParticle)
+			{
+				var a = triad.indexA;
+				var b = triad.indexB;
+				var c = triad.indexC;
+				var oa = triad.pa;
+				var ob = triad.pb;
+				var oc = triad.pc;
+				var pa = this.m_positionBuffer.data[a];
+				var pb = this.m_positionBuffer.data[b];
+				var pc = this.m_positionBuffer.data[c];
+				var p = b2Vec2.Multiply(1 / 3, b2Vec2.Add(pa, b2Vec2.Add(pb, pc)));
+				var r = new b2Rot();
+				r.s = b2Cross_v2_v2(oa, pa) + b2Cross_v2_v2(ob, pb) + b2Cross_v2_v2(oc, pc);
+				r.c = b2Dot_v2_v2(oa, pa) + b2Dot_v2_v2(ob, pb) + b2Dot_v2_v2(oc, pc);
+				var r2 = r.s * r.s + r.c * r.c;
+				var invR = b2InvSqrt(r2);
+				r.s *= invR;
+				r.c *= invR;
+				var strength = elasticStrength * triad.strength;
+				this.m_velocityBuffer.data[a].Add(b2Vec2.Multiply(strength, (b2Vec2.Subtract(b2Mul(r, oa), (b2Vec2.Subtract(pa, p))))));
+				this.m_velocityBuffer.data[b].Add(b2Vec2.Multiply(strength, (b2Vec2.Subtract(b2Mul(r, ob), (b2Vec2.Subtract(pb, p))))));
+				this.m_velocityBuffer.data[c].Add(b2Vec2.Multiply(strength, (b2Vec2.Subtract(b2Mul(r, oc), (b2Vec2.Subtract(pc, p))))));
+			}
+		}
+	},
+
+	SolveSpring: function(step)
+	{
+		var springStrength = step.inv_dt * this.m_springStrength;
+		for (var k = 0; k < this.m_pairCount; k++)
+		{
+			var pair = this.m_pairBuffer[k];
+			if (pair.flags & b2ParticleDef.b2_springParticle)
+			{
+				var a = pair.indexA;
+				var b = pair.indexB;
+				var d = b2Vec2.Subtract(this.m_positionBuffer.data[b], this.m_positionBuffer.data[a]);
+				var r0 = pair.distance;
+				var r1 = d.Length();
+				var strength = springStrength * pair.strength;
+				var f = b2Vec2.Multiply(strength * (r0 - r1) / r1, d);
+				this.m_velocityBuffer.data[a].Subtract(f);
+				this.m_velocityBuffer.data[b].Add(f);
+			}
+		}
+	},
+
+	SolveTensile: function(step)
+	{
+		this.m_accumulation2Buffer = this.RequestParticleBuffer(this.m_accumulation2Buffer);
+		for (var i = 0; i < this.m_count; i++)
+		{
+			this.m_accumulationBuffer[i] = 0;
+			this.m_accumulation2Buffer[i] = new b2Vec2();
+		}
+		for (var k = 0; k < this.m_contactCount; k++)
+		{
+			var contact = this.m_contactBuffer[k];
+			if (contact.flags & b2ParticleDef.b2_tensileParticle)
+			{
+				var a = contact.indexA;
+				var b = contact.indexB;
+				var w = contact.weight;
+				var n = contact.normal;
+				this.m_accumulationBuffer[a] += w;
+				this.m_accumulationBuffer[b] += w;
+				this.m_accumulation2Buffer[a].Subtract(b2Vec2.Multiply((1 - w) * w, n));
+				this.m_accumulation2Buffer[b].Add(b2Vec2.Multiply((1 - w) * w, n));
+			}
+		}
+		var strengthA = this.m_surfaceTensionStrengthA * this.GetCriticalVelocity(step);
+		var strengthB = this.m_surfaceTensionStrengthB * this.GetCriticalVelocity(step);
+		for (var k = 0; k < this.m_contactCount; k++)
+		{
+			var contact = this.m_contactBuffer[k];
+			if (contact.flags & b2ParticleDef.b2_tensileParticle)
+			{
+				var a = contact.indexA;
+				var b = contact.indexB;
+				var w = contact.weight;
+				var n = contact.normal;
+				var h = this.m_accumulationBuffer[a] + this.m_accumulationBuffer[b];
+				var s = b2Vec2.Subtract(this.m_accumulation2Buffer[b], this.m_accumulation2Buffer[a]);
+				var fn = (strengthA * (h - 2) + strengthB * b2Dot_v2_v2(s, n)) * w;
+				var f = b2Vec2.Multiply(fn, n);
+				this.m_velocityBuffer.data[a].Subtract(f);
+				this.m_velocityBuffer.data[b].Add(f);
+			}
+		}
+	},
+
+	SolveViscous: function(step)
+	{
+		var viscousStrength = this.m_viscousStrength;
+		for (var k = 0; k < this.m_bodyContactCount; k++)
+		{
+			var contact = this.m_bodyContactBuffer[k];
+			var a = contact.index;
+			if (this.m_flagsBuffer.data[a] & b2ParticleDef.b2_viscousParticle)
+			{
+				var b = contact.body;
+				var w = contact.weight;
+				var m = contact.mass;
+				var p = this.m_positionBuffer.data[a];
+				var v = b2Vec2.Subtract(b.GetLinearVelocityFromWorldPoint(p), this.m_velocityBuffer.data[a]);
+				var f = b2Vec2.Multiply(viscousStrength * m * w, v);
+				this.m_velocityBuffer.data[a].Add(b2Vec2.Multiply(this.GetParticleInvMass(), f));
+				b.ApplyLinearImpulse(f.Negate(), p, true);
+			}
+		}
+		for (var k = 0; k < this.m_contactCount; k++)
+		{
+			var contact = this.m_contactBuffer[k];
+			if (contact.flags & b2ParticleDef.b2_viscousParticle)
+			{
+				var a = contact.indexA;
+				var b = contact.indexB;
+				var w = contact.weight;
+				var v = b2Vec2.Subtract(this.m_velocityBuffer.data[b], this.m_velocityBuffer.data[a]);
+				var f = b2Vec2.Multiply(viscousStrength * w, v);
+				this.m_velocityBuffer.data[a].Add(f);
+				this.m_velocityBuffer.data[b].Subtract(f);
+			}
+		}
+	},
+
+	SolvePowder: function(step)
+	{
+		var powderStrength = this.m_powderStrength * this.GetCriticalVelocity(step);
+		var minWeight = 1.0 - b2_particleStride;
+		for (var k = 0; k < this.m_bodyContactCount; k++)
+		{
+			var contact = this.m_bodyContactBuffer[k];
+			var a = contact.index;
+			if (this.m_flagsBuffer.data[a] & b2ParticleDef.b2_powderParticle)
+			{
+				var w = contact.weight;
+				if (w > minWeight)
+				{
+					var b = contact.body;
+					var m = contact.mass;
+					var p = this.m_positionBuffer.data[a];
+					var n = contact.normal;
+					var f = b2Vec2.Multiply(powderStrength * m * (w - minWeight), n);
+					this.m_velocityBuffer.data[a].Subtract(b2Vec2.Multiply(this.GetParticleInvMass(), f));
+					b.ApplyLinearImpulse(f, p, true);
+				}
+			}
+		}
+		for (var k = 0; k < this.m_contactCount; k++)
+		{
+			var contact = this.m_contactBuffer[k];
+			if (contact.flags & b2ParticleDef.b2_powderParticle)
+			{
+				var w = contact.weight;
+				if (w > minWeight)
+				{
+					var a = contact.indexA;
+					var b = contact.indexB;
+					var n = contact.normal;
+					var f = b2Vec2.Multiply(powderStrength * (w - minWeight), n);
+					this.m_velocityBuffer.data[a].Subtract(f);
+					this.m_velocityBuffer.data[b].Add(f);
+				}
+			}
+		}
+	},
+
+	SolveSolid: function(step)
+	{
+		// applies extra repulsive force from solid particle groups
+		this.m_depthBuffer = this.RequestParticleBuffer(this.m_depthBuffer);
+		var ejectionStrength = step.inv_dt * this.m_ejectionStrength;
+		for (var k = 0; k < this.m_contactCount; k++)
+		{
+			var contact = this.m_contactBuffer[k];
+			var a = contact.indexA;
+			var b = contact.indexB;
+			if (this.m_groupBuffer[a] != this.m_groupBuffer[b])
+			{
+				var w = contact.weight;
+				var n = contact.normal;
+				var h = this.m_depthBuffer[a] + this.m_depthBuffer[b];
+				var f = b2Vec2.Multiply(ejectionStrength * h * w, n);
+				this.m_velocityBuffer.data[a].Subtract(f);
+				this.m_velocityBuffer.data[b].Add(f);
+			}
+		}
+	},
+
+	SolveColorMixing: function(step)
+	{
+		// mixes color between contacting particles
+		this.m_colorBuffer.data = this.RequestParticleBuffer(this.m_colorBuffer.data);
+		var colorMixing256 = Math.floor(256 * this.m_colorMixingStrength);
+		for (var k = 0; k < this.m_contactCount; k++)
+		{
+			var contact = this.m_contactBuffer[k];
+			var a = contact.indexA;
+			var b = contact.indexB;
+			if (this.m_flagsBuffer.data[a] & this.m_flagsBuffer.data[b] & b2ParticleDef.b2_colorMixingParticle)
+			{
+				var colorA = this.m_colorBuffer.data[a];
+				var colorB = this.m_colorBuffer.data[b];
+				var dr = (colorMixing256 * (colorB.r - colorA.r)) >> 8;
+				var dg = (colorMixing256 * (colorB.g - colorA.g)) >> 8;
+				var db = (colorMixing256 * (colorB.b - colorA.b)) >> 8;
+				var da = (colorMixing256 * (colorB.a - colorA.a)) >> 8;
+				colorA.r += dr;
+				colorA.g += dg;
+				colorA.b += db;
+				colorA.a += da;
+				colorB.r -= dr;
+				colorB.g -= dg;
+				colorB.b -= db;
+				colorB.a -= da;
+			}
+		}
+	},
+
+	SolveZombie: function()
+	{
+		// removes particles with zombie flag
+		var newCount = 0;
+		var newIndices = new Array(this.m_count);
+		for (var i = 0; i < this.m_count; i++)
+		{
+			var flags = this.m_flagsBuffer.data[i];
+			if (flags & b2ParticleDef.b2_zombieParticle)
+			{
+				var destructionListener = this.m_world.m_destructionListener;
+				if ((flags & b2ParticleDef.b2_destructionListener) && destructionListener)
+				{
+					destructionListener.SayGoodbyeParticle(i);
+				}
+				newIndices[i] = b2ParticleSystem.b2_invalidParticleIndex;
+			}
+			else
+			{
+				newIndices[i] = newCount;
+				if (i != newCount)
+				{
+					this.m_flagsBuffer.data[newCount] = this.m_flagsBuffer.data[i];
+					this.m_positionBuffer.data[newCount] = this.m_positionBuffer.data[i];
+					this.m_velocityBuffer.data[newCount] = this.m_velocityBuffer.data[i];
+					this.m_groupBuffer[newCount] = this.m_groupBuffer[i];
+					if (this.m_depthBuffer)
+					{
+						this.m_depthBuffer[newCount] = this.m_depthBuffer[i];
+					}
+					if (this.m_colorBuffer.data)
+					{
+						this.m_colorBuffer.data[newCount] = this.m_colorBuffer.data[i];
+					}
+					if (this.m_userDataBuffer.data)
+					{
+						this.m_userDataBuffer.data[newCount] = this.m_userDataBuffer.data[i];
+					}
+				}
+				newCount++;
+			}
+		}
+
+		// predicate functions
+		var Test =
+		{
+			IsProxyInvalid: function(proxy)
+			{
+				return proxy.index < 0;
+			},
+			IsContactInvalid: function(contact)
+			{
+				return contact.indexA < 0 || contact.indexB < 0;
+			},
+			IsBodyContactInvalid: function(contact)
+			{
+				return contact.index < 0;
+			},
+			IsPairInvalid: function(pair)
+			{
+				return pair.indexA < 0 || pair.indexB < 0;
+			},
+			IsTriadInvalid: function(triad)
+			{
+				return triad.indexA < 0 || triad.indexB < 0 || triad.indexC < 0;
+			}
+		};
+
+		// update proxies
+		for (var k = 0; k < this.m_proxyCount; k++)
+		{
+			var proxy = this.m_proxyBuffer[k];
+			proxy.index = newIndices[proxy.index];
+		}
+		/*Proxy* lastProxy = std::remove_if(
+			m_proxyBuffer, m_proxyBuffer + m_proxyCount,
+			Test::IsProxyInvalid);
+		m_proxyCount = (int32) (lastProxy - m_proxyBuffer);*/
+		this.m_proxyCount = this.m_proxyBuffer.collapse(Test.IsProxyInvalid, this.m_proxyCount);
+
+		// update contacts
+		for (var k = 0; k < this.m_contactCount; k++)
+		{
+			var contact = this.m_contactBuffer[k];
+			contact.indexA = newIndices[contact.indexA];
+			contact.indexB = newIndices[contact.indexB];
+		}
+		/*b2ParticleContact* lastContact = std::remove_if(
+			m_contactBuffer, m_contactBuffer + m_contactCount,
+			Test::IsContactInvalid);
+		m_contactCount = (int32) (lastContact - m_contactBuffer);*/
+		this.m_contactCount = this.m_contactBuffer.collapse(Test.IsContactInvalid, this.m_contactCount);
+
+		// update particle-body contacts
+		for (var k = 0; k < this.m_bodyContactCount; k++)
+		{
+			var contact = this.m_bodyContactBuffer[k];
+			contact.index = newIndices[contact.index];
+		}
+		/*b2ParticleBodyContact* lastBodyContact = std::remove_if(
+			m_bodyContactBuffer, m_bodyContactBuffer + m_bodyContactCount,
+			Test::IsBodyContactInvalid);
+		m_bodyContactCount = (int32) (lastBodyContact - m_bodyContactBuffer);*/
+		this.m_bodyContactCount = this.m_bodyContactBuffer.collapse(Test.IsBodyContactInvalid, this.m_bodyContactCount);
+
+		// update pairs
+		for (var k = 0; k < this.m_pairCount; k++)
+		{
+			var pair = this.m_pairBuffer[k];
+			pair.indexA = newIndices[pair.indexA];
+			pair.indexB = newIndices[pair.indexB];
+		}
+		/*Pair* lastPair = std::remove_if(
+			m_pairBuffer, m_pairBuffer + m_pairCount, Test::IsPairInvalid);
+		m_pairCount = (int32) (lastPair - m_pairBuffer);*/
+		this.m_pairCount = this.m_pairBuffer.collapse(Test.IsPairInvalid, this.m_pairCount);
+
+		// update triads
+		for (var k = 0; k < this.m_triadCount; k++)
+		{
+			var triad = this.m_triadBuffer[k];
+			triad.indexA = newIndices[triad.indexA];
+			triad.indexB = newIndices[triad.indexB];
+			triad.indexC = newIndices[triad.indexC];
+		}
+		/*Triad* lastTriad = std::remove_if(
+			m_triadBuffer, m_triadBuffer + m_triadCount,
+			Test::IsTriadInvalid);
+		m_triadCount = (int32) (lastTriad - m_triadBuffer);*/
+		this.m_triadCount = this.m_triadBuffer.collapse(Test.IsTriadInvalid, this.m_triadCount);
+
+		// update groups
+		for (var group = this.m_groupList; group; group = group.GetNext())
+		{
+			var firstIndex = newCount;
+			var lastIndex = 0;
+			var modified = false;
+			for (var i = group.m_firstIndex; i < group.m_lastIndex; i++)
+			{
+				var j = newIndices[i];
+				if (j >= 0) {
+					firstIndex = b2Min(firstIndex, j);
+					lastIndex = b2Max(lastIndex, j + 1);
+				} else {
+					modified = true;
+				}
+			}
+			if (firstIndex < lastIndex)
+			{
+				group.m_firstIndex = firstIndex;
+				group.m_lastIndex = lastIndex;
+				if (modified)
+				{
+					if (group.m_groupFlags & b2ParticleGroup.b2_rigidParticleGroup)
+					{
+						group.m_toBeSplit = true;
+					}
+				}
+			}
+			else
+			{
+				group.m_firstIndex = 0;
+				group.m_lastIndex = 0;
+				if (group.m_destroyAutomatically)
+				{
+					group.m_toBeDestroyed = true;
+				}
+			}
+		}
+
+		// update particle count
+		this.m_count = newCount;
+
+		// destroy bodies with no particles
+		for (var group = this.m_groupList; group;)
+		{
+			var next = group.GetNext();
+			if (group.m_toBeDestroyed)
+			{
+				this.DestroyParticleGroup(group);
+			}
+			else if (group.m_toBeSplit)
+			{
+				// TODO: split the group
+			}
+			group = next;
+		}
+	},
+
+	RotateBuffer: function(start, mid, end)
+	{
+		// move the particles assigned to the given group toward the end of array
+		if (start == mid || mid == end)
+		{
+			return;
+		}
+
+		function newIndices(i)
+		{
+			if (i < start)
+			{
+				return i;
+			}
+			else if (i < mid)
+			{
+				return i + end - mid;
+			}
+			else if (i < end)
+			{
+				return i + start - mid;
+			}
+			else
+			{
+				return i;
+			}
+		}
+
+		//std.rotate(m_flagsBuffer.data + start, m_flagsBuffer.data + mid, m_flagsBuffer.data + end);
+		this.m_flagsBuffer.data.rotate(start, mid, end);
+		//std.rotate(m_positionBuffer.data + start, m_positionBuffer.data + mid, m_positionBuffer.data + end);
+		this.m_positionBuffer.data.rotate(start, mid, end);
+		//std.rotate(m_velocityBuffer.data + start, m_velocityBuffer.data + mid, m_velocityBuffer.data + end);
+		this.m_velocityBuffer.data.rotate(start, mid, end);
+		//std.rotate(m_groupBuffer + start, m_groupBuffer + mid, m_groupBuffer + end);
+		this.m_groupBuffer.rotate(start, mid, end);
+
+		if (this.m_depthBuffer)
+		{
+			//std.rotate(m_depthBuffer + start, m_depthBuffer + mid, m_depthBuffer + end);
+			this.m_depthBuffer.rotate(start, mid, end);
+		}
+		if (this.m_colorBuffer.data)
+		{
+			//std.rotate(m_colorBuffer.data + start, m_colorBuffer.data + mid, m_colorBuffer.data + end);
+			this.m_colorBuffer.data.rotate(start, mid, end);
+		}
+		if (this.m_userDataBuffer.data)
+		{
+			//std.rotate(m_userDataBuffer.data + start, m_userDataBuffer.data + mid, m_userDataBuffer.data + end);
+			this.m_userDataBuffer.data.rotate(start, mid, end);
+		}
+
+		// update proxies
+		for (var k = 0; k < this.m_proxyCount; k++)
+		{
+			var proxy = this.m_proxyBuffer[k];
+			proxy.index = newIndices(proxy.index);
+		}
+
+		// update contacts
+		for (var k = 0; k < this.m_contactCount; k++)
+		{
+			var contact = this.m_contactBuffer[k];
+			contact.indexA = newIndices(contact.indexA);
+			contact.indexB = newIndices(contact.indexB);
+		}
+
+		// update particle-body contacts
+		for (var k = 0; k < this.m_bodyContactCount; k++)
+		{
+			var contact = this.m_bodyContactBuffer[k];
+			contact.index = newIndices(contact.index);
+		}
+
+		// update pairs
+		for (var k = 0; k < this.m_pairCount; k++)
+		{
+			var pair = this.m_pairBuffer[k];
+			pair.indexA = newIndices(pair.indexA);
+			pair.indexB = newIndices(pair.indexB);
+		}
+
+		// update triads
+		for (var k = 0; k < this.m_triadCount; k++)
+		{
+			var triad = this.m_triadBuffer[k];
+			triad.indexA = newIndices(triad.indexA);
+			triad.indexB = newIndices(triad.indexB);
+			triad.indexC = newIndices(triad.indexC);
+		}
+
+		// update groups
+		for (var group = this.m_groupList; group; group = group.GetNext())
+		{
+			group.m_firstIndex = newIndices(group.m_firstIndex);
+			group.m_lastIndex = newIndices(group.m_lastIndex - 1) + 1;
+		}
+	},
+
+	SetParticleRadius: function(radius)
+	{
+		this.m_particleDiameter = 2 * radius;
+		this.m_squaredDiameter = this.m_particleDiameter * this.m_particleDiameter;
+		this.m_inverseDiameter = 1 / this.m_particleDiameter;
+	},
+
+	SetParticleDensity: function(density)
+	{
+		this.m_density = density;
+		this.m_inverseDensity =  1 / this.m_density;
+	},
+
+	GetParticleDensity: function()
+	{
+		return this.m_density;
+	},
+
+	SetParticleGravityScale: function(gravityScale)
+	{
+		this.m_gravityScale = gravityScale;
+	},
+
+	GetParticleGravityScale: function()
+	{
+		return this.m_gravityScale;
+	},
+
+	SetParticleDamping: function(damping)
+	{
+		this.m_dampingStrength = damping;
+	},
+
+	GetParticleDamping: function()
+	{
+		return this.m_dampingStrength;
+	},
+
+	GetParticleRadius: function()
+	{
+		return this.m_particleDiameter / 2;
+	},
+
+	GetCriticalVelocity: function(step)
+	{
+		return this.m_particleDiameter * step.inv_dt;
+	},
+
+	GetCriticalVelocitySquared: function(step)
+	{
+		var velocity = this.GetCriticalVelocity(step);
+		return velocity * velocity;
+	},
+
+	GetCriticalPressure: function(step)
+	{
+		return this.m_density * this.GetCriticalVelocitySquared(step);
+	},
+
+	GetParticleStride: function()
+	{
+		return b2_particleStride * this.m_particleDiameter;
+	},
+
+	GetParticleMass: function()
+	{
+		var stride = this.GetParticleStride();
+		return this.m_density * stride * stride;
+	},
+
+	GetParticleInvMass: function()
+	{
+		return 1.777777 * this.m_inverseDensity * this.m_inverseDiameter * this.m_inverseDiameter;
+	},
+
+	GetParticleFlagsBuffer: function()
+	{
+		return this.m_flagsBuffer.data;
+	},
+
+	GetParticlePositionBuffer: function()
+	{
+		return this.m_positionBuffer.data;
+	},
+
+	GetParticleVelocityBuffer: function()
+	{
+		return this.m_velocityBuffer.data;
+	},
+
+	GetParticleColorBuffer: function()
+	{
+		this.m_colorBuffer.data = this.RequestParticleBuffer(this.m_colorBuffer.data);
+		return this.m_colorBuffer.data;
+	},
+
+	GetParticleUserDataBuffer: function()
+	{
+		this.m_userDataBuffer.data = this.RequestParticleBuffer(this.m_userDataBuffer.data);
+		return this.m_userDataBuffer.data;
+	},
+
+	GetParticleMaxCount: function()
+	{
+		return this.m_maxCount;
+	},
+
+	SetParticleMaxCount: function(count)
+	{
+
+		b2Assert(this.m_count <= count);
+
+		this.m_maxCount = count;
+	},
+
+	GetParticleGroupBuffer: function()
+	{
+		return this.m_groupBuffer;
+	},
+
+	SetParticleBuffer: function(buffer, newData, newCapacity)
+	{
+
+		b2Assert((newData && newCapacity) || (!newData && !newCapacity));
+
+		if (!buffer.userSuppliedCapacity)
+		{
+			//this.m_world.m_blockAllocator.Free(buffer->data, sizeof(T) * m_internalAllocatedCapacity);
+		}
+		buffer.data = newData;
+		buffer.userSuppliedCapacity = newCapacity;
+	},
+
+	SetParticleFlagsBuffer: function(buffer, capacity)
+	{
+		this.SetParticleBuffer(this.m_flagsBuffer, buffer, capacity);
+	},
+
+	SetParticlePositionBuffer: function(buffer, capacity)
+	{
+		this.SetParticleBuffer(this.m_positionBuffer, buffer, capacity);
+	},
+
+	SetParticleVelocityBuffer: function(buffer, capacity)
+	{
+		this.SetParticleBuffer(this.m_velocityBuffer, buffer, capacity);
+	},
+
+	SetParticleColorBuffer: function(buffer, capacity)
+	{
+		this.SetParticleBuffer(this.m_colorBuffer, buffer, capacity);
+	},
+
+	SetParticleUserDataBuffer: function(buffer, capacity)
+	{
+		this.SetParticleBuffer(this.m_userDataBuffer, buffer, capacity);
+	},
+
+	QueryAABB: function(callback, aabb)
+	{
+		if (this.m_proxyCount == 0)
+		{
+			return;
+		}
+		var beginProxy = 0;
+		var endProxy = this.m_proxyCount;
+		/*Proxy* firstProxy = std::lower_bound(
+			beginProxy, endProxy,
+			computeTag(
+				m_inverseDiameter * aabb.lowerBound.x,
+				m_inverseDiameter * aabb.lowerBound.y));*/
+		var firstProxy = this.m_proxyBuffer.lower_bound(
+			beginProxy, endProxy,
+			computeTag(
+				this.m_inverseDiameter * aabb.lowerBound.x,
+				this.m_inverseDiameter * aabb.lowerBound.y),
+			function(a, b) { return b2ParticleSystem.Proxy.LessThan_p_i(a, b); });
+		/*Proxy* lastProxy = std::upper_bound(
+			firstProxy, endProxy,
+			computeTag(
+				m_inverseDiameter * aabb.upperBound.x,
+				m_inverseDiameter * aabb.upperBound.y));*/
+		var lastProxy = this.m_proxyBuffer.upper_bound(
+			firstProxy, endProxy,
+			computeTag(
+				this.m_inverseDiameter * aabb.upperBound.x,
+				this.m_inverseDiameter * aabb.upperBound.y),
+			function(a, b) { return b2ParticleSystem.Proxy.LessThan_i_p(a, b); });
+
+		for (var proxy = firstProxy; proxy < lastProxy; ++proxy)
+		{
+			var actualProxy = this.m_proxyBuffer[proxy];
+			var i = actualProxy.index;
+			var p = this.m_positionBuffer.data[i];
+			if (aabb.lowerBound.x < p.x && p.x < aabb.upperBound.x &&
+				aabb.lowerBound.y < p.y && p.y < aabb.upperBound.y)
+			{
+				if (!callback.ReportParticle(i))
+				{
+					break;
+				}
+			}
+		}
+	},
+
+	RayCast: function(callback, point1, point2)
+	{
+		if (this.m_proxyCount == 0)
+		{
+			return;
+		}
+		var beginProxy = 0;
+		var endProxy = this.m_proxyCount;
+		/*Proxy* firstProxy = std::lower_bound(
+			beginProxy, endProxy,
+			computeTag(
+				m_inverseDiameter * b2Min(point1.x, point2.x) - 1,
+				m_inverseDiameter * b2Min(point1.y, point2.y) - 1));*/
+		var firstProxy = this.m_proxyBuffer.lower_bound(
+			beginProxy, endProxy,
+			computeTag(
+				this.m_inverseDiameter * b2Min(point1.x, point2.x) - 1,
+				this.m_inverseDiameter * b2Min(point1.y, point2.y) - 1),
+			function(a, b) { return b2ParticleSystem.Proxy.LessThan_p_i(a, b); });
+		/*Proxy* lastProxy = std::upper_bound(
+			firstProxy, endProxy,
+			computeTag(
+				m_inverseDiameter * b2Max(point1.x, point2.x) + 1,
+				m_inverseDiameter * b2Max(point1.y, point2.y) + 1));*/
+		var lastProxy = this.m_proxyBuffer.upper_bound(
+			beginProxy, endProxy,
+			computeTag(
+				this.m_inverseDiameter * b2Max(point1.x, point2.x) + 1,
+				this.m_inverseDiameter * b2Max(point1.y, point2.y) + 1),
+			function(a, b) { return b2ParticleSystem.Proxy.LessThan_i_p(a, b); });
+		var fraction = 1;
+		// solving the following equation:
+		// ((1-t)*point1+t*point2-position)^2=diameter^2
+		// where t is a potential fraction
+		var v = b2Vec2.Subtract(point2, point1);
+		var v2 = b2Dot_v2_v2(v, v);
+		for (var proxy = firstProxy; proxy < lastProxy; ++proxy)
+		{
+			var actualProxy = this.m_proxyBuffer[proxy];
+			var i = actualProxy.index;
+			var p = b2Vec2.Subtract(point1, this.m_positionBuffer.data[i]);
+			var pv = b2Dot_v2_v2(p, v);
+			var p2 = b2Dot_v2_v2(p, p);
+			var determinant = pv * pv - v2 * (p2 - this.m_squaredDiameter);
+			if (determinant >= 0)
+			{
+				var sqrtDeterminant = b2Sqrt(determinant);
+				// find a solution between 0 and fraction
+				var t = (-pv - sqrtDeterminant) / v2;
+				if (t > fraction)
+				{
+					continue;
+				}
+				if (t < 0)
+				{
+					t = (-pv + sqrtDeterminant) / v2;
+					if (t < 0 || t > fraction)
+					{
+						continue;
+					}
+				}
+				var n = b2Vec2.Add(p, b2Vec2.Subtract(t, v));
+				n.Normalize();
+				var f = callback.ReportParticle(i, b2Vec2.Add(point1, b2Vec2.Multiply(t, v)), n, t);
+				fraction = b2Min(fraction, f);
+				if (fraction <= 0)
+				{
+					break;
+				}
+			}
+		}
+	},
+
+	ComputeParticleCollisionEnergy: function()
+	{
+		var sum_v2 = 0;
+		for (var k = 0; k < this.m_contactCount; k++)
+		{
+			var contact = this.m_contactBuffer[k];
+			var a = contact.indexA;
+			var b = contact.indexB;
+			var n = contact.normal;
+			var v = b2Vec2.Subtract(this.m_velocityBuffer.data[b], this.m_velocityBuffer.data[a]);
+			var vn = b2Dot_v2_v2(v, n);
+			if (vn < 0)
+			{
+				sum_v2 += vn * vn;
+			}
+		}
+		return 0.5 * this.GetParticleMass() * sum_v2;
+	},
+
+	GetParticleGroupList: function()
+	{
+		return this.m_groupList;
+	},
+
+	GetParticleGroupCount: function()
+	{
+		return this.m_groupCount;
+	},
+
+	GetParticleCount: function()
+	{
+		return this.m_count;
+	}
+};
 
 
 
@@ -18066,7 +21074,9 @@ var b2RUBELoader = (function()
 
 
 
-var mappings = [{"trimmed":"version","name":"b2_version","def":b2_version},{"trimmed":"Vec2","name":"b2Vec2","def":b2Vec2},{"trimmed":"Vec3","name":"b2Vec3","def":b2Vec3},{"trimmed":"Mat22","name":"b2Mat22","def":b2Mat22},{"trimmed":"Mat33","name":"b2Mat33","def":b2Mat33},{"trimmed":"Rot","name":"b2Rot","def":b2Rot},{"trimmed":"Transform","name":"b2Transform","def":b2Transform},{"trimmed":"Sweep","name":"b2Sweep","def":b2Sweep},{"trimmed":"Dot_v2_v2","name":"b2Dot_v2_v2","def":b2Dot_v2_v2},{"trimmed":"Cross_v2_v2","name":"b2Cross_v2_v2","def":b2Cross_v2_v2},{"trimmed":"Cross_v2_f","name":"b2Cross_v2_f","def":b2Cross_v2_f},{"trimmed":"Cross_f_v2","name":"b2Cross_f_v2","def":b2Cross_f_v2},{"trimmed":"Mul_m22_v2","name":"b2Mul_m22_v2","def":b2Mul_m22_v2},{"trimmed":"MulT_m22_v2","name":"b2MulT_m22_v2","def":b2MulT_m22_v2},{"trimmed":"Distance","name":"b2Distance","def":b2Distance},{"trimmed":"DistanceSquared","name":"b2DistanceSquared","def":b2DistanceSquared},{"trimmed":"Dot_v3_v3","name":"b2Dot_v3_v3","def":b2Dot_v3_v3},{"trimmed":"Cross_v3_v3","name":"b2Cross_v3_v3","def":b2Cross_v3_v3},{"trimmed":"Mul_m22_m22","name":"b2Mul_m22_m22","def":b2Mul_m22_m22},{"trimmed":"MulT_m22_m22","name":"b2MulT_m22_m22","def":b2MulT_m22_m22},{"trimmed":"Mul_m33_v3","name":"b2Mul_m33_v3","def":b2Mul_m33_v3},{"trimmed":"Mul22_m33_v2","name":"b2Mul22_m33_v2","def":b2Mul22_m33_v2},{"trimmed":"Mul_r_r","name":"b2Mul_r_r","def":b2Mul_r_r},{"trimmed":"MulT_r_r","name":"b2MulT_r_r","def":b2MulT_r_r},{"trimmed":"Mul_r_v2","name":"b2Mul_r_v2","def":b2Mul_r_v2},{"trimmed":"MulT_r_v2","name":"b2MulT_r_v2","def":b2MulT_r_v2},{"trimmed":"Mul_t_v2","name":"b2Mul_t_v2","def":b2Mul_t_v2},{"trimmed":"Min_v2","name":"b2Min_v2","def":b2Min_v2},{"trimmed":"Max_v2","name":"b2Max_v2","def":b2Max_v2},{"trimmed":"Clamp","name":"b2Clamp","def":b2Clamp},{"trimmed":"MulT_t_v2","name":"b2MulT_t_v2","def":b2MulT_t_v2},{"trimmed":"Mul_t_t","name":"b2Mul_t_t","def":b2Mul_t_t},{"trimmed":"MulT_t_t","name":"b2MulT_t_t","def":b2MulT_t_t},{"trimmed":"Clamp_v2","name":"b2Clamp_v2","def":b2Clamp_v2},{"trimmed":"NextPowerOfTwo","name":"b2NextPowerOfTwo","def":b2NextPowerOfTwo},{"trimmed":"Abs_v2","name":"b2Abs_v2","def":b2Abs_v2},{"trimmed":"Abs_m22","name":"b2Abs_m22","def":b2Abs_m22},{"trimmed":"IsPowerOfTwo","name":"b2IsPowerOfTwo","def":b2IsPowerOfTwo},{"trimmed":"RandomFloat","name":"b2RandomFloat","def":b2RandomFloat},{"trimmed":"Timer","name":"b2Timer","def":b2Timer},{"trimmed":"Color","name":"b2Color","def":b2Color},{"trimmed":"Draw","name":"b2Draw","def":b2Draw},{"trimmed":"ContactID","name":"b2ContactID","def":b2ContactID},{"trimmed":"ManifoldPoint","name":"b2ManifoldPoint","def":b2ManifoldPoint},{"trimmed":"Manifold","name":"b2Manifold","def":b2Manifold},{"trimmed":"WorldManifold","name":"b2WorldManifold","def":b2WorldManifold},{"trimmed":"GetPointStates","name":"b2GetPointStates","def":b2GetPointStates},{"trimmed":"ClipVertex","name":"b2ClipVertex","def":b2ClipVertex},{"trimmed":"RayCastInput","name":"b2RayCastInput","def":b2RayCastInput},{"trimmed":"RayCastOutput","name":"b2RayCastOutput","def":b2RayCastOutput},{"trimmed":"AABB","name":"b2AABB","def":b2AABB},{"trimmed":"CollideCircles","name":"b2CollideCircles","def":b2CollideCircles},{"trimmed":"CollidePolygonAndCircle","name":"b2CollidePolygonAndCircle","def":b2CollidePolygonAndCircle},{"trimmed":"FindMaxSeparation","name":"b2FindMaxSeparation","def":b2FindMaxSeparation},{"trimmed":"FindIncidentEdge","name":"b2FindIncidentEdge","def":b2FindIncidentEdge},{"trimmed":"CollidePolygons","name":"b2CollidePolygons","def":b2CollidePolygons},{"trimmed":"CollideEdgeAndCircle","name":"b2CollideEdgeAndCircle","def":b2CollideEdgeAndCircle},{"trimmed":"EPAxis","name":"b2EPAxis","def":b2EPAxis},{"trimmed":"TempPolygon","name":"b2TempPolygon","def":b2TempPolygon},{"trimmed":"ReferenceFace","name":"b2ReferenceFace","def":b2ReferenceFace},{"trimmed":"EPCollider","name":"b2EPCollider","def":b2EPCollider},{"trimmed":"CollideEdgeAndPolygon","name":"b2CollideEdgeAndPolygon","def":b2CollideEdgeAndPolygon},{"trimmed":"ClipSegmentToLine","name":"b2ClipSegmentToLine","def":b2ClipSegmentToLine},{"trimmed":"TestShapeOverlap","name":"b2TestShapeOverlap","def":b2TestShapeOverlap},{"trimmed":"TestOverlap","name":"b2TestOverlap","def":b2TestOverlap},{"trimmed":"Shape","name":"b2Shape","def":b2Shape},{"trimmed":"CircleShape","name":"b2CircleShape","def":b2CircleShape},{"trimmed":"EdgeShape","name":"b2EdgeShape","def":b2EdgeShape},{"trimmed":"ChainShape","name":"b2ChainShape","def":b2ChainShape},{"trimmed":"PolygonShape","name":"b2PolygonShape","def":b2PolygonShape},{"trimmed":"Pair","name":"b2Pair","def":b2Pair},{"trimmed":"PairLessThan","name":"b2PairLessThan","def":b2PairLessThan},{"trimmed":"BroadPhase","name":"b2BroadPhase","def":b2BroadPhase},{"trimmed":"DistanceProxy","name":"b2DistanceProxy","def":b2DistanceProxy},{"trimmed":"SimplexCache","name":"b2SimplexCache","def":b2SimplexCache},{"trimmed":"DistanceInput","name":"b2DistanceInput","def":b2DistanceInput},{"trimmed":"DistanceOutput","name":"b2DistanceOutput","def":b2DistanceOutput},{"trimmed":"SimplexVertex","name":"b2SimplexVertex","def":b2SimplexVertex},{"trimmed":"Simplex","name":"b2Simplex","def":b2Simplex},{"trimmed":"DistanceFunc","name":"b2DistanceFunc","def":b2DistanceFunc},{"trimmed":"TreeNode","name":"b2TreeNode","def":b2TreeNode},{"trimmed":"DynamicTree","name":"b2DynamicTree","def":b2DynamicTree},{"trimmed":"TOIInput","name":"b2TOIInput","def":b2TOIInput},{"trimmed":"TOIOutput","name":"b2TOIOutput","def":b2TOIOutput},{"trimmed":"SeparationFunction","name":"b2SeparationFunction","def":b2SeparationFunction},{"trimmed":"TimeOfImpact","name":"b2TimeOfImpact","def":b2TimeOfImpact},{"trimmed":"BodyDef","name":"b2BodyDef","def":b2BodyDef},{"trimmed":"Body","name":"b2Body","def":b2Body},{"trimmed":"Filter","name":"b2Filter","def":b2Filter},{"trimmed":"FixtureDef","name":"b2FixtureDef","def":b2FixtureDef},{"trimmed":"Fixture","name":"b2Fixture","def":b2Fixture},{"trimmed":"DestructionListener","name":"b2DestructionListener","def":b2DestructionListener},{"trimmed":"ContactFilter","name":"b2ContactFilter","def":b2ContactFilter},{"trimmed":"ContactImpulse","name":"b2ContactImpulse","def":b2ContactImpulse},{"trimmed":"ContactListener","name":"b2ContactListener","def":b2ContactListener},{"trimmed":"QueryCallback","name":"b2QueryCallback","def":b2QueryCallback},{"trimmed":"RayCastCallback","name":"b2RayCastCallback","def":b2RayCastCallback},{"trimmed":"TimeStep","name":"b2TimeStep","def":b2TimeStep},{"trimmed":"Position","name":"b2Position","def":b2Position},{"trimmed":"Velocity","name":"b2Velocity","def":b2Velocity},{"trimmed":"SolverData","name":"b2SolverData","def":b2SolverData},{"trimmed":"World","name":"b2World","def":b2World},{"trimmed":"MixFriction","name":"b2MixFriction","def":b2MixFriction},{"trimmed":"MixRestitution","name":"b2MixRestitution","def":b2MixRestitution},{"trimmed":"ContactRegister","name":"b2ContactRegister","def":b2ContactRegister},{"trimmed":"ContactEdge","name":"b2ContactEdge","def":b2ContactEdge},{"trimmed":"Contact","name":"b2Contact","def":b2Contact},{"trimmed":"CircleContact","name":"b2CircleContact","def":b2CircleContact},{"trimmed":"PolygonContact","name":"b2PolygonContact","def":b2PolygonContact},{"trimmed":"ChainAndCircleContact","name":"b2ChainAndCircleContact","def":b2ChainAndCircleContact},{"trimmed":"ChainAndPolygonContact","name":"b2ChainAndPolygonContact","def":b2ChainAndPolygonContact},{"trimmed":"EdgeAndCircleContact","name":"b2EdgeAndCircleContact","def":b2EdgeAndCircleContact},{"trimmed":"EdgeAndPolygonContact","name":"b2EdgeAndPolygonContact","def":b2EdgeAndPolygonContact},{"trimmed":"PolygonAndCircleContact","name":"b2PolygonAndCircleContact","def":b2PolygonAndCircleContact},{"trimmed":"defaultFilter","name":"b2_defaultFilter","def":b2_defaultFilter},{"trimmed":"defaultListener","name":"b2_defaultListener","def":b2_defaultListener},{"trimmed":"ContactManager","name":"b2ContactManager","def":b2ContactManager},{"trimmed":"VelocityConstraintPoint","name":"b2VelocityConstraintPoint","def":b2VelocityConstraintPoint},{"trimmed":"ContactPositionConstraint","name":"b2ContactPositionConstraint","def":b2ContactPositionConstraint},{"trimmed":"ContactVelocityConstraint","name":"b2ContactVelocityConstraint","def":b2ContactVelocityConstraint},{"trimmed":"PositionSolverManifold","name":"b2PositionSolverManifold","def":b2PositionSolverManifold},{"trimmed":"ContactSolverDef","name":"b2ContactSolverDef","def":b2ContactSolverDef},{"trimmed":"ContactSolver","name":"b2ContactSolver","def":b2ContactSolver},{"trimmed":"Island","name":"b2Island","def":b2Island},{"trimmed":"Jacobian","name":"b2Jacobian","def":b2Jacobian},{"trimmed":"JointEdge","name":"b2JointEdge","def":b2JointEdge},{"trimmed":"JointDef","name":"b2JointDef","def":b2JointDef},{"trimmed":"Joint","name":"b2Joint","def":b2Joint},{"trimmed":"RevoluteJointDef","name":"b2RevoluteJointDef","def":b2RevoluteJointDef},{"trimmed":"RevoluteJoint","name":"b2RevoluteJoint","def":b2RevoluteJoint},{"trimmed":"MouseJointDef","name":"b2MouseJointDef","def":b2MouseJointDef},{"trimmed":"MouseJoint","name":"b2MouseJoint","def":b2MouseJoint},{"trimmed":"DistanceJointDef","name":"b2DistanceJointDef","def":b2DistanceJointDef},{"trimmed":"DistanceJoint","name":"b2DistanceJoint","def":b2DistanceJoint},{"trimmed":"PrismaticJointDef","name":"b2PrismaticJointDef","def":b2PrismaticJointDef},{"trimmed":"PrismaticJoint","name":"b2PrismaticJoint","def":b2PrismaticJoint},{"trimmed":"FrictionJointDef","name":"b2FrictionJointDef","def":b2FrictionJointDef},{"trimmed":"FrictionJoint","name":"b2FrictionJoint","def":b2FrictionJoint},{"trimmed":"WeldJointDef","name":"b2WeldJointDef","def":b2WeldJointDef},{"trimmed":"WeldJoint","name":"b2WeldJoint","def":b2WeldJoint},{"trimmed":"WheelJointDef","name":"b2WheelJointDef","def":b2WheelJointDef},{"trimmed":"WheelJoint","name":"b2WheelJoint","def":b2WheelJoint},{"trimmed":"GearJointDef","name":"b2GearJointDef","def":b2GearJointDef},{"trimmed":"GearJoint","name":"b2GearJoint","def":b2GearJoint},{"trimmed":"MotorJointDef","name":"b2MotorJointDef","def":b2MotorJointDef},{"trimmed":"MotorJoint","name":"b2MotorJoint","def":b2MotorJoint},{"trimmed":"PulleyJointDef","name":"b2PulleyJointDef","def":b2PulleyJointDef},{"trimmed":"PulleyJoint","name":"b2PulleyJoint","def":b2PulleyJoint},{"trimmed":"RopeJointDef","name":"b2RopeJointDef","def":b2RopeJointDef},{"trimmed":"RopeJoint","name":"b2RopeJoint","def":b2RopeJoint},{"trimmed":"RopeDef","name":"b2RopeDef","def":b2RopeDef},{"trimmed":"Rope","name":"b2Rope","def":b2Rope},{"trimmed":"maxManifoldPoints","name":"b2_maxManifoldPoints","def":b2_maxManifoldPoints},{"trimmed":"maxPolygonVertices","name":"b2_maxPolygonVertices","def":b2_maxPolygonVertices},{"trimmed":"aabbExtension","name":"b2_aabbExtension","def":b2_aabbExtension},{"trimmed":"aabbMultiplier","name":"b2_aabbMultiplier","def":b2_aabbMultiplier},{"trimmed":"linearSlop","name":"b2_linearSlop","def":b2_linearSlop},{"trimmed":"angularSlop","name":"b2_angularSlop","def":b2_angularSlop},{"trimmed":"polygonRadius","name":"b2_polygonRadius","def":b2_polygonRadius},{"trimmed":"maxSubSteps","name":"b2_maxSubSteps","def":b2_maxSubSteps},{"trimmed":"maxTOIContacts","name":"b2_maxTOIContacts","def":b2_maxTOIContacts},{"trimmed":"velocityThreshold","name":"b2_velocityThreshold","def":b2_velocityThreshold},{"trimmed":"maxLinearCorrection","name":"b2_maxLinearCorrection","def":b2_maxLinearCorrection},{"trimmed":"maxAngularCorrection","name":"b2_maxAngularCorrection","def":b2_maxAngularCorrection},{"trimmed":"maxTranslation","name":"b2_maxTranslation","def":b2_maxTranslation},{"trimmed":"maxTranslationSquared","name":"b2_maxTranslationSquared","def":b2_maxTranslationSquared},{"trimmed":"maxRotation","name":"b2_maxRotation","def":b2_maxRotation},{"trimmed":"maxRotationSquared","name":"b2_maxRotationSquared","def":b2_maxRotationSquared},{"trimmed":"baumgarte","name":"b2_baumgarte","def":b2_baumgarte},{"trimmed":"toiBaugarte","name":"b2_toiBaugarte","def":b2_toiBaugarte},{"trimmed":"timeToSleep","name":"b2_timeToSleep","def":b2_timeToSleep},{"trimmed":"linearSleepTolerance","name":"b2_linearSleepTolerance","def":b2_linearSleepTolerance},{"trimmed":"angularSleepTolerance","name":"b2_angularSleepTolerance","def":b2_angularSleepTolerance},{"trimmed":"epsilon","name":"b2_epsilon","def":b2_epsilon},{"trimmed":"JsonSerializer","name":"b2JsonSerializer","def":b2JsonSerializer},{"trimmed":"RUBELoader","name":"b2RUBELoader","def":b2RUBELoader},{"trimmed":"Profiler","name":"b2Profiler","def":b2Profiler}];
+
+
+var mappings = [{"trimmed":"version","name":"b2_version","def":b2_version},{"trimmed":"Vec2","name":"b2Vec2","def":b2Vec2},{"trimmed":"Vec3","name":"b2Vec3","def":b2Vec3},{"trimmed":"Mat22","name":"b2Mat22","def":b2Mat22},{"trimmed":"Mat33","name":"b2Mat33","def":b2Mat33},{"trimmed":"Rot","name":"b2Rot","def":b2Rot},{"trimmed":"Transform","name":"b2Transform","def":b2Transform},{"trimmed":"Sweep","name":"b2Sweep","def":b2Sweep},{"trimmed":"Dot_v2_v2","name":"b2Dot_v2_v2","def":b2Dot_v2_v2},{"trimmed":"Cross_v2_v2","name":"b2Cross_v2_v2","def":b2Cross_v2_v2},{"trimmed":"Cross_v2_f","name":"b2Cross_v2_f","def":b2Cross_v2_f},{"trimmed":"Cross_f_v2","name":"b2Cross_f_v2","def":b2Cross_f_v2},{"trimmed":"Mul_m22_v2","name":"b2Mul_m22_v2","def":b2Mul_m22_v2},{"trimmed":"MulT_m22_v2","name":"b2MulT_m22_v2","def":b2MulT_m22_v2},{"trimmed":"Distance","name":"b2Distance","def":b2Distance},{"trimmed":"DistanceSquared","name":"b2DistanceSquared","def":b2DistanceSquared},{"trimmed":"Dot_v3_v3","name":"b2Dot_v3_v3","def":b2Dot_v3_v3},{"trimmed":"Cross_v3_v3","name":"b2Cross_v3_v3","def":b2Cross_v3_v3},{"trimmed":"Mul_m22_m22","name":"b2Mul_m22_m22","def":b2Mul_m22_m22},{"trimmed":"MulT_m22_m22","name":"b2MulT_m22_m22","def":b2MulT_m22_m22},{"trimmed":"Mul_m33_v3","name":"b2Mul_m33_v3","def":b2Mul_m33_v3},{"trimmed":"Mul22_m33_v2","name":"b2Mul22_m33_v2","def":b2Mul22_m33_v2},{"trimmed":"Mul_r_r","name":"b2Mul_r_r","def":b2Mul_r_r},{"trimmed":"MulT_r_r","name":"b2MulT_r_r","def":b2MulT_r_r},{"trimmed":"Mul_r_v2","name":"b2Mul_r_v2","def":b2Mul_r_v2},{"trimmed":"MulT_r_v2","name":"b2MulT_r_v2","def":b2MulT_r_v2},{"trimmed":"Mul_t_v2","name":"b2Mul_t_v2","def":b2Mul_t_v2},{"trimmed":"Min_v2","name":"b2Min_v2","def":b2Min_v2},{"trimmed":"Max_v2","name":"b2Max_v2","def":b2Max_v2},{"trimmed":"Clamp","name":"b2Clamp","def":b2Clamp},{"trimmed":"MulT_t_v2","name":"b2MulT_t_v2","def":b2MulT_t_v2},{"trimmed":"Mul_t_t","name":"b2Mul_t_t","def":b2Mul_t_t},{"trimmed":"MulT_t_t","name":"b2MulT_t_t","def":b2MulT_t_t},{"trimmed":"Clamp_v2","name":"b2Clamp_v2","def":b2Clamp_v2},{"trimmed":"NextPowerOfTwo","name":"b2NextPowerOfTwo","def":b2NextPowerOfTwo},{"trimmed":"Abs_v2","name":"b2Abs_v2","def":b2Abs_v2},{"trimmed":"Abs_m22","name":"b2Abs_m22","def":b2Abs_m22},{"trimmed":"IsPowerOfTwo","name":"b2IsPowerOfTwo","def":b2IsPowerOfTwo},{"trimmed":"RandomFloat","name":"b2RandomFloat","def":b2RandomFloat},{"trimmed":"Timer","name":"b2Timer","def":b2Timer},{"trimmed":"Color","name":"b2Color","def":b2Color},{"trimmed":"Draw","name":"b2Draw","def":b2Draw},{"trimmed":"ContactID","name":"b2ContactID","def":b2ContactID},{"trimmed":"ManifoldPoint","name":"b2ManifoldPoint","def":b2ManifoldPoint},{"trimmed":"Manifold","name":"b2Manifold","def":b2Manifold},{"trimmed":"WorldManifold","name":"b2WorldManifold","def":b2WorldManifold},{"trimmed":"GetPointStates","name":"b2GetPointStates","def":b2GetPointStates},{"trimmed":"ClipVertex","name":"b2ClipVertex","def":b2ClipVertex},{"trimmed":"RayCastInput","name":"b2RayCastInput","def":b2RayCastInput},{"trimmed":"RayCastOutput","name":"b2RayCastOutput","def":b2RayCastOutput},{"trimmed":"AABB","name":"b2AABB","def":b2AABB},{"trimmed":"CollideCircles","name":"b2CollideCircles","def":b2CollideCircles},{"trimmed":"CollidePolygonAndCircle","name":"b2CollidePolygonAndCircle","def":b2CollidePolygonAndCircle},{"trimmed":"FindMaxSeparation","name":"b2FindMaxSeparation","def":b2FindMaxSeparation},{"trimmed":"FindIncidentEdge","name":"b2FindIncidentEdge","def":b2FindIncidentEdge},{"trimmed":"CollidePolygons","name":"b2CollidePolygons","def":b2CollidePolygons},{"trimmed":"CollideEdgeAndCircle","name":"b2CollideEdgeAndCircle","def":b2CollideEdgeAndCircle},{"trimmed":"EPAxis","name":"b2EPAxis","def":b2EPAxis},{"trimmed":"TempPolygon","name":"b2TempPolygon","def":b2TempPolygon},{"trimmed":"ReferenceFace","name":"b2ReferenceFace","def":b2ReferenceFace},{"trimmed":"EPCollider","name":"b2EPCollider","def":b2EPCollider},{"trimmed":"CollideEdgeAndPolygon","name":"b2CollideEdgeAndPolygon","def":b2CollideEdgeAndPolygon},{"trimmed":"ClipSegmentToLine","name":"b2ClipSegmentToLine","def":b2ClipSegmentToLine},{"trimmed":"TestShapeOverlap","name":"b2TestShapeOverlap","def":b2TestShapeOverlap},{"trimmed":"TestOverlap","name":"b2TestOverlap","def":b2TestOverlap},{"trimmed":"Shape","name":"b2Shape","def":b2Shape},{"trimmed":"CircleShape","name":"b2CircleShape","def":b2CircleShape},{"trimmed":"EdgeShape","name":"b2EdgeShape","def":b2EdgeShape},{"trimmed":"ChainShape","name":"b2ChainShape","def":b2ChainShape},{"trimmed":"PolygonShape","name":"b2PolygonShape","def":b2PolygonShape},{"trimmed":"Pair","name":"b2Pair","def":b2Pair},{"trimmed":"PairLessThan","name":"b2PairLessThan","def":b2PairLessThan},{"trimmed":"BroadPhase","name":"b2BroadPhase","def":b2BroadPhase},{"trimmed":"DistanceProxy","name":"b2DistanceProxy","def":b2DistanceProxy},{"trimmed":"SimplexCache","name":"b2SimplexCache","def":b2SimplexCache},{"trimmed":"DistanceInput","name":"b2DistanceInput","def":b2DistanceInput},{"trimmed":"DistanceOutput","name":"b2DistanceOutput","def":b2DistanceOutput},{"trimmed":"SimplexVertex","name":"b2SimplexVertex","def":b2SimplexVertex},{"trimmed":"Simplex","name":"b2Simplex","def":b2Simplex},{"trimmed":"DistanceFunc","name":"b2DistanceFunc","def":b2DistanceFunc},{"trimmed":"TreeNode","name":"b2TreeNode","def":b2TreeNode},{"trimmed":"DynamicTree","name":"b2DynamicTree","def":b2DynamicTree},{"trimmed":"TOIInput","name":"b2TOIInput","def":b2TOIInput},{"trimmed":"TOIOutput","name":"b2TOIOutput","def":b2TOIOutput},{"trimmed":"SeparationFunction","name":"b2SeparationFunction","def":b2SeparationFunction},{"trimmed":"TimeOfImpact","name":"b2TimeOfImpact","def":b2TimeOfImpact},{"trimmed":"BodyDef","name":"b2BodyDef","def":b2BodyDef},{"trimmed":"Body","name":"b2Body","def":b2Body},{"trimmed":"Filter","name":"b2Filter","def":b2Filter},{"trimmed":"FixtureDef","name":"b2FixtureDef","def":b2FixtureDef},{"trimmed":"Fixture","name":"b2Fixture","def":b2Fixture},{"trimmed":"DestructionListener","name":"b2DestructionListener","def":b2DestructionListener},{"trimmed":"ContactFilter","name":"b2ContactFilter","def":b2ContactFilter},{"trimmed":"ContactImpulse","name":"b2ContactImpulse","def":b2ContactImpulse},{"trimmed":"ContactListener","name":"b2ContactListener","def":b2ContactListener},{"trimmed":"QueryCallback","name":"b2QueryCallback","def":b2QueryCallback},{"trimmed":"RayCastCallback","name":"b2RayCastCallback","def":b2RayCastCallback},{"trimmed":"TimeStep","name":"b2TimeStep","def":b2TimeStep},{"trimmed":"Position","name":"b2Position","def":b2Position},{"trimmed":"Velocity","name":"b2Velocity","def":b2Velocity},{"trimmed":"SolverData","name":"b2SolverData","def":b2SolverData},{"trimmed":"World","name":"b2World","def":b2World},{"trimmed":"MixFriction","name":"b2MixFriction","def":b2MixFriction},{"trimmed":"MixRestitution","name":"b2MixRestitution","def":b2MixRestitution},{"trimmed":"ContactRegister","name":"b2ContactRegister","def":b2ContactRegister},{"trimmed":"ContactEdge","name":"b2ContactEdge","def":b2ContactEdge},{"trimmed":"Contact","name":"b2Contact","def":b2Contact},{"trimmed":"CircleContact","name":"b2CircleContact","def":b2CircleContact},{"trimmed":"PolygonContact","name":"b2PolygonContact","def":b2PolygonContact},{"trimmed":"ChainAndCircleContact","name":"b2ChainAndCircleContact","def":b2ChainAndCircleContact},{"trimmed":"ChainAndPolygonContact","name":"b2ChainAndPolygonContact","def":b2ChainAndPolygonContact},{"trimmed":"EdgeAndCircleContact","name":"b2EdgeAndCircleContact","def":b2EdgeAndCircleContact},{"trimmed":"EdgeAndPolygonContact","name":"b2EdgeAndPolygonContact","def":b2EdgeAndPolygonContact},{"trimmed":"PolygonAndCircleContact","name":"b2PolygonAndCircleContact","def":b2PolygonAndCircleContact},{"trimmed":"defaultFilter","name":"b2_defaultFilter","def":b2_defaultFilter},{"trimmed":"defaultListener","name":"b2_defaultListener","def":b2_defaultListener},{"trimmed":"ContactManager","name":"b2ContactManager","def":b2ContactManager},{"trimmed":"VelocityConstraintPoint","name":"b2VelocityConstraintPoint","def":b2VelocityConstraintPoint},{"trimmed":"ContactPositionConstraint","name":"b2ContactPositionConstraint","def":b2ContactPositionConstraint},{"trimmed":"ContactVelocityConstraint","name":"b2ContactVelocityConstraint","def":b2ContactVelocityConstraint},{"trimmed":"PositionSolverManifold","name":"b2PositionSolverManifold","def":b2PositionSolverManifold},{"trimmed":"ContactSolverDef","name":"b2ContactSolverDef","def":b2ContactSolverDef},{"trimmed":"ContactSolver","name":"b2ContactSolver","def":b2ContactSolver},{"trimmed":"Island","name":"b2Island","def":b2Island},{"trimmed":"Jacobian","name":"b2Jacobian","def":b2Jacobian},{"trimmed":"JointEdge","name":"b2JointEdge","def":b2JointEdge},{"trimmed":"JointDef","name":"b2JointDef","def":b2JointDef},{"trimmed":"Joint","name":"b2Joint","def":b2Joint},{"trimmed":"RevoluteJointDef","name":"b2RevoluteJointDef","def":b2RevoluteJointDef},{"trimmed":"RevoluteJoint","name":"b2RevoluteJoint","def":b2RevoluteJoint},{"trimmed":"MouseJointDef","name":"b2MouseJointDef","def":b2MouseJointDef},{"trimmed":"MouseJoint","name":"b2MouseJoint","def":b2MouseJoint},{"trimmed":"DistanceJointDef","name":"b2DistanceJointDef","def":b2DistanceJointDef},{"trimmed":"DistanceJoint","name":"b2DistanceJoint","def":b2DistanceJoint},{"trimmed":"PrismaticJointDef","name":"b2PrismaticJointDef","def":b2PrismaticJointDef},{"trimmed":"PrismaticJoint","name":"b2PrismaticJoint","def":b2PrismaticJoint},{"trimmed":"FrictionJointDef","name":"b2FrictionJointDef","def":b2FrictionJointDef},{"trimmed":"FrictionJoint","name":"b2FrictionJoint","def":b2FrictionJoint},{"trimmed":"WeldJointDef","name":"b2WeldJointDef","def":b2WeldJointDef},{"trimmed":"WeldJoint","name":"b2WeldJoint","def":b2WeldJoint},{"trimmed":"WheelJointDef","name":"b2WheelJointDef","def":b2WheelJointDef},{"trimmed":"WheelJoint","name":"b2WheelJoint","def":b2WheelJoint},{"trimmed":"GearJointDef","name":"b2GearJointDef","def":b2GearJointDef},{"trimmed":"GearJoint","name":"b2GearJoint","def":b2GearJoint},{"trimmed":"MotorJointDef","name":"b2MotorJointDef","def":b2MotorJointDef},{"trimmed":"MotorJoint","name":"b2MotorJoint","def":b2MotorJoint},{"trimmed":"PulleyJointDef","name":"b2PulleyJointDef","def":b2PulleyJointDef},{"trimmed":"PulleyJoint","name":"b2PulleyJoint","def":b2PulleyJoint},{"trimmed":"RopeJointDef","name":"b2RopeJointDef","def":b2RopeJointDef},{"trimmed":"RopeJoint","name":"b2RopeJoint","def":b2RopeJoint},{"trimmed":"RopeDef","name":"b2RopeDef","def":b2RopeDef},{"trimmed":"Rope","name":"b2Rope","def":b2Rope},{"trimmed":"maxManifoldPoints","name":"b2_maxManifoldPoints","def":b2_maxManifoldPoints},{"trimmed":"maxPolygonVertices","name":"b2_maxPolygonVertices","def":b2_maxPolygonVertices},{"trimmed":"aabbExtension","name":"b2_aabbExtension","def":b2_aabbExtension},{"trimmed":"aabbMultiplier","name":"b2_aabbMultiplier","def":b2_aabbMultiplier},{"trimmed":"linearSlop","name":"b2_linearSlop","def":b2_linearSlop},{"trimmed":"angularSlop","name":"b2_angularSlop","def":b2_angularSlop},{"trimmed":"polygonRadius","name":"b2_polygonRadius","def":b2_polygonRadius},{"trimmed":"maxSubSteps","name":"b2_maxSubSteps","def":b2_maxSubSteps},{"trimmed":"maxTOIContacts","name":"b2_maxTOIContacts","def":b2_maxTOIContacts},{"trimmed":"velocityThreshold","name":"b2_velocityThreshold","def":b2_velocityThreshold},{"trimmed":"maxLinearCorrection","name":"b2_maxLinearCorrection","def":b2_maxLinearCorrection},{"trimmed":"maxAngularCorrection","name":"b2_maxAngularCorrection","def":b2_maxAngularCorrection},{"trimmed":"maxTranslation","name":"b2_maxTranslation","def":b2_maxTranslation},{"trimmed":"maxTranslationSquared","name":"b2_maxTranslationSquared","def":b2_maxTranslationSquared},{"trimmed":"maxRotation","name":"b2_maxRotation","def":b2_maxRotation},{"trimmed":"maxRotationSquared","name":"b2_maxRotationSquared","def":b2_maxRotationSquared},{"trimmed":"baumgarte","name":"b2_baumgarte","def":b2_baumgarte},{"trimmed":"toiBaugarte","name":"b2_toiBaugarte","def":b2_toiBaugarte},{"trimmed":"timeToSleep","name":"b2_timeToSleep","def":b2_timeToSleep},{"trimmed":"linearSleepTolerance","name":"b2_linearSleepTolerance","def":b2_linearSleepTolerance},{"trimmed":"angularSleepTolerance","name":"b2_angularSleepTolerance","def":b2_angularSleepTolerance},{"trimmed":"epsilon","name":"b2_epsilon","def":b2_epsilon},{"trimmed":"JsonSerializer","name":"b2JsonSerializer","def":b2JsonSerializer},{"trimmed":"RUBELoader","name":"b2RUBELoader","def":b2RUBELoader},{"trimmed":"Profiler","name":"b2Profiler","def":b2Profiler},{"trimmed":"ParticleDef","name":"b2ParticleDef","def":b2ParticleDef},{"trimmed":"ParticleColor","name":"b2ParticleColor","def":b2ParticleColor},{"trimmed":"ParticleGroupDef","name":"b2ParticleGroupDef","def":b2ParticleGroupDef},{"trimmed":"ParticleGroup","name":"b2ParticleGroup","def":b2ParticleGroup},{"trimmed":"ParticleSystem","name":"b2ParticleSystem","def":b2ParticleSystem}];
 if (typeof(b2_compatibility) !== "undefined" && typeof(window) !== "undefined")
 {
 	for (var i = 0; i < mappings.length; ++i)

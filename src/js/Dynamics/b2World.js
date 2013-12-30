@@ -1,5 +1,3 @@
-"use strict";
-
 var profile_world_step = b2Profiler.create("step");
 var profile_world_collide = b2Profiler.create("collide", "step");
 var profile_world_solve = b2Profiler.create("solve", "step");
@@ -36,6 +34,11 @@ function b2World(gravity)
 	this.m_inv_dt0 = 0.0;
 	this.p_step = new b2TimeStep();
 	this.p_island = new b2Island();
+
+'#if @LIQUIDFUN';
+	this.m_particleSystem = new b2ParticleSystem();
+	this.m_particleSystem.m_world = this;
+'#endif';
 }
 
 function b2WorldQueryWrapper()
@@ -464,6 +467,9 @@ b2World.prototype =
 		if (this.m_stepComplete && this.p_step.dt > 0.0)
 		{
 			profile_world_solve.start();
+'#if @LIQUIDFUN';
+			this.m_particleSystem.Solve(this.p_step); // Particle Simulation
+'#endif';
 			this.Solve(this.p_step);
 			profile_world_solve.stop();
 		}
@@ -546,6 +552,9 @@ b2World.prototype =
 					}
 				}
 			}
+'#if @LIQUIDFUN';
+		this.DrawParticleSystem(this.m_particleSystem);
+'#endif';
 		}
 
 		if (flags & b2Draw.e_jointBit)
@@ -575,6 +584,7 @@ b2World.prototype =
 		if (flags & b2Draw.e_aabbBit)
 		{
 			var color = new b2Color(0.9, 0.3, 0.9);
+			var color2 = new b2Color(0.3, 0.3, 0.9);
 			var bp = this.m_contactManager.m_broadPhase;
 
 			for (var b = this.m_bodyList; b; b = b.GetNext())
@@ -597,6 +607,16 @@ b2World.prototype =
 						vs[3] = new b2Vec2(aabb.lowerBound.x, aabb.upperBound.y);
 
 						this.g_debugDraw.DrawPolygon(vs, 4, color);
+
+						var realAABB = new b2AABB();
+						f.GetShape().ComputeAABB(realAABB, b.GetTransform(), 0);
+						var vs = [];
+						vs[0] = new b2Vec2(realAABB.lowerBound.x, realAABB.lowerBound.y);
+						vs[1] = new b2Vec2(realAABB.upperBound.x, realAABB.lowerBound.y);
+						vs[2] = new b2Vec2(realAABB.upperBound.x, realAABB.upperBound.y);
+						vs[3] = new b2Vec2(realAABB.lowerBound.x, realAABB.upperBound.y);
+
+						this.g_debugDraw.DrawPolygon(vs, 4, color2);
 					}
 				}
 			}
@@ -623,6 +643,9 @@ b2World.prototype =
 		wrapper.broadPhase = this.m_contactManager.m_broadPhase;
 		wrapper.callback = callback;
 		this.m_contactManager.m_broadPhase.Query(wrapper, aabb);
+'#if @LIQUIDFUN';
+		this.m_particleSystem.QueryAABB(callback, aabb);
+'#endif';
 	},
 
 	/// Ray-cast the world for all fixtures in the path of the ray. Your callback
@@ -641,6 +664,9 @@ b2World.prototype =
 		input.p1 = point1;
 		input.p2 = point2;
 		this.m_contactManager.m_broadPhase.RayCast(wrapper, input);
+'#if @LIQUIDFUN';
+		this.m_particleSystem.RayCast(callback, point1, point2);
+'#endif';
 	},
 
 	/// Get the world body list. With the returned body, use b2Body::GetNext to get
@@ -816,6 +842,14 @@ b2World.prototype =
 
 	Solve: function(step)
 	{
+'#if @LIQUIDFUN';
+		// update previous transforms
+		for (var b = this.m_bodyList; b; b = b.m_next)
+		{
+			b.m_xf0.Assign(b.m_xf);
+		}
+'#endif';
+
 		// Size the island for the worst case.
 		this.p_island.Initialize(this.m_bodyCount,
 						this.m_contactManager.m_contactCount,
@@ -1429,6 +1463,242 @@ b2World.prototype =
 			break;
 		}
 	}
+
+//'#if @LIQUIDFUN';
+	,
+
+	GetParticleMaxCount: function()
+	{
+		return this.m_particleSystem.GetParticleMaxCount();
+	},
+
+	SetParticleMaxCount: function(count)
+	{
+		this.m_particleSystem.SetParticleMaxCount(count);
+	},
+
+	SetParticleDensity: function(density)
+	{
+		this.m_particleSystem.SetParticleDensity(density);
+	},
+
+	GetParticleDensity: function()
+	{
+		return this.m_particleSystem.GetParticleDensity();
+	},
+
+	SetParticleGravityScale: function(gravityScale)
+	{
+		this.m_particleSystem.SetParticleGravityScale(gravityScale);
+	},
+
+	GetParticleGravityScale: function()
+	{
+		return this.m_particleSystem.GetParticleGravityScale();
+	},
+
+	SetParticleDamping: function(damping)
+	{
+		this.m_particleSystem.SetParticleDamping(damping);
+	},
+
+	GetParticleDamping: function()
+	{
+		return this.m_particleSystem.GetParticleDamping();
+	},
+
+	SetParticleRadius: function(radius)
+	{
+		this.m_particleSystem.SetParticleRadius(radius);
+	},
+
+	GetParticleRadius: function()
+	{
+		return this.m_particleSystem.GetParticleRadius();
+	},
+
+	CreateParticle: function(def)
+	{
+'#if @DEBUG';
+		b2Assert(this.IsLocked() == false);
+'#endif';
+		if (this.IsLocked())
+		{
+			return 0;
+		}
+		var p = this.m_particleSystem.CreateParticle(def);
+		return p;
+	},
+
+	DestroyParticle: function(index, callDestructionListener)
+	{
+		this.m_particleSystem.DestroyParticle(index, callDestructionListener);
+	},
+
+	DestroyParticlesInShape: function(shape, xf, callDestructionListener)
+	{
+'#if @DEBUG';
+		b2Assert(this.IsLocked() == false);
+'#endif';
+		if (this.IsLocked())
+		{
+			return 0;
+		}
+		return this.m_particleSystem.DestroyParticlesInShape(shape, xf,
+														callDestructionListener);
+	},
+
+	CreateParticleGroup: function(def)
+	{
+'#if @DEBUG';
+		b2Assert(this.IsLocked() == false);
+'#endif';
+		if (this.IsLocked())
+		{
+			return null;
+		}
+		var g = this.m_particleSystem.CreateParticleGroup(def);
+		return g;
+	},
+
+	JoinParticleGroups: function(groupA, groupB)
+	{
+'#if @DEBUG';
+		b2Assert(this.IsLocked() == false);
+'#endif';
+		if (this.IsLocked())
+		{
+			return;
+		}
+		this.m_particleSystem.JoinParticleGroups(groupA, groupB);
+	},
+
+	DestroyParticlesInGroup: function(group, callDestructionListener)
+	{
+'#if @DEBUG';
+		b2Assert(this.IsLocked() == false);
+'#endif';
+		if (this.IsLocked())
+		{
+			return;
+		}
+		this.m_particleSystem.DestroyParticlesInGroup(group, callDestructionListener);
+	},
+
+	GetParticleFlagsBuffer: function()
+	{
+		return this.m_particleSystem.GetParticleFlagsBuffer();
+	},
+
+	GetParticlePositionBuffer: function()
+	{
+		return this.m_particleSystem.GetParticlePositionBuffer();
+	},
+
+	GetParticleVelocityBuffer: function()
+	{
+		return this.m_particleSystem.GetParticleVelocityBuffer();
+	},
+
+	GetParticleColorBuffer: function()
+	{
+		return this.m_particleSystem.GetParticleColorBuffer();
+	},
+
+	GetParticleUserDataBuffer: function()
+	{
+		return this.m_particleSystem.GetParticleUserDataBuffer();
+	},
+
+	GetParticleGroupBuffer: function()
+	{
+		return this.m_particleSystem.GetParticleGroupBuffer();
+	},
+
+	SetParticleFlagsBuffer: function(buffer, capacity)
+	{
+		this.m_particleSystem.SetParticleFlagsBuffer(buffer, capacity);
+	},
+
+	SetParticlePositionBuffer: function(buffer, capacity)
+	{
+		this.m_particleSystem.SetParticlePositionBuffer(buffer, capacity);
+	},
+
+	SetParticleVelocityBuffer: function(buffer, capacity)
+	{
+		this.m_particleSystem.SetParticleVelocityBuffer(buffer, capacity);
+	},
+
+	SetParticleColorBuffer: function(buffer, capacity)
+	{
+		this.m_particleSystem.SetParticleColorBuffer(buffer, capacity);
+	},
+
+	SetParticleUserDataBuffer: function(buffer, capacity)
+	{
+		this.m_particleSystem.SetParticleUserDataBuffer(buffer, capacity);
+	},
+
+	GetParticleContacts: function()
+	{
+		return this.m_particleSystem.m_contactBuffer;
+	},
+
+	GetParticleContactCount: function()
+	{
+		return this.m_particleSystem.m_contactCount;
+	},
+
+	GetParticleBodyContacts: function()
+	{
+		return this.m_particleSystem.m_bodyContactBuffer;
+	},
+
+	GetParticleBodyContactCount: function()
+	{
+		return this.m_particleSystem.m_bodyContactCount;
+	},
+
+	ComputeParticleCollisionEnergy: function()
+	{
+		return this.m_particleSystem.ComputeParticleCollisionEnergy();
+	},
+
+	GetParticleGroupList: function()
+	{
+		return this.m_particleSystem.GetParticleGroupList();
+	},
+
+	GetParticleGroupCount: function()
+	{
+		return this.m_particleSystem.GetParticleGroupCount();
+	},
+
+	GetParticleCount: function()
+	{
+		return this.m_particleSystem.GetParticleCount();
+	},
+
+	DrawParticleSystem: function(system)
+	{
+		var particleCount = system.GetParticleCount();
+		if (particleCount)
+		{
+			var particleRadius = system.GetParticleRadius();
+			var positionBuffer = system.GetParticlePositionBuffer();
+			if (system.m_colorBuffer.data)
+			{
+				var colorBuffer = system.GetParticleColorBuffer();
+				this.g_debugDraw.DrawParticles(positionBuffer, particleRadius, colorBuffer, particleCount);
+			}
+			else
+			{
+				this.g_debugDraw.DrawParticles(positionBuffer, particleRadius, null, particleCount);
+			}
+		}
+	}
+//'#endif';
 };
 
 b2World.e_newFixture = 0x0001;

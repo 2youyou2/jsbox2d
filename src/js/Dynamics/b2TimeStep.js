@@ -1,5 +1,3 @@
-"use strict";
-
 /// This is an internal structure.
 function b2TimeStep()
 {

@@ -16,8 +16,6 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-"use strict";
-
 /// A convex polygon. It is assumed that the interior of the polygon is to
 /// the left of each edge.
 /// Polygons have a maximum number of vertices equal to b2_maxPolygonVertices.
@@ -472,6 +470,50 @@ b2PolygonShape.prototype =
 
 		return true;
 	},
+
+//'#if @LIQUIDFUN';
+	ComputeDistance: function(xf, p, distanceOut, normal, childIndex)
+	{
+		var pLocal = b2MulT_r_v2(xf.q, b2Vec2.Subtract(p, xf.p));
+		var maxDistance = -Number.MAX_VALUE;
+		var normalForMaxDistance = pLocal;
+
+		for (var i = 0; i < this.m_count; ++i)
+		{
+			var dot = b2Dot_v2_v2(this.m_normals[i], b2Vec2.Subtract(pLocal, this.m_vertices[i]));
+			if (dot > maxDistance)
+			{
+				maxDistance = dot;
+				normalForMaxDistance = this.m_normals[i];
+			}
+		}
+
+		if (maxDistance > 0)
+		{
+			var minDistance = normalForMaxDistance;
+			var minDistance2 = maxDistance * maxDistance;
+			for (var i = 0; i < this.m_count; ++i)
+			{
+				var distance = b2Vec2.Subtract(pLocal, this.m_vertices[i]);
+				var distance2 = distance.LengthSquared();
+				if (minDistance2 > distance2)
+				{
+					minDistance = distance;
+					minDistance2 = distance2;
+				}
+			}
+
+			distanceOut[0] = b2Sqrt(minDistance2);
+			normal.Assign(b2Mul_r_v2(xf.q, minDistance));
+			normal.Normalize();
+		}
+		else
+		{
+			distanceOut[0] = maxDistance;
+			normal.Assign(b2Mul_r_v2(xf.q, normalForMaxDistance));
+		}
+	},
+//'#endif';
 
 	_serialize: function(out)
 	{

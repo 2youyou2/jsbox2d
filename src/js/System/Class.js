@@ -1,5 +1,3 @@
-"use strict";
-
 Function.prototype._extend = function(parent)
 {
 	this.prototype.parent = parent;

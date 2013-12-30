@@ -76,7 +76,12 @@ function loadTestBed()
 			TestRUBEJointTypes,
 			TestPlinko,
 			TestBulldozer,
-			TestSnake
+			TestSnake,
+			TestDamBreak,
+			TestSurfaceTension,
+			TestChaosPendulum,
+			TestWaveMachine,
+			TestSoup
 		];
 
 	tests.sort(function(a, b)

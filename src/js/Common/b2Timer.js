@@ -1,5 +1,3 @@
-"use strict";
-
 if (typeof(performance) === 'undefined')
 {
 	window.performance = { now: function() { return +new Date(); } };

@@ -16,8 +16,6 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-"use strict";
-
 '#if @DEBUG';
 function b2Assert(A)
 {
@@ -118,6 +116,29 @@ var b2_linearSleepTolerance		= 0.01;
 
 /// A body cannot sleep if its angular velocity is above this tolerance.
 var b2_angularSleepTolerance	= (2.0 / 180.0 * b2_pi);
+
+'#if @LIQUIDFUN';
+// Particle
+
+/// A symbolic constant that stands for particle allocation error.
+var b2_invalidParticleIndex		= (-1);
+
+/// The standard distance between particles, divided by the particle radius.
+var b2_particleStride			= 0.75;
+
+/// The minimum particle weight that produces pressure.
+var b2_minParticleWeight			= 1.0;
+
+/// The upper limit for particle weight used in pressure calculation.
+var b2_maxParticleWeight		= 5.0;
+
+/// The maximum distance between particles in a triad, divided by the particle radius.
+var b2_maxTriadDistance			= 2;
+var b2_maxTriadDistanceSquared		= (b2_maxTriadDistance * b2_maxTriadDistance);
+
+/// The initial size of particle data buffers.
+var b2_minParticleBufferCapacity	= 256;
+'#endif';
 
 /// Version numbering scheme.
 /// See http://en.wikipedia.org/wiki/Software_versioning

@@ -1,5 +1,3 @@
-"use strict";
-
 /// A body definition holds all the data needed to construct a rigid body.
 /// You can safely re-use body definitions. Shapes are added to a body after construction.
 function b2BodyDef()
@@ -119,6 +117,10 @@ function b2Body(bd, world)
 	this.m_xf = new b2Transform();
 	this.m_xf.p.Assign(bd.position);
 	this.m_xf.q.Set(bd.angle);
+'#if @LIQUIDFUN';
+	this.m_xf0 = new b2Transform();
+	this.m_xf0.Assign(this.m_xf);
+'#endif';
 
 	this.m_sweep = new b2Sweep();
 	this.m_sweep.localCenter.SetZero();
@@ -339,6 +341,9 @@ b2Body.prototype =
 
 		this.m_xf.q.Set(angle);
 		this.m_xf.p.Assign(position);
+'#if @LIQUIDFUN';
+		this.m_xf0.Assign(this.m_xf);
+'#endif';
 
 		this.m_sweep.c.Assign(b2Mul_t_v2(this.m_xf, this.m_sweep.localCenter));
 		this.m_sweep.a = angle;

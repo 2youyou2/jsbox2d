@@ -1,5 +1,3 @@
-"use strict";
-
 /// Friction mixing law. The idea is to allow either fixture to drive the restitution to zero.
 /// For example, anything slides on ice.
 function b2MixFriction(friction1, friction2)
@@ -629,7 +627,7 @@ b2Contact.Create = function(fixtureA, indexA, fixtureB, indexB)
 	b2Assert(0 <= type2 && type2 < b2Shape.e_typeCount);
 '#endif';
 
-	var fcn = b2Contact.s_registers[type1][type2].fcn;
+	var fcn = b2Contact.s_registers[type1] ? b2Contact.s_registers[type1][type2] ? b2Contact.s_registers[type1][type2].fcn : null : null;
 
 	if (fcn)
 	{

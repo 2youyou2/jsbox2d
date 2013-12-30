@@ -1,5 +1,3 @@
-"use strict";
-
 var b2_defaultFilter = new b2ContactFilter();
 var b2_defaultListener = new b2ContactListener();
 

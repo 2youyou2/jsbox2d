@@ -16,8 +16,6 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-"use strict";
-
 /// A circle shape.
 function b2CircleShape()
 {
@@ -126,6 +124,17 @@ b2CircleShape.prototype =
 '#endif';
 		return this.m_p;
 	},
+
+//'#if @LIQUIDFUN';
+	ComputeDistance: function(transform, p, distance, normal, childIndex)
+	{
+		var center = b2Vec2.Add(transform.p, b2Mul_r_v2(transform.q, this.m_p));
+		var d = b2Vec2.Subtract(p, center);
+		var d1 = d.Length();
+		distance[0] = d1 - this.m_radius;
+		normal.Assign(b2Vec2.Multiply(1 / d1, d));
+	},
+//'#endif';
 
 	_serialize: function(out)
 	{

@@ -51,9 +51,12 @@ CanvasDebugDraw.prototype =
 		this.context.strokeStyle = this.ColorFor(color, 1.0);
 		this.context.beginPath();
 		this.context.arc(center.x, center.y, radius, 0, Math.PI * 2);
-		this.context.moveTo(center.x, center.y);
-		var p = b2Vec2.Add(center, b2Vec2.Multiply(radius, axis));
-		this.context.lineTo(p.x, p.y);
+		if (axis)
+		{
+			this.context.moveTo(center.x, center.y);
+			var p = b2Vec2.Add(center, b2Vec2.Multiply(radius, axis));
+			this.context.lineTo(p.x, p.y);
+		}
 		this.context.closePath();
 		this.context.stroke();
 		this.context.fill();
@@ -113,6 +116,20 @@ CanvasDebugDraw.prototype =
 		var b = Math.floor(c.b * 255);
 
 		return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+	},
+
+	DrawParticles: function(centers, radius, colors, count)
+	{
+		this.context.fillStyle = 'rgba(255, 255, 255, 0.25)';
+		for (var i = 0; i < count; ++i)
+		{
+			if (colors && colors[i])
+				this.context.fillStyle = 'rgba(' + colors[i].r + ', ' + colors[i].g + ', ' + colors[i].b + ', ' + (colors[i].a / 255) + ')';
+			this.context.beginPath();
+			this.context.rect(centers[i].x - radius, centers[i].y - radius, radius * 2, radius * 2);
+			this.context.closePath();
+			this.context.fill();
+		}
 	}
 };
 

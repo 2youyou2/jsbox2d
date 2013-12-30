@@ -147,7 +147,7 @@ function evaluate(str)
 		return 'definitions["' + name + '"]';
 	});
 
-	return !!eval('(' + replaced + ')');
+	return eval('(' + replaced + ')');
 }
 
 function processString(tabPos, folder, file, s)
@@ -190,19 +190,31 @@ function processString(tabPos, folder, file, s)
 				{
 					case 'include':
 						{
-							var path = args[0];
-							var combined = folder + '/' + path;
+							var path;
 
-							processed += processString(tabPos + 1, folder, path, fileio.read(combined));
+							try
+							{
+								path = evaluate(args[0]);
+							}
+							catch (e)
+							{
+								path = args[0];
+							}
+							
+							processed += processString(tabPos + 1, folder, path, fileio.read(path));
 						}
+						break;
+					case 'def':
+						processed += evaluate(args[0]);
 						break;
 					case 'export':
 						{
 							var names = {};
+							var split = evaluate(arg.trim()).split(' ');
 
-							for (var i = 0; i < args.length; ++i)
+							for (var i = 0; i < split.length; ++i)
 							{
-								var name = args[i].trim();
+								var name = split[i].trim();
 								var trimmed = name.replace(/b2(?:_?)/ig, '');
 
 								if (trimmed.length)
@@ -256,11 +268,12 @@ else\n\
 					case 'define':
 						{
 							var trimmed = arg.trim();
-							definitions[args[0].trim()] = trimmed.substr(trimmed.indexOf(' ') + 1);
+							definitions[args[0].trim()] = evaluate(trimmed.substr(trimmed.indexOf(' ') + 1));
 						}
 						break;
 					case 'if':
 						{
+							var nest = 1;
 							var val = evaluate(arg);
 							conditionals.push(val);
 
@@ -268,7 +281,11 @@ else\n\
 
 							while (true)
 							{
-								inside += consumer.consume(/[^']/gi);
+								var c = consumer.consume(/[^']/gi);
+
+								if (c !== false)
+									inside += c;
+
 								var begin = consumer.pos;
 
 								if (!consumer.consume("'"))
@@ -283,21 +300,41 @@ else\n\
 								// if it's an elif or else, then we have to double-back and let execution continue below
 								var name = consumer.consume(/[^'\s]/gi);
 								var lower = name ? name.toLowerCase() : null;
+								var breakOut = false;
 
-								if (name && (lower === 'else' || lower === 'elif' || lower === 'endif'))
+								if (name)
 								{
-									// good - push back the consumer to the start of this expression
-									consumer.pos = begin;
+									switch (lower)
+									{
+										case 'if':
+											++nest;
+											break;
+										case 'else':
+										case 'elif':
+										case 'endif':
+										{
+											if (!--nest)
+											{
+												// good - push back the consumer to the start of this expression
+												consumer.pos = begin;
 
-									// if our last expression succeeded, parse and include the text we got from here
-									if (val)
-										processed += processString(tabPos, folder, file, inside);
+												// if our last expression succeeded, parse and include the text we got from here
+												if (val)
+													processed += processString(tabPos, folder, file, inside);
 
-									// we're done here
-									break;
+												// we're done here
+												breakOut = true;
+												break;
+											}
+										}
+									}
+
+									if (breakOut)
+										break;
 								}
 
 								// not an elif/else, keep trying
+								inside += "'#" + name;
 							}
 						}
 						break;
@@ -344,6 +381,8 @@ else\n\
 									// we're done here
 									break;
 								}
+								else
+									inside += "'#" + name;
 
 								// not an elif/else, keep trying
 							}
@@ -388,6 +427,8 @@ else\n\
 									// we're done here
 									break;
 								}
+								else
+									inside += "'#" + name;
 
 								// not an elif/else, keep trying
 							}

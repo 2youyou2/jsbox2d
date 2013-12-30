@@ -1,7 +1,9 @@
 (function()
 {
 'use strict';
+
 '#include ../../src/js/System/Class.js';
+'#include ../../src/js/System/Array.js';
 '#include ../../src/js/System/Profiling.js';
 
 '#include ../../src/js/Common/b2Settings.js';
@@ -27,6 +29,14 @@
 '#include ../../src/js/Dynamics/b2TimeStep.js';
 '#include ../../src/js/Dynamics/b2World.js';
 
+'#if @LIQUIDFUN';
+'#include ../../src/js/Particle/b2StackQueue.js';
+'#include ../../src/js/Particle/b2VoronoiDiagram.js';
+'#include ../../src/js/Particle/b2Particle.js';
+'#include ../../src/js/Particle/b2ParticleGroup.js';
+'#include ../../src/js/Particle/b2ParticleSystem.js';
+'#endif';
+
 '#include ../../src/js/Dynamics/Contacts/b2Contact.js';
 '#include ../../src/js/Dynamics/b2ContactManager.js';
 '#include ../../src/js/Dynamics/Contacts/b2ContactSolver.js';
@@ -50,75 +60,11 @@
 '#include ../../src/js/System/Serializer.js';
 '#include ../../src/js/System/RUBE.js';
 
-	'#export
-	b2_version b2Vec2 b2Vec3 b2Mat22 b2Mat33 b2Rot b2Transform b2Sweep b2Dot_v2_v2 b2Cross_v2_v2 b2Cross_v2_f b2Cross_f_v2 b2Mul_m22_v2 b2MulT_m22_v2 b2Distance b2DistanceSquared b2Dot_v3_v3 b2Cross_v3_v3 b2Mul_m22_m22 b2MulT_m22_m22 b2Mul_m33_v3 b2Mul22_m33_v2 b2Mul_r_r b2MulT_r_r b2Mul_r_v2 b2MulT_r_v2 b2Mul_t_v2 b2Min_v2 b2Max_v2 b2Clamp b2MulT_t_v2 b2Mul_t_t b2MulT_t_t b2Clamp_v2 b2NextPowerOfTwo b2Abs_v2 b2Abs_m22 b2IsPowerOfTwo b2RandomFloat
+'#define EXPORT_STRING "b2_version b2Vec2 b2Vec3 b2Mat22 b2Mat33 b2Rot b2Transform b2Sweep b2Dot_v2_v2 b2Cross_v2_v2 b2Cross_v2_f b2Cross_f_v2 b2Mul_m22_v2 b2MulT_m22_v2 b2Distance b2DistanceSquared b2Dot_v3_v3 b2Cross_v3_v3 b2Mul_m22_m22 b2MulT_m22_m22 b2Mul_m33_v3 b2Mul22_m33_v2 b2Mul_r_r b2MulT_r_r b2Mul_r_v2 b2MulT_r_v2 b2Mul_t_v2 b2Min_v2 b2Max_v2 b2Clamp b2MulT_t_v2 b2Mul_t_t b2MulT_t_t b2Clamp_v2 b2NextPowerOfTwo b2Abs_v2 b2Abs_m22 b2IsPowerOfTwo b2RandomFloat b2Timer b2Color b2Draw b2ContactID b2ManifoldPoint b2Manifold b2WorldManifold b2GetPointStates b2ClipVertex b2RayCastInput b2RayCastOutput b2AABB b2CollideCircles b2CollidePolygonAndCircle b2FindMaxSeparation b2FindIncidentEdge b2CollidePolygons b2CollideEdgeAndCircle b2EPAxis b2TempPolygon b2ReferenceFace b2EPCollider b2CollideEdgeAndPolygon b2ClipSegmentToLine b2TestShapeOverlap b2TestOverlap b2Shape b2CircleShape b2EdgeShape b2ChainShape b2PolygonShape b2Pair b2PairLessThan b2BroadPhase b2DistanceProxy b2SimplexCache b2DistanceInput b2DistanceOutput b2SimplexVertex b2Simplex b2DistanceFunc b2TreeNode b2DynamicTree b2TOIInput b2TOIOutput b2SeparationFunction b2TimeOfImpact b2BodyDef b2Body b2Filter b2FixtureDef b2Fixture b2DestructionListener b2ContactFilter b2ContactImpulse b2ContactListener b2QueryCallback b2RayCastCallback b2TimeStep b2Position b2Velocity b2SolverData b2World b2MixFriction b2MixRestitution b2ContactRegister b2ContactEdge b2Contact b2CircleContact b2PolygonContact b2ChainAndCircleContact b2ChainAndPolygonContact b2EdgeAndCircleContact b2EdgeAndPolygonContact b2PolygonAndCircleContact b2_defaultFilter b2_defaultListener b2ContactManager b2VelocityConstraintPoint b2ContactPositionConstraint b2ContactVelocityConstraint b2PositionSolverManifold b2ContactSolverDef b2ContactSolver b2Island b2Jacobian b2JointEdge b2JointDef b2Joint b2RevoluteJointDef b2RevoluteJoint b2MouseJointDef b2MouseJoint b2DistanceJointDef b2DistanceJoint b2PrismaticJointDef b2PrismaticJoint b2FrictionJointDef b2FrictionJoint b2WeldJointDef b2WeldJoint b2WheelJointDef b2WheelJoint b2GearJointDef b2GearJoint b2MotorJointDef b2MotorJoint b2PulleyJointDef b2PulleyJoint b2RopeJointDef b2RopeJoint b2RopeDef b2Rope b2_maxManifoldPoints b2_maxPolygonVertices b2_aabbExtension b2_aabbMultiplier b2_linearSlop b2_angularSlop b2_polygonRadius b2_maxSubSteps b2_maxTOIContacts b2_velocityThreshold b2_maxLinearCorrection b2_maxAngularCorrection b2_maxTranslation b2_maxTranslationSquared b2_maxRotation b2_maxRotationSquared b2_baumgarte b2_toiBaugarte b2_timeToSleep b2_linearSleepTolerance b2_angularSleepTolerance b2_epsilon b2JsonSerializer b2RUBELoader b2Profiler"';
 
-	b2Timer
+'#if @LIQUIDFUN';
+'#define EXPORT_STRING (@EXPORT_STRING + " b2ParticleDef b2ParticleColor b2ParticleGroupDef b2ParticleGroup b2ParticleSystem")';
+'#endif';
 
-	b2Color b2Draw
-
-	b2ContactID b2ManifoldPoint b2Manifold b2WorldManifold b2GetPointStates b2ClipVertex b2RayCastInput b2RayCastOutput b2AABB b2CollideCircles b2CollidePolygonAndCircle b2FindMaxSeparation b2FindIncidentEdge b2CollidePolygons b2CollideEdgeAndCircle b2EPAxis b2TempPolygon b2ReferenceFace b2EPCollider b2CollideEdgeAndPolygon b2ClipSegmentToLine b2TestShapeOverlap b2TestOverlap
-
-	b2Shape b2CircleShape b2EdgeShape b2ChainShape b2PolygonShape
-
-	b2Pair b2PairLessThan b2BroadPhase
-
-	b2DistanceProxy b2SimplexCache b2DistanceInput b2DistanceOutput b2SimplexVertex b2Simplex b2DistanceFunc
-
-	b2TreeNode b2DynamicTree
-
-	b2TOIInput b2TOIOutput b2SeparationFunction b2TimeOfImpact
-
-	b2BodyDef b2Body
-
-	b2Filter b2FixtureDef b2Fixture
-
-	b2DestructionListener b2ContactFilter b2ContactImpulse b2ContactListener b2QueryCallback b2RayCastCallback
-
-	b2TimeStep b2Position b2Velocity b2SolverData
-
-	b2World
-
-	b2MixFriction b2MixRestitution b2ContactRegister b2ContactEdge b2Contact b2CircleContact b2PolygonContact b2ChainAndCircleContact b2ChainAndPolygonContact b2EdgeAndCircleContact b2EdgeAndPolygonContact b2PolygonAndCircleContact
-
-	b2_defaultFilter b2_defaultListener b2ContactManager
-
-	b2VelocityConstraintPoint b2ContactPositionConstraint b2ContactVelocityConstraint b2PositionSolverManifold b2ContactSolverDef b2ContactSolver
-
-	b2Island
-
-	b2Jacobian b2JointEdge b2JointDef b2Joint
-
-	b2RevoluteJointDef b2RevoluteJoint
-
-	b2MouseJointDef b2MouseJoint
-
-	b2DistanceJointDef b2DistanceJoint
-
-	b2PrismaticJointDef b2PrismaticJoint
-
-	b2FrictionJointDef b2FrictionJoint
-
-	b2WeldJointDef b2WeldJoint
-
-	b2WheelJointDef b2WheelJoint
-
-	b2GearJointDef b2GearJoint
-
-	b2MotorJointDef b2MotorJoint
-
-	b2PulleyJointDef b2PulleyJoint
-
-	b2RopeJointDef b2RopeJoint
-
-	b2RopeDef b2Rope
-
-	b2_maxManifoldPoints b2_maxPolygonVertices b2_aabbExtension b2_aabbMultiplier b2_linearSlop b2_angularSlop b2_polygonRadius b2_maxSubSteps b2_maxTOIContacts b2_velocityThreshold b2_maxLinearCorrection b2_maxAngularCorrection b2_maxTranslation b2_maxTranslationSquared b2_maxRotation b2_maxRotationSquared b2_baumgarte b2_toiBaugarte b2_timeToSleep b2_linearSleepTolerance b2_angularSleepTolerance b2_epsilon
-
-	b2JsonSerializer
-
-	b2RUBELoader
-
-	b2Profiler
-';
+'#export @EXPORT_STRING';
 })();
