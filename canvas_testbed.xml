@@ -5,7 +5,7 @@
      <![CDATA[
 		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 		<script>var b2_compatibility = true;</script>
-		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/build/jsbox2d.min.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/build/jsliquidfun.min.js"></script>
 
 		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/CanvasDebug.js"></script>
 
@@ -62,6 +62,11 @@
 		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestPlinko.js"></script>
 		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestBulldozer.js"></script>
 		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestSnake.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestDamBreak.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestSurfaceTension.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestChaosPendulum.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestWaveMachine.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestSoup.js"></script>
 
 		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/testbed.js"></script>
 		<link type="text/css" rel="stylesheet" href="https://jsbox2d.googlecode.com/svn/trunk/style.css"></link>
