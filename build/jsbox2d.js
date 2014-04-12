@@ -10212,6 +10212,14 @@ function b2ContactEdge()
 	this.next = null;			///< the next contact edge in the body's contact list
 };
 
+b2ContactEdge.prototype =
+{
+	Clear: function()
+	{
+		this.other = this.prev = this.next = null;
+	}
+};
+
 /// The class manages contact between two shapes. A contact exists for each overlapping
 /// AABB in the broad-phase (except if filtered). Therefore a contact object may exist
 /// that has no contact points.
