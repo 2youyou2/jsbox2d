@@ -67,6 +67,8 @@
 		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestChaosPendulum.js"></script>
 		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestWaveMachine.js"></script>
 		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestSoup.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestRigidParticles.js"></script>
+		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/TestElasticParticles.js"></script>
 
 		<script type="text/javascript" src="https://jsbox2d.googlecode.com/svn/trunk/testbed.js"></script>
 		<link type="text/css" rel="stylesheet" href="https://jsbox2d.googlecode.com/svn/trunk/style.css"></link>
