@@ -28,12 +28,12 @@ function b2ChainShape()
 
 	this.m_type = b2Shape.e_chain;
 	this.m_radius = b2_polygonRadius;
-	this.m_vertices = null;
-	this.m_count = 0;
 	this.m_prevVertex = new b2Vec2();
 	this.m_nextVertex = new b2Vec2();
 	this.m_hasPrevVertex = false;
 	this.m_hasNextVertex = false;
+
+	this.Clear();
 
 	Object.seal(this);
 }
@@ -42,6 +42,13 @@ b2ChainShape._tempEdge = new b2EdgeShape();
 
 b2ChainShape.prototype =
 {
+	/// Clear all data.
+	Clear: function()
+	{
+		this.m_vertices = null;
+		this.m_count = 0;
+	},
+
 	/// Create a loop. This automatically adjusts connectivity.
 	/// @param vertices an array of vertices, these are copied
 	/// @param count the vertex count
@@ -52,13 +59,8 @@ b2ChainShape.prototype =
 		b2Assert(count >= 3);
 
 		for (var i = 1; i < count; ++i)
-		{
-			var v1 = vertices[i-1];
-			var v2 = vertices[i];
-
 			// If the code crashes here, it means your vertices are too close together.
-			b2Assert(b2DistanceSquared(v1, v2) > b2_linearSlop * b2_linearSlop);
-		}
+			b2Assert(b2DistanceSquared(vertices[i-1], vertices[i]) > b2_linearSlop * b2_linearSlop);
 '#endif';
 
 		this.m_count = count + 1;

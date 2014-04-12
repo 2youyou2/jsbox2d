@@ -2,10 +2,6 @@
 setlocal
 set PATH=%PATH%;../backend_win/builder/bin/Release/
 
-REM echo Building minified version...
-REM builder.exe pArgs="LIQUIDFUN"
-REM java.exe -jar closurecompiler.jar --js ../jsbox2d.js --js_output_file ../jsbox2d.min.js
-
 echo Building Box2D Debug...
 builder.exe pArgs="DEBUG" input="build.inc" output="jsbox2d.js"
 

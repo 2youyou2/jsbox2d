@@ -683,6 +683,15 @@ b2Vec3.prototype =
 		this.x *= s; this.y *= s; this.z *= s;
 	},
 
+	Invert: function()
+	{
+		this.x = -this.x;
+		this.y = -this.y;
+		this.z = -this.z;
+
+		return this;
+	},
+
 	x: 0,
 	y: 0,
 	z: 0
@@ -1952,12 +1961,12 @@ function b2ChainShape()
 
 	this.m_type = b2Shape.e_chain;
 	this.m_radius = b2_polygonRadius;
-	this.m_vertices = null;
-	this.m_count = 0;
 	this.m_prevVertex = new b2Vec2();
 	this.m_nextVertex = new b2Vec2();
 	this.m_hasPrevVertex = false;
 	this.m_hasNextVertex = false;
+
+	this.Clear();
 
 	Object.seal(this);
 }
@@ -1966,6 +1975,13 @@ b2ChainShape._tempEdge = new b2EdgeShape();
 
 b2ChainShape.prototype =
 {
+	/// Clear all data.
+	Clear: function()
+	{
+		this.m_vertices = null;
+		this.m_count = 0;
+	},
+
 	/// Create a loop. This automatically adjusts connectivity.
 	/// @param vertices an array of vertices, these are copied
 	/// @param count the vertex count
@@ -1976,13 +1992,8 @@ b2ChainShape.prototype =
 		b2Assert(count >= 3);
 
 		for (var i = 1; i < count; ++i)
-		{
-			var v1 = vertices[i-1];
-			var v2 = vertices[i];
-
 			// If the code crashes here, it means your vertices are too close together.
-			b2Assert(b2DistanceSquared(v1, v2) > b2_linearSlop * b2_linearSlop);
-		}
+			b2Assert(b2DistanceSquared(vertices[i-1], vertices[i]) > b2_linearSlop * b2_linearSlop);
 
 
 		this.m_count = count + 1;
@@ -2399,6 +2410,16 @@ b2PolygonShape.prototype =
 			{
 				break;
 			}
+		}
+
+		if (m < 3)
+		{
+			// Polygon is degenerate.
+
+			b2Assert(false);
+
+			this.SetAsBox(1.0, 1.0);
+			return;
 		}
 
 		this.m_count = m;
@@ -10587,14 +10608,33 @@ b2StackQueue.prototype =
 		return this.m_buffer[this.m_front];
 	}
 };
+/*
+* Copyright (c) 2013 Google, Inc.
+*
+* This software is provided 'as-is', without any express or implied
+* warranty.  In no event will the authors be held liable for any damages
+* arising from the use of this software.
+* Permission is granted to anyone to use this software for any purpose,
+* including commercial applications, and to alter it and redistribute it
+* freely, subject to the following restrictions:
+* 1. The origin of this software must not be misrepresented; you must not
+* claim that you wrote the original software. If you use this software
+* in a product, an acknowledgment in the product documentation would be
+* appreciated but is not required.
+* 2. Altered source versions must be plainly marked as such, and must not be
+* misrepresented as being the original software.
+* 3. This notice may not be removed or altered from any source distribution.
+*/
 /// A field representing the nearest generator from each point.
-
 function b2VoronoiDiagram(generatorCapacity)
 {
-	this.m_generatorBuffer = new Array(generatorCapacity);
+	this.m_generatorBuffer = [];
+
+	for (var i = 0; i < generatorCapacity; ++i)
+		this.m_generatorBuffer[i] = new b2VoronoiDiagram.Generator();
+
 	this.m_generatorCount = 0;
-	this.m_countX = 0;
-	this.m_countY = 0;
+	this.m_countX = 0; this.m_countY = 0;
 	this.m_diagram = null;
 }
 
@@ -10616,8 +10656,8 @@ b2VoronoiDiagram.prototype =
 {
 	AddGenerator: function(center, tag)
 	{
-		var g = (this.m_generatorBuffer[this.m_generatorCount++] = new b2VoronoiDiagram.Generator());
-		g.center.Assign(center);
+		var g = this.m_generatorBuffer[this.m_generatorCount++];
+		g.center = center.Clone();
 		g.tag = tag;
 	},
 
@@ -10629,27 +10669,24 @@ b2VoronoiDiagram.prototype =
 		var inverseRadius = 1 / radius;
 		var lower = new b2Vec2(+b2_maxFloat, +b2_maxFloat);
 		var upper = new b2Vec2(-b2_maxFloat, -b2_maxFloat);
-
 		for (var k = 0; k < this.m_generatorCount; k++)
 		{
 			var g = this.m_generatorBuffer[k];
-			lower.Assign(b2Min_v2(lower, g.center));
-			upper.Assign(b2Max_v2(upper, g.center));
+			lower = b2Min_v2(lower, g.center);
+			upper = b2Max_v2(upper, g.center);
 		}
+		this.m_countX = 1 + Math.floor(inverseRadius * (upper.x - lower.x));
+		this.m_countY = 1 + Math.floor(inverseRadius * (upper.y - lower.y));
+		this.m_diagram = [];
 
-		this.m_countX = 1 + ((inverseRadius * (upper.x - lower.x)) >>> 0);
-		this.m_countY = 1 + ((inverseRadius * (upper.y - lower.y)) >>> 0);
-
-		this.m_diagram = new Array(this.m_countX * this.m_countY);
-
-		for (var i = 0; i < this.m_countX * this.m_countY; i++)
+		for (var i = 0; i < this.m_countX * this.m_countY; ++i)
 			this.m_diagram[i] = null;
 
-		var queue = new b2StackQueue(this.m_countX * this.m_countX);
+		var queue = new b2StackQueue(4 * this.m_countX * this.m_countX);
 		for (var k = 0; k < this.m_generatorCount; k++)
 		{
 			var g = this.m_generatorBuffer[k];
-			g.center.Assign(b2Vec2.Multiply(inverseRadius, b2Vec2.Subtract(g.center, lower)));
+			g.center = b2Vec2.Multiply(inverseRadius, b2Vec2.Subtract(g.center, lower));
 			var x = b2Max(0, b2Min(Math.floor(g.center.x), this.m_countX - 1));
 			var y = b2Max(0, b2Min(Math.floor(g.center.y), this.m_countY - 1));
 			queue.Push(new b2VoronoiDiagram.b2VoronoiDiagramTask(x, y, x + y * this.m_countX, g));
@@ -10787,7 +10824,6 @@ b2VoronoiDiagram.prototype =
 		}
 	}
 };
-
 /// Small color object for each particle
 /// Constructor with four elements: r (red), g (green), b (blue), and a (opacity).
 /// Each element can be specified 0 to 255.
@@ -11585,34 +11621,35 @@ b2ParticleSystem.prototype =
 				diagram.AddGenerator(this.m_positionBuffer.data[i], i);
 			}
 			diagram.Generate(stride / 2);
+			var me = this;
 			var callback = function CreateParticleGroupCallback(a, b, c)
 			{
-				var pa = this.m_positionBuffer.data[a];
-				var pb = this.m_positionBuffer.data[b];
-				var pc = this.m_positionBuffer.data[c];
+				var pa = me.m_positionBuffer.data[a];
+				var pb = me.m_positionBuffer.data[b];
+				var pc = me.m_positionBuffer.data[c];
 				var dab = b2Vec2.Subtract(pa, pb);
 				var dbc = b2Vec2.Subtract(pb, pc);
 				var dca = b2Vec2.Subtract(pc, pa);
-				var maxDistanceSquared = b2_maxTriadDistanceSquared * this.m_squaredDiameter;
-				if (b2Dot_b2_b2(dab, dab) < maxDistanceSquared &&
-					b2Dot_b2_b2(dbc, dbc) < maxDistanceSquared &&
-					b2Dot_b2_b2(dca, dca) < maxDistanceSquared)
+				var maxDistanceSquared = b2_maxTriadDistanceSquared * me.m_squaredDiameter;
+				if (b2Dot_v2_v2(dab, dab) < maxDistanceSquared &&
+					b2Dot_v2_v2(dbc, dbc) < maxDistanceSquared &&
+					b2Dot_v2_v2(dca, dca) < maxDistanceSquared)
 				{
-					if (this.m_triadCount >= this.m_triadCapacity)
+					if (me.m_triadCount >= me.m_triadCapacity)
 					{
-						var oldCapacity = this.m_triadCapacity;
-						var newCapacity = this.m_triadCount ? 2 * this.m_triadCount : b2_minParticleBufferCapacity;
-						this.m_triadBuffer = this.ReallocateBuffer3(this.m_triadBuffer, oldCapacity, newCapacity);
-						this.m_triadCapacity = newCapacity;
+						var oldCapacity = me.m_triadCapacity;
+						var newCapacity = me.m_triadCount ? 2 * me.m_triadCount : b2_minParticleBufferCapacity;
+						me.m_triadBuffer = me.ReallocateBuffer3(me.m_triadBuffer, oldCapacity, newCapacity);
+						me.m_triadCapacity = newCapacity;
 					}
-					var triad = this.m_triadBuffer[this.m_triadCount];
+					var triad = me.m_triadBuffer[me.m_triadCount] = new b2ParticleSystem.Triad();
 					triad.indexA = a;
 					triad.indexB = b;
 					triad.indexC = c;
 					triad.flags =
-						this.m_flagsBuffer.data[a] |
-						this.m_flagsBuffer.data[b] |
-						this.m_flagsBuffer.data[c];
+						me.m_flagsBuffer.data[a] |
+						me.m_flagsBuffer.data[b] |
+						me.m_flagsBuffer.data[c];
 					triad.strength = groupDef.strength;
 					var midPoint = b2Vec2.Multiply(1.0 / 3.0, b2Vec2.Add(pa, b2Vec2.Add(pb, pc)));
 					triad.pa = b2Vec2.Subtract(pa, midPoint);
@@ -11622,7 +11659,7 @@ b2ParticleSystem.prototype =
 					triad.kb = -b2Dot_v2_v2(dab, dbc);
 					triad.kc = -b2Dot_v2_v2(dbc, dca);
 					triad.s = b2Cross_v2_v2(pa, pb) + b2Cross_v2_v2(pb, pc) + b2Cross_v2_v2(pc, pa);
-					this.m_triadCount++;
+					me.m_triadCount++;
 				}
 			};
 			//callback.system = this;
@@ -11630,9 +11667,9 @@ b2ParticleSystem.prototype =
 			//callback.firstIndex = firstIndex;
 			diagram.GetNodes(callback);
 		}
-		if (groupDef.groupFlags & b2ParticleDef.b2_solidParticleGroup)
+		if (groupDef.groupFlags & b2ParticleGroup.b2_solidParticleGroup)
 		{
-			ComputeDepthForGroup(group);
+			this.ComputeDepthForGroup(group);
 		}
 
 		return group;
@@ -11720,7 +11757,7 @@ b2ParticleSystem.prototype =
 		groupB.m_firstIndex = groupB.m_lastIndex;
 		this.DestroyParticleGroup(groupB);
 
-		if (groupFlags & b2ParticleDef.b2_solidParticleGroup)
+		if (groupFlags & b2ParticleGroup.b2_solidParticleGroup)
 		{
 			this.ComputeDepthForGroup(groupA);
 		}
@@ -12361,9 +12398,9 @@ b2ParticleSystem.prototype =
 				r.s *= invR;
 				r.c *= invR;
 				var strength = elasticStrength * triad.strength;
-				this.m_velocityBuffer.data[a].Add(b2Vec2.Multiply(strength, (b2Vec2.Subtract(b2Mul(r, oa), (b2Vec2.Subtract(pa, p))))));
-				this.m_velocityBuffer.data[b].Add(b2Vec2.Multiply(strength, (b2Vec2.Subtract(b2Mul(r, ob), (b2Vec2.Subtract(pb, p))))));
-				this.m_velocityBuffer.data[c].Add(b2Vec2.Multiply(strength, (b2Vec2.Subtract(b2Mul(r, oc), (b2Vec2.Subtract(pc, p))))));
+				this.m_velocityBuffer.data[a].Add(b2Vec2.Multiply(strength, (b2Vec2.Subtract(b2Mul_r_v2(r, oa), (b2Vec2.Subtract(pa, p))))));
+				this.m_velocityBuffer.data[b].Add(b2Vec2.Multiply(strength, (b2Vec2.Subtract(b2Mul_r_v2(r, ob), (b2Vec2.Subtract(pb, p))))));
+				this.m_velocityBuffer.data[c].Add(b2Vec2.Multiply(strength, (b2Vec2.Subtract(b2Mul_r_v2(r, oc), (b2Vec2.Subtract(pc, p))))));
 			}
 		}
 	},
@@ -13836,6 +13873,9 @@ b2Contact.Destroy = function(contact)
 	b2Assert(0 <= typeA && typeB < b2Shape.e_typeCount);
 	b2Assert(0 <= typeA && typeB < b2Shape.e_typeCount);
 
+
+	contact.m_nodeA.Clear();
+	contact.m_nodeB.Clear();
 
 	b2Contact.s_registers[typeA][typeB].fcn.garbage.push(contact);
 };
@@ -18079,6 +18119,12 @@ b2WeldJoint.prototype =
 			invM += this.m_gamma;
 			this.m_mass.ez.z = invM != 0.0 ? 1.0 / invM : 0.0;
 		}
+		else if (K.ez.z == 0.0)
+		{
+			K.GetInverse22(this.m_mass);
+			this.m_gamma = 0.0;
+			this.m_bias = 0.0;
+		}
 		else
 		{
 			K.GetSymInverse33(this.m_mass);
@@ -18221,7 +18267,17 @@ b2WeldJoint.prototype =
 
 			var C = new b2Vec3(C1.x, C1.y, C2);
 
-			var impulse = K.Solve33(C).Negate();
+			var impulse;
+			if (K.ez.z > 0.0)
+			{
+				impulse = K.Solve33(C).Invert();
+			}
+			else
+			{
+				var impulse2 = K.Solve22(C1).Invert();
+				impulse = new b2Vec3(impulse2.x, impulse2.y, 0.0);
+			}
+
 			var P = new b2Vec2(impulse.x, impulse.y);
 
 			cA.Subtract(b2Vec2.Multiply(mA, P));
@@ -18329,9 +18385,8 @@ b2WheelJointDef.prototype =
 b2WheelJointDef._extend(b2JointDef);
 
 /// A wheel joint. This joint provides two degrees of freedom: translation
-/// along an axis fixed in bodyA and rotation in the plane. You can use a
-/// joint limit to restrict the range of motion and a joint motor to drive
-/// the rotation or to model rotational friction.
+/// along an axis fixed in bodyA and rotation in the plane. In other words, it is a point to
+/// line constraint with a rotational motor and a linear spring/damper.
 /// This joint is designed for vehicle suspensions.
 function b2WheelJoint(def)
 {

@@ -81,7 +81,9 @@ function loadTestBed()
 			TestSurfaceTension,
 			TestChaosPendulum,
 			TestWaveMachine,
-			TestSoup
+			TestSoup,
+			TestRigidParticles,
+			TestElasticParticles
 		];
 
 	tests.sort(function(a, b)

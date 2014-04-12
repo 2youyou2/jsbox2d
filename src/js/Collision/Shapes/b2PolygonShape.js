@@ -170,6 +170,16 @@ b2PolygonShape.prototype =
 			}
 		}
 
+		if (m < 3)
+		{
+			// Polygon is degenerate.
+'#if @DEBUG';
+			b2Assert(false);
+'#endif';
+			this.SetAsBox(1.0, 1.0);
+			return;
+		}
+
 		this.m_count = m;
 
 		// Copy vertices.

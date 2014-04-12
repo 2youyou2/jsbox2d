@@ -669,6 +669,9 @@ b2Contact.Destroy = function(contact)
 	b2Assert(0 <= typeA && typeB < b2Shape.e_typeCount);
 '#endif';
 
+	contact.m_nodeA.Clear();
+	contact.m_nodeB.Clear();
+
 	b2Contact.s_registers[typeA][typeB].fcn.garbage.push(contact);
 };
 

@@ -247,6 +247,15 @@ b2Vec3.prototype =
 		this.x *= s; this.y *= s; this.z *= s;
 	},
 
+	Invert: function()
+	{
+		this.x = -this.x;
+		this.y = -this.y;
+		this.z = -this.z;
+
+		return this;
+	},
+
 	x: 0,
 	y: 0,
 	z: 0

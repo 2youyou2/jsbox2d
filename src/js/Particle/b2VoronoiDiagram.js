@@ -1,11 +1,30 @@
+/*
+* Copyright (c) 2013 Google, Inc.
+*
+* This software is provided 'as-is', without any express or implied
+* warranty.  In no event will the authors be held liable for any damages
+* arising from the use of this software.
+* Permission is granted to anyone to use this software for any purpose,
+* including commercial applications, and to alter it and redistribute it
+* freely, subject to the following restrictions:
+* 1. The origin of this software must not be misrepresented; you must not
+* claim that you wrote the original software. If you use this software
+* in a product, an acknowledgment in the product documentation would be
+* appreciated but is not required.
+* 2. Altered source versions must be plainly marked as such, and must not be
+* misrepresented as being the original software.
+* 3. This notice may not be removed or altered from any source distribution.
+*/
 /// A field representing the nearest generator from each point.
-
 function b2VoronoiDiagram(generatorCapacity)
 {
-	this.m_generatorBuffer = new Array(generatorCapacity);
+	this.m_generatorBuffer = [];
+
+	for (var i = 0; i < generatorCapacity; ++i)
+		this.m_generatorBuffer[i] = new b2VoronoiDiagram.Generator();
+
 	this.m_generatorCount = 0;
-	this.m_countX = 0;
-	this.m_countY = 0;
+	this.m_countX = 0; this.m_countY = 0;
 	this.m_diagram = null;
 }
 
@@ -27,8 +46,8 @@ b2VoronoiDiagram.prototype =
 {
 	AddGenerator: function(center, tag)
 	{
-		var g = (this.m_generatorBuffer[this.m_generatorCount++] = new b2VoronoiDiagram.Generator());
-		g.center.Assign(center);
+		var g = this.m_generatorBuffer[this.m_generatorCount++];
+		g.center = center.Clone();
 		g.tag = tag;
 	},
 
@@ -40,27 +59,24 @@ b2VoronoiDiagram.prototype =
 		var inverseRadius = 1 / radius;
 		var lower = new b2Vec2(+b2_maxFloat, +b2_maxFloat);
 		var upper = new b2Vec2(-b2_maxFloat, -b2_maxFloat);
-
 		for (var k = 0; k < this.m_generatorCount; k++)
 		{
 			var g = this.m_generatorBuffer[k];
-			lower.Assign(b2Min_v2(lower, g.center));
-			upper.Assign(b2Max_v2(upper, g.center));
+			lower = b2Min_v2(lower, g.center);
+			upper = b2Max_v2(upper, g.center);
 		}
+		this.m_countX = 1 + Math.floor(inverseRadius * (upper.x - lower.x));
+		this.m_countY = 1 + Math.floor(inverseRadius * (upper.y - lower.y));
+		this.m_diagram = [];
 
-		this.m_countX = 1 + ((inverseRadius * (upper.x - lower.x)) >>> 0);
-		this.m_countY = 1 + ((inverseRadius * (upper.y - lower.y)) >>> 0);
-
-		this.m_diagram = new Array(this.m_countX * this.m_countY);
-
-		for (var i = 0; i < this.m_countX * this.m_countY; i++)
+		for (var i = 0; i < this.m_countX * this.m_countY; ++i)
 			this.m_diagram[i] = null;
 
-		var queue = new b2StackQueue(this.m_countX * this.m_countX);
+		var queue = new b2StackQueue(4 * this.m_countX * this.m_countX);
 		for (var k = 0; k < this.m_generatorCount; k++)
 		{
 			var g = this.m_generatorBuffer[k];
-			g.center.Assign(b2Vec2.Multiply(inverseRadius, b2Vec2.Subtract(g.center, lower)));
+			g.center = b2Vec2.Multiply(inverseRadius, b2Vec2.Subtract(g.center, lower));
 			var x = b2Max(0, b2Min(Math.floor(g.center.x), this.m_countX - 1));
 			var y = b2Max(0, b2Min(Math.floor(g.center.y), this.m_countY - 1));
 			queue.Push(new b2VoronoiDiagram.b2VoronoiDiagramTask(x, y, x + y * this.m_countX, g));

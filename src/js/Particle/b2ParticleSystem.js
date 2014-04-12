@@ -479,34 +479,35 @@ b2ParticleSystem.prototype =
 				diagram.AddGenerator(this.m_positionBuffer.data[i], i);
 			}
 			diagram.Generate(stride / 2);
+			var me = this;
 			var callback = function CreateParticleGroupCallback(a, b, c)
 			{
-				var pa = this.m_positionBuffer.data[a];
-				var pb = this.m_positionBuffer.data[b];
-				var pc = this.m_positionBuffer.data[c];
+				var pa = me.m_positionBuffer.data[a];
+				var pb = me.m_positionBuffer.data[b];
+				var pc = me.m_positionBuffer.data[c];
 				var dab = b2Vec2.Subtract(pa, pb);
 				var dbc = b2Vec2.Subtract(pb, pc);
 				var dca = b2Vec2.Subtract(pc, pa);
-				var maxDistanceSquared = b2_maxTriadDistanceSquared * this.m_squaredDiameter;
-				if (b2Dot_b2_b2(dab, dab) < maxDistanceSquared &&
-					b2Dot_b2_b2(dbc, dbc) < maxDistanceSquared &&
-					b2Dot_b2_b2(dca, dca) < maxDistanceSquared)
+				var maxDistanceSquared = b2_maxTriadDistanceSquared * me.m_squaredDiameter;
+				if (b2Dot_v2_v2(dab, dab) < maxDistanceSquared &&
+					b2Dot_v2_v2(dbc, dbc) < maxDistanceSquared &&
+					b2Dot_v2_v2(dca, dca) < maxDistanceSquared)
 				{
-					if (this.m_triadCount >= this.m_triadCapacity)
+					if (me.m_triadCount >= me.m_triadCapacity)
 					{
-						var oldCapacity = this.m_triadCapacity;
-						var newCapacity = this.m_triadCount ? 2 * this.m_triadCount : b2_minParticleBufferCapacity;
-						this.m_triadBuffer = this.ReallocateBuffer3(this.m_triadBuffer, oldCapacity, newCapacity);
-						this.m_triadCapacity = newCapacity;
+						var oldCapacity = me.m_triadCapacity;
+						var newCapacity = me.m_triadCount ? 2 * me.m_triadCount : b2_minParticleBufferCapacity;
+						me.m_triadBuffer = me.ReallocateBuffer3(me.m_triadBuffer, oldCapacity, newCapacity);
+						me.m_triadCapacity = newCapacity;
 					}
-					var triad = this.m_triadBuffer[this.m_triadCount];
+					var triad = me.m_triadBuffer[me.m_triadCount] = new b2ParticleSystem.Triad();
 					triad.indexA = a;
 					triad.indexB = b;
 					triad.indexC = c;
 					triad.flags =
-						this.m_flagsBuffer.data[a] |
-						this.m_flagsBuffer.data[b] |
-						this.m_flagsBuffer.data[c];
+						me.m_flagsBuffer.data[a] |
+						me.m_flagsBuffer.data[b] |
+						me.m_flagsBuffer.data[c];
 					triad.strength = groupDef.strength;
 					var midPoint = b2Vec2.Multiply(1.0 / 3.0, b2Vec2.Add(pa, b2Vec2.Add(pb, pc)));
 					triad.pa = b2Vec2.Subtract(pa, midPoint);
@@ -516,7 +517,7 @@ b2ParticleSystem.prototype =
 					triad.kb = -b2Dot_v2_v2(dab, dbc);
 					triad.kc = -b2Dot_v2_v2(dbc, dca);
 					triad.s = b2Cross_v2_v2(pa, pb) + b2Cross_v2_v2(pb, pc) + b2Cross_v2_v2(pc, pa);
-					this.m_triadCount++;
+					me.m_triadCount++;
 				}
 			};
 			//callback.system = this;
@@ -524,9 +525,9 @@ b2ParticleSystem.prototype =
 			//callback.firstIndex = firstIndex;
 			diagram.GetNodes(callback);
 		}
-		if (groupDef.groupFlags & b2ParticleDef.b2_solidParticleGroup)
+		if (groupDef.groupFlags & b2ParticleGroup.b2_solidParticleGroup)
 		{
-			ComputeDepthForGroup(group);
+			this.ComputeDepthForGroup(group);
 		}
 
 		return group;
@@ -614,7 +615,7 @@ b2ParticleSystem.prototype =
 		groupB.m_firstIndex = groupB.m_lastIndex;
 		this.DestroyParticleGroup(groupB);
 
-		if (groupFlags & b2ParticleDef.b2_solidParticleGroup)
+		if (groupFlags & b2ParticleGroup.b2_solidParticleGroup)
 		{
 			this.ComputeDepthForGroup(groupA);
 		}
@@ -1255,9 +1256,9 @@ b2ParticleSystem.prototype =
 				r.s *= invR;
 				r.c *= invR;
 				var strength = elasticStrength * triad.strength;
-				this.m_velocityBuffer.data[a].Add(b2Vec2.Multiply(strength, (b2Vec2.Subtract(b2Mul(r, oa), (b2Vec2.Subtract(pa, p))))));
-				this.m_velocityBuffer.data[b].Add(b2Vec2.Multiply(strength, (b2Vec2.Subtract(b2Mul(r, ob), (b2Vec2.Subtract(pb, p))))));
-				this.m_velocityBuffer.data[c].Add(b2Vec2.Multiply(strength, (b2Vec2.Subtract(b2Mul(r, oc), (b2Vec2.Subtract(pc, p))))));
+				this.m_velocityBuffer.data[a].Add(b2Vec2.Multiply(strength, (b2Vec2.Subtract(b2Mul_r_v2(r, oa), (b2Vec2.Subtract(pa, p))))));
+				this.m_velocityBuffer.data[b].Add(b2Vec2.Multiply(strength, (b2Vec2.Subtract(b2Mul_r_v2(r, ob), (b2Vec2.Subtract(pb, p))))));
+				this.m_velocityBuffer.data[c].Add(b2Vec2.Multiply(strength, (b2Vec2.Subtract(b2Mul_r_v2(r, oc), (b2Vec2.Subtract(pc, p))))));
 			}
 		}
 	},

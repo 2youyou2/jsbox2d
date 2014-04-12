@@ -662,6 +662,15 @@ b2Vec3.prototype =
 		this.x *= s; this.y *= s; this.z *= s;
 	},
 
+	Invert: function()
+	{
+		this.x = -this.x;
+		this.y = -this.y;
+		this.z = -this.z;
+
+		return this;
+	},
+
 	x: 0,
 	y: 0,
 	z: 0
@@ -1886,12 +1895,12 @@ function b2ChainShape()
 
 	this.m_type = b2Shape.e_chain;
 	this.m_radius = b2_polygonRadius;
-	this.m_vertices = null;
-	this.m_count = 0;
 	this.m_prevVertex = new b2Vec2();
 	this.m_nextVertex = new b2Vec2();
 	this.m_hasPrevVertex = false;
 	this.m_hasNextVertex = false;
+
+	this.Clear();
 
 	Object.seal(this);
 }
@@ -1900,6 +1909,13 @@ b2ChainShape._tempEdge = new b2EdgeShape();
 
 b2ChainShape.prototype =
 {
+	/// Clear all data.
+	Clear: function()
+	{
+		this.m_vertices = null;
+		this.m_count = 0;
+	},
+
 	/// Create a loop. This automatically adjusts connectivity.
 	/// @param vertices an array of vertices, these are copied
 	/// @param count the vertex count
@@ -1910,13 +1926,8 @@ b2ChainShape.prototype =
 		b2Assert(count >= 3);
 
 		for (var i = 1; i < count; ++i)
-		{
-			var v1 = vertices[i-1];
-			var v2 = vertices[i];
-
 			// If the code crashes here, it means your vertices are too close together.
-			b2Assert(b2DistanceSquared(v1, v2) > b2_linearSlop * b2_linearSlop);
-		}
+			b2Assert(b2DistanceSquared(vertices[i-1], vertices[i]) > b2_linearSlop * b2_linearSlop);
 
 
 		this.m_count = count + 1;
@@ -2327,6 +2338,16 @@ b2PolygonShape.prototype =
 			{
 				break;
 			}
+		}
+
+		if (m < 3)
+		{
+			// Polygon is degenerate.
+
+			b2Assert(false);
+
+			this.SetAsBox(1.0, 1.0);
+			return;
 		}
 
 		this.m_count = m;
@@ -10829,6 +10850,9 @@ b2Contact.Destroy = function(contact)
 	b2Assert(0 <= typeA && typeB < b2Shape.e_typeCount);
 
 
+	contact.m_nodeA.Clear();
+	contact.m_nodeB.Clear();
+
 	b2Contact.s_registers[typeA][typeB].fcn.garbage.push(contact);
 };
 
@@ -15071,6 +15095,12 @@ b2WeldJoint.prototype =
 			invM += this.m_gamma;
 			this.m_mass.ez.z = invM != 0.0 ? 1.0 / invM : 0.0;
 		}
+		else if (K.ez.z == 0.0)
+		{
+			K.GetInverse22(this.m_mass);
+			this.m_gamma = 0.0;
+			this.m_bias = 0.0;
+		}
 		else
 		{
 			K.GetSymInverse33(this.m_mass);
@@ -15213,7 +15243,17 @@ b2WeldJoint.prototype =
 
 			var C = new b2Vec3(C1.x, C1.y, C2);
 
-			var impulse = K.Solve33(C).Negate();
+			var impulse;
+			if (K.ez.z > 0.0)
+			{
+				impulse = K.Solve33(C).Invert();
+			}
+			else
+			{
+				var impulse2 = K.Solve22(C1).Invert();
+				impulse = new b2Vec3(impulse2.x, impulse2.y, 0.0);
+			}
+
 			var P = new b2Vec2(impulse.x, impulse.y);
 
 			cA.Subtract(b2Vec2.Multiply(mA, P));
@@ -15321,9 +15361,8 @@ b2WheelJointDef.prototype =
 b2WheelJointDef._extend(b2JointDef);
 
 /// A wheel joint. This joint provides two degrees of freedom: translation
-/// along an axis fixed in bodyA and rotation in the plane. You can use a
-/// joint limit to restrict the range of motion and a joint motor to drive
-/// the rotation or to model rotational friction.
+/// along an axis fixed in bodyA and rotation in the plane. In other words, it is a point to
+/// line constraint with a rotational motor and a linear spring/damper.
 /// This joint is designed for vehicle suspensions.
 function b2WheelJoint(def)
 {

@@ -196,6 +196,12 @@ b2WeldJoint.prototype =
 			invM += this.m_gamma;
 			this.m_mass.ez.z = invM != 0.0 ? 1.0 / invM : 0.0;
 		}
+		else if (K.ez.z == 0.0)
+		{
+			K.GetInverse22(this.m_mass);
+			this.m_gamma = 0.0;
+			this.m_bias = 0.0;
+		}
 		else
 		{
 			K.GetSymInverse33(this.m_mass);
@@ -338,7 +344,17 @@ b2WeldJoint.prototype =
 
 			var C = new b2Vec3(C1.x, C1.y, C2);
 
-			var impulse = K.Solve33(C).Negate();
+			var impulse;
+			if (K.ez.z > 0.0)
+			{
+				impulse = K.Solve33(C).Invert();
+			}
+			else
+			{
+				var impulse2 = K.Solve22(C1).Invert();
+				impulse = new b2Vec3(impulse2.x, impulse2.y, 0.0);
+			}
+
 			var P = new b2Vec2(impulse.x, impulse.y);
 
 			cA.Subtract(b2Vec2.Multiply(mA, P));
